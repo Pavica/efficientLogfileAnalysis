@@ -15,7 +15,7 @@
 
     <title>Main</title>
     <style>
-        .introduction{
+        .searchbar, .filter-menu, .logfile-results{
             margin-right: 3rem;
             margin-left: 3rem;
             margin-top: 2rem;
@@ -77,7 +77,6 @@
                 <a data-bs-toggle="modal" data-bs-target="#settingsModal">
                     <i class="bi bi-gear-fill fs-3"></span></i>
                 </a>
-
             <li class="nav-item px-3 my-auto">
                 <a data-bs-toggle="modal" data-bs-target="#logModal">
                     <i class="bi bi-gear-fill fs-3"></span></i>
@@ -89,9 +88,9 @@
 <!-- NavBar -->
 
 <!-- Searchbar -->
-<div class="Searchbar">
+<div class="searchbar">
     <div class="container">
-        <div class="row d-flex p-4">
+        <div class="row d-flex">
             <div class="search-container">
                 <form action="">
                     <div class="d-flex justify-content-center">
@@ -106,10 +105,10 @@
 <!-- Searchbar -->
 
 <!-- Filter-Menu -->
-<div class="container">
-    <div>
+<div class="filter-menu">
+    <div class="container">
         <div class="collapse" id="collapseExample">
-            <div class="d-flex flex-row row w-100 mx-auto border rounded-3" id="FilterContainer">
+            <div class="d-flex flex-row row border rounded-3" id="FilterContainer">
 
         <!-- Date-Picker -->
                 <div class="d-flex flex-column p-4 col-md-4 text-center">
@@ -191,42 +190,40 @@
 
         <!-- Other options -->
                 <div class="d-flex flex-column p-4 col-md-4 text-center">
-                    <div>
-                        <div class="container">
-                            <h5 style="border-bottom: solid black 1px;" class="mb-2">Other options </h5>
-                            <div>
-                                <label for="modulDataList" class="form-label">Modul:</label>
-                                <input class="form-control" list="datalistOptionsModul" id="modulDataList" placeholder="Drop down or Search">
-                                <datalist id="datalistOptionsModul">
-                                    <option value="Modul 1">
-                                    <option value="Kein Modul">
-                                    <option value="Vielleicht Modul 2">
-                                    <option value="Modul 2">
-                                    <option value="ludoM 3">
-                                </datalist>
-                            </div>
-                            <div>
-                                <label for="classDataList" class="form-label">Klasse:</label>
-                                <input class="form-control" list="datalistOptionsClass" id="classDataList" placeholder="Drop down or Search">
-                                <datalist id="datalistOptionsClass">
-                                    <option value="Modul 1">
-                                    <option value="Kein Modul">
-                                    <option value="Vielleicht Modul 2">
-                                    <option value="Modul 2">
-                                    <option value="ludoM 3">
-                                </datalist>
-                            </div>
-                            <div>
-                                <label for="ExceptionDataList" class="form-label">Exception:</label>
-                                <input class="form-control" list="datalistOptionsClass" id="ExceptionDataList" placeholder="Drop down or Search">
-                                <datalist id="datalistOptionsException">
-                                    <option value="Modul 1">
-                                    <option value="Kein Modul">
-                                    <option value="Vielleicht Modul 2">
-                                    <option value="Modul 2">
-                                    <option value="ludoM 3">
-                                </datalist>
-                            </div>
+                    <div class="container">
+                        <h5 style="border-bottom: solid black 1px;" class="mb-2">Other options </h5>
+                        <div>
+                            <label for="modulDataList" class="form-label">Modul:</label>
+                            <input class="form-control" list="datalistOptionsModul" id="modulDataList" placeholder="Drop down or Search">
+                            <datalist id="datalistOptionsModul">
+                                <option value="Modul 1">
+                                <option value="Kein Modul">
+                                <option value="Vielleicht Modul 2">
+                                <option value="Modul 2">
+                                <option value="ludoM 3">
+                            </datalist>
+                        </div>
+                        <div>
+                            <label for="classDataList" class="form-label">Klasse:</label>
+                            <input class="form-control" list="datalistOptionsClass" id="classDataList" placeholder="Drop down or Search">
+                            <datalist id="datalistOptionsClass">
+                                <option value="Modul 1">
+                                <option value="Kein Modul">
+                                <option value="Vielleicht Modul 2">
+                                <option value="Modul 2">
+                                <option value="ludoM 3">
+                            </datalist>
+                        </div>
+                        <div>
+                            <label for="ExceptionDataList" class="form-label">Exception:</label>
+                            <input class="form-control" list="datalistOptionsClass" id="ExceptionDataList" placeholder="Drop down or Search">
+                            <datalist id="datalistOptionsException">
+                                <option value="Modul 1">
+                                <option value="Kein Modul">
+                                <option value="Vielleicht Modul 2">
+                                <option value="Modul 2">
+                                <option value="ludoM 3">
+                            </datalist>
                         </div>
                     </div>
                 </div>
@@ -240,6 +237,19 @@
     </div>
 </div>
 <!-- Filter-Menu -->
+
+<!-- Logfile results -->
+<div class="logfile-results">
+    <div class="container">
+        <div class="row d-flex border rounded-3 py-4">
+            <div class="d-flex justify-content-center">
+                <p>08.06.2022 18:15</p>
+                <p> Loremagna aliqua. Dolor morbi non arcu risus quis varius quam quisque. Nunc scelerisque viver...</p>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Logfile results -->
 
 <!-- Settings Modal -->
 <div class="modal fade" id="settingsModal" tabindex="-1" aria-labelledby="settingsModal" aria-hidden="true">
