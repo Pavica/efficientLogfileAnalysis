@@ -20,5 +20,5 @@ function onCollapseFilter(buttonFilter, doCollapse)
         buttonFilter.innerText = "Expand Filter";
         doCollapse == !doCollapse;
     }
-
 }
+
