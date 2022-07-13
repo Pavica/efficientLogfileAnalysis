@@ -10,6 +10,9 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
+/**
+ * Data class representing a single log entry.
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
