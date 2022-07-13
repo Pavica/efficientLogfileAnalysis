@@ -45,8 +45,8 @@ public class ReadIndex {
 //        Query query = parser.parse("Clark");
 
         Query query = LongPoint.newRangeQuery("date",
-            convertToLong(2022, 6, 12, 8, 12, 12),
-            convertToLong(2022, 12, 12, 8, 12, 12)
+            convertToLong(2022, 7, 5, 12, 53, 58),
+            convertToLong(2022, 7, 5, 12, 54, 0)
         );
 
         //Iterate through results
@@ -69,9 +69,9 @@ public class ReadIndex {
                 //value.get("date").numericValue().longValue() , existiert nicht wegen longpoint
                 1,
                 value.getField("logLevel").stringValue(),
-                value.getField("message").stringValue(),
+                value.getField("module").stringValue(),
                 value.getField("classname").stringValue(),
-                value.getField("module").stringValue()
+                value.getField("message").stringValue()
             );
 
 
