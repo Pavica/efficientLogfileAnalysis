@@ -1,5 +1,6 @@
 package com.efficientlogfileanalysis.log;
 
+import com.efficientlogfileanalysis.bl.FileIDManager;
 import com.efficientlogfileanalysis.data.LogEntry;
 import lombok.SneakyThrows;
 import org.apache.lucene.analysis.Analyzer;
@@ -61,7 +62,6 @@ public class CreateIndex {
         return logEntries;
     }
 
-
     public static void main(String[] args) throws IOException {
         //Delete the previous index
         new File("index").delete();
@@ -83,19 +83,23 @@ public class CreateIndex {
 
         //Read all the log entries from all the files into a list
         List<LogEntry> logEntries = readAllLogEntries("test_logs");
+        FileIDManager mgr = FileIDManager.getInstance();
 
         for(LogEntry logEntry : logEntries)
         {
             Document document = new Document();
+            
             document.add(new LongPoint("date", logEntry.getTime()));
             document.add(new StringField("logLevel", logEntry.getLogLevel(), Field.Store.YES));
             document.add(new TextField("message", logEntry.getMessage(), Field.Store.YES));
             document.add(new StringField("classname", logEntry.getClassName(), Field.Store.YES));
             document.add(new StringField("module", logEntry.getModule(), Field.Store.YES));
+            //machen das referenz azf fiel gmeacht wird
+            //document.add();
+            
             indexWriter.addDocument(document);
         }
 
         indexWriter.close();
     }
-
 }
