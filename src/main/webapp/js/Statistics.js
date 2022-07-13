@@ -1,3 +1,12 @@
+/**
+ * author: Clark
+ * version: 1.0
+ * last changed: 13.07.2022
+ */
+
+/**
+ * Function used to create and load the bar chart into the corresponding canvas.
+ */
 function loadBarChart(){
     const barChartContext = document.getElementById("barChart").getContext('2d');
     const barChart = new Chart(barChartContext, {
@@ -24,6 +33,9 @@ function loadBarChart(){
     });
 }
 
+/**
+ * Function used to create and load the pie chart into the corresponding canvas.
+ */
 function loadPieChart(){
     const pieChartContext = document.getElementById("pieChart").getContext('2d');
     const pieChart = new Chart(pieChartContext, {
@@ -78,6 +90,10 @@ function loadPieChart(){
     });
 }
 
+
+/**
+ * Function used to create and load the line chart into the corresponding canvas.
+ */
 function loadLineChart(){
     const lineChartContext = document.getElementById("lineChart").getContext('2d');
     const lineChart = new Chart(lineChartContext, {
@@ -104,8 +120,14 @@ function loadLineChart(){
     });
 }
 
+/** used to identify how many statistics are to be displayed */
 let countStatistics;
 
+/**
+ * Function used to determine how each statistic is displayed.
+ *
+ * @param activeStatistics statistics that are to be displayed.
+ */
 function showActiveStatistics(activeStatistics)
 {
     countStatistics = activeStatistics.length;
@@ -150,6 +172,12 @@ function showActiveStatistics(activeStatistics)
         reloadStatistics(activeStatistics[i].chartName)
 }
 
+/**
+ * Creates the canvas for each statistic, depending on their width.
+ *
+ * @param charts charts which are to be displayed
+ * @param chartWidths width of the charts in an array
+ */
 function createChartContainer(charts, chartWidths){
 
     document.getElementById('statisticsHolder').innerHTML = "";
@@ -167,6 +195,11 @@ function createChartContainer(charts, chartWidths){
             `
 }
 
+/**
+ * Function used to reload the statistics, especially when the canvas of the statistic was deleted and recreated.
+ *
+ * @param statistic
+ */
 function reloadStatistics(statistic){
 
     if(statistic == 'barChart'){
