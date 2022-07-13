@@ -14,6 +14,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -59,12 +60,11 @@ public class CreateIndex {
 
     public static void main(String[] args) throws IOException {
 
-        //Delete the previous index
-        new File("index").delete();
-
-
         //Create path object
         Path indexPath = Paths.get("index");
+
+        //Delete previous directory
+        Files.walk(indexPath).map(Path::toFile).forEach(File::delete);
 
         //Open the index directory (creates the directory if it doesn't exist)
         Directory indexDirectory = FSDirectory.open(indexPath);
