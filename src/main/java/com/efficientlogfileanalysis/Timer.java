@@ -12,7 +12,7 @@ public class Timer {
     /**
      * 10^10
      */
-    private static long TEN_TO_THE_POWER_OF_TEN = 10000000000l;
+    private static long TEN_TO_THE_POWER_OF_TEN = 10_000_000_000l;
 
     /**
      * Data class that stores time statistics.
@@ -87,11 +87,12 @@ public class Timer {
 
     /**
      * Times the execution speed, in miliseconds, of a runnable by running the function for n times. Cant be used to time 2 things simultaniously.
+     * @param func The Runnable that is being timed.
+     * @param times The amount of times the function should be executed.
      * @return A Time Object with statistics of the ran function.
      */
     public Time timeExecutionSpeed(Runnable func, int times) {
         Time time = new Time();
-        long tempTime;
 
         for(int i = 0;i < times; ++i) {
             startTime = getCurrentTime();
