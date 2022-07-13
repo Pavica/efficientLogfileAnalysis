@@ -1,5 +1,6 @@
 package com.efficientlogfileanalysis.log;
 
+import com.efficientlogfileanalysis.bl.FileIDManager;
 import com.efficientlogfileanalysis.data.LogEntry;
 import lombok.SneakyThrows;
 import org.apache.lucene.analysis.Analyzer;
@@ -21,10 +22,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Class with main method which indexes all log files
+ * Class with main method which indexes all log files.
  */
 public class CreateIndex {
 
+    /**
+     * Reads all the Logentries from a directory.
+     * @param path The path to the folder
+     * @return A list containing all LogEntries from a directory with Logfiles
+     */
     @SneakyThrows
     public static List<LogEntry> readAllLogEntries(String path)
     {
@@ -57,7 +63,6 @@ public class CreateIndex {
         return logEntries;
     }
 
-
     public static void main(String[] args) throws IOException {
 
         //Create path object
@@ -69,37 +74,34 @@ public class CreateIndex {
         //Open the index directory (creates the directory if it doesn't exist)
         Directory indexDirectory = FSDirectory.open(indexPath);
 
-
         //Create Analyzer object
         //The analyzer removes useless tokens ( words like a, an is etc.)
         Analyzer analyzer = new StandardAnalyzer();
-
 
         //The IndexWriter is used to create an Index
         IndexWriterConfig indexWriterConfig = new IndexWriterConfig(analyzer);
         //Specify the Index to be written to and the config
         IndexWriter indexWriter = new IndexWriter(indexDirectory, indexWriterConfig);
 
-
-        //Add all log entries
+        //Read all the log entries from all the files into a list
         List<LogEntry> logEntries = readAllLogEntries("test_logs");
+        FileIDManager mgr = FileIDManager.getInstance();
 
         for(LogEntry logEntry : logEntries)
         {
             Document document = new Document();
+            
             document.add(new LongPoint("date", logEntry.getTime()));
             document.add(new StringField("logLevel", logEntry.getLogLevel(), Field.Store.YES));
             document.add(new TextField("message", logEntry.getMessage(), Field.Store.YES));
             document.add(new StringField("classname", logEntry.getClassName(), Field.Store.YES));
             document.add(new StringField("module", logEntry.getModule(), Field.Store.YES));
+            //machen das referenz azf fiel gmeacht wird
+            //document.add();
+            
             indexWriter.addDocument(document);
         }
 
         indexWriter.close();
-
-
-
-
     }
-
 }
