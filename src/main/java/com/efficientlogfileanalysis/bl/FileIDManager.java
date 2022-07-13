@@ -3,6 +3,9 @@ package com.efficientlogfileanalysis.bl;
 import java.io.File;
 import java.util.HashMap;
 
+/**
+ * Manages a Hashmap Containing all available file names.
+ */
 public class FileIDManager {
 
     private final HashMap<String, Integer> fileIDs;
