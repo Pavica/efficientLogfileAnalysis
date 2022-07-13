@@ -17,10 +17,14 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 
 /**
- * Class with main method which tests different search queries
+ * Class with main method which tests different search queries.
  */
 public class ReadIndex {
 
+    /**
+     * Convenience function. Converts date an time to a long value in milliseconds.
+     * @return The current date and time in miliseconds with precision of seconds.
+     */
     public static long convertToLong(int year, int month, int dayOfMonth, int hour, int minute, int second)
     {
         LocalDateTime time = LocalDateTime.of(year, month, dayOfMonth, hour, minute, second);
@@ -29,37 +33,32 @@ public class ReadIndex {
 
     @SneakyThrows
     public static void main(String[] args) {
-
         //Create path object
         Path indexPath = Paths.get("index");
 
         //Open the index directory (creates the directory if it doesn't exist)
         Directory indexDirectory = FSDirectory.open(indexPath);
 
-
         //Query the index
         DirectoryReader directoryReader = DirectoryReader.open(indexDirectory);
         IndexSearcher indexSearcher = new IndexSearcher(directoryReader);
-
-//        QueryParser parser = new QueryParser("name", analyzer);
-//        Query query = parser.parse("Clark");
 
         Query query = LongPoint.newRangeQuery("date",
             convertToLong(2022, 6, 12, 8, 12, 12),
             convertToLong(2022, 12, 12, 8, 12, 12)
         );
 
-        //Iterate through results
-
-
         ScoreDoc[] hits = indexSearcher.search(query, Integer.MAX_VALUE).scoreDocs;
 
+        //print hit amount
         System.out.println(hits.length);
 
+        //Iterate through the search results
         for(ScoreDoc hit : hits)
         {
             Document value = indexSearcher.doc(hit.doc);
 
+            //list all fields
 //            for(IndexableField field : value.getFields())
 //            {
 //                System.out.println(field.name());
@@ -73,7 +72,6 @@ public class ReadIndex {
                 value.getField("classname").stringValue(),
                 value.getField("module").stringValue()
             );
-
 
             System.out.println(result);
         }

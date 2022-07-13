@@ -20,6 +20,12 @@ public class LogEntry
 {
     private static final DateTimeFormatter DTF = DateTimeFormatter.ofPattern("dd LLL yyyy HH:mm:ss,SSS").withLocale(Locale.ENGLISH);
 
+    private long time;
+    private String logLevel;
+    private String module;
+    private String className;
+    private String message;
+    
     public LogEntry(String logEntry)
     {
         this
@@ -40,12 +46,6 @@ public class LogEntry
         this.className = className;
         this.message = message;
     }
-
-    private long time;
-    private String logLevel;
-    private String module;
-    private String className;
-    private String message;
 
     public LocalDateTime getLocalDateTime()
     {
