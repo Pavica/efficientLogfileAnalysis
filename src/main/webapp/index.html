@@ -23,7 +23,7 @@
 
     <title>Main</title>
     <style>
-        .searchbar, .filter-menu, .logfile-results, .statistics{
+        .searchbar, .filter-menu, .statistics, .logfile-results{
             margin-right: 3rem;
             margin-left: 3rem;
             margin-top: 2rem;
@@ -62,12 +62,6 @@
             background-color: white;
         }
 
-        @media only screen and (max-width: 768px) {
-            .introduction > div{
-                margin-left: auto;
-                margin-right: auto;
-            }
-        }
         .search-button{
             margin-left: 1rem;
             background-color: #fff200;
@@ -77,7 +71,20 @@
             max-width: 40rem;
         }
 
+        .log-date{
+            background-color: #fff200;
+        }
 
+        .log-element{
+
+        }
+
+        @media only screen and (max-width: 768px) {
+            .introduction > div{
+                margin-left: auto;
+                margin-right: auto;
+            }
+        }
     </style>
 </head>
 <body>
@@ -91,10 +98,6 @@
         <ul class="navbar-nav ms-auto mb-2 mb-lg-0 fs-6">
             <li class="nav-item px-3 my-auto">
                 <a data-bs-toggle="modal" data-bs-target="#settingsModal">
-                    <i class="bi bi-gear-fill fs-3"></span></i>
-                </a>
-            <li class="nav-item px-3 my-auto">
-                <a data-bs-toggle="modal" data-bs-target="#logModal">
                     <i class="bi bi-gear-fill fs-3"></span></i>
                 </a>
             </li>
@@ -285,17 +288,49 @@
 <!-- Statistics -->
 
 <!-- Logfile results -->
+<a data-bs-toggle="modal" data-bs-target="#logModal">
 <div class="logfile-results">
     <div class="container">
-        <div class="row d-flex border rounded-3 py-4">
-            <div class="d-flex justify-content-center">
-                <p>08.06.2022 18:15</p>
-
-                <p> Loremagna aliqua. Dolor morbi non arcu risus quis varius quam quisque. Nunc scelerisque viver...</p>
+        <div class="column">
+            <div class="row mt-2">
+                <div class="col-sm-3 text-center log-date border rounded-3">
+                    <p class="my-3">08.06.2022 18:15</p>
+                </div>
+                <div class="col-sm-6 border rounded-3">
+                    <p class="my-3"> Loremagna aliqua. Dolor morbi non arcu risus quis varius quam quisque. Nunc scelerisque viver...</p>
+                </div>
+                <div class="col-sm-3 border rounded-3">
+                    <p class="my-3"> Log-Level</p>
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-sm-3 text-center log-date border rounded-3">
+                    <p class="my-3">08.06.2022 18:15</p>
+                </div>
+                <div class="col-sm-6 border rounded-3">
+                    <p class="my-3"> Loremagna aliqua. Dolor morbi non arcu risquis quis varius quam quisque. Nunc scelerisque viver...quis varius quam quisque. Nunc scelerisque viver...quis vari
+                        Loremagna aliqua. Dolor morbi non arcu risquis quis varius quam quisque. Nunc quisque. Nunc
+                    </p>
+                </div>
+                <div class="col-sm-3 border rounded-3">
+                    <p class="my-3"> Log-Level</p>
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-sm-3 text-center log-date border rounded-3">
+                    <p class="my-3">08.06.2022 18:15</p>
+                </div>
+                <div class="col-sm-6 border rounded-3">
+                    <p class="my-3">  quis varius quam quisque. Nunc scelerisque viver...</p>
+                </div>
+                <div class="col-sm-3 border rounded-3">
+                    <p class="my-3"> Log-Level</p>
+                </div>
             </div>
         </div>
     </div>
 </div>
+</a>
 <!-- Logfile results -->
 
 <!-- Settings Modal -->
