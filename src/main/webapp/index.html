@@ -8,15 +8,35 @@
 
     <!-- Bootstrap 5 Main -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+
     <!-- Bootstrap 5 Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+
     <!-- Bootstrap 5 Main -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.js"></script>
 
-    <!-- jQuery -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.13.1/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.1/jquery-ui.js"></script>
+
+    <!-- Initiate datepickers -->
+    <script>
+        $( function() {
+            $( "#startDate" ).datepicker({
+                dateFormat: "dd.mm.yy"
+            });
+            setMinMaxDate("startDate");
+        });
+
+        $( function() {
+            $( "#endDate" ).datepicker({
+                dateFormat: "dd.mm.yy"
+            });
+            setMinMaxDate("endDate");
+        });
+    </script>
 
     <title>Main</title>
     <style>
@@ -68,10 +88,6 @@
             background-color: #fff200;
         }
 
-        .log-element{
-
-        }
-
         @media only screen and (max-width: 768px) {
             .introduction > div{
                 margin-left: auto;
@@ -91,7 +107,7 @@
         <ul class="navbar-nav ms-auto mb-2 mb-lg-0 fs-6">
             <li class="nav-item px-3 my-auto">
                 <a data-bs-toggle="modal" data-bs-target="#settingsModal">
-                    <i class="bi bi-gear-fill fs-3"></span></i>
+                    <i class="bi bi-gear-fill fs-3"></i>
                 </a>
             </li>
         </ul>
@@ -101,20 +117,20 @@
 
 
 
-<form action="">
+<form action="" class="needs-validation" novalidate>
 <div class="searchbar">
     <div class="container">
         <div class="row d-flex">
             <div class="search-container">
                   <div class="d-flex justify-content-center">
                       <input type="text" class="search-bar form-control" placeholder="Search for Log-Messages..." name="search">
-                      <button type="button" class="btn btn-warning search-button">Search</button>
+                      <button type="submit" class="btn btn-warning search-button">Search</button>
                   </div>
             </div>
         </div>
     </div>
 </div>
-    <!-- Searchbar -->
+<!-- Searchbar -->
 
 
 <!-- Filter-Menu -->
@@ -124,105 +140,71 @@
             <div class="d-flex flex-row row" id="FilterContainer">
             <!-- Date-Picker -->
                     <div class="flex-column p-4 col-md-4 text-center border rounded-3">
-                        <div>
-                            <div class="container">
-                                <h5 class="filter-header">Zeitraum beschränken: </h5>
-                                <div class=" mt-3">
-                                    <label for="startDate">Start</label>
-                                    <input id="startDate" class="form-control" type="date" />
-                                    <span id="startDateSelected"></span>
-                                </div>
-                                <div class="container">
-                                    <div class="row">
-                                        <div class='col-sm-6'>
-                                            <div class="form-group">
-                                                <div class='input-group date' id='datetimepicker3'>
-                                                    <input type='text' class="form-control" />
-                                                    <span class="input-group-addon">
-               <span class="glyphicon glyphicon-time"></span>
-               </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <script type="text/javascript">
-                                            $(function () {
-                                                $('#datetimepicker3').datetimepicker({
-                                                    format: 'HH:mm'
-                                                });
-                                            });
-                                        </script>
-                                    </div>
-                                </div>
-                                <div class=" mt-3">
-                                    <label for="endDate">End</label>
-                                    <input id="endDate" class="form-control" type="date" />
-                                    <span id="endDateSelected"></span>
-                                </div>
-                                <div class="cs-form">
-                                    <input type="time" class="form-control datetimepicker2" value="08:00 AM" />
-                                </div>
-                                <script>
-                                    $(function () {
-                                        $('.datetimepicker2').datetimepicker({
-                                            use24hours: true,
-                                            format: 'HH:mm'
-                                        });
-                                    });
-                                </script>
+                        <div class="container">
+                            <h5 class="filter-header">Zeitraum beschränken: </h5>
+                            <div class=" mt-3">
+                                <label for="startDate">Start</label>
+                                <input type="text"  class="form-control" id="startDate" oninput="checkInputValidity(this.id)" onchange="checkInputValidity(this.id)" required>
+                                <span id="startDateSelected"></span>
                             </div>
+                            <input id="startTime" class="form-control" type="input" pattern="^(1\d|2[0-3]|0?\d)(:(([1-5])\d|0?\d)){0,2}$" oninput="addTime(this.id)"  placeholder="00:00:00" disabled/>
+                            <div class=" mt-3">
+                                <label for="startDate">End</label>
+                                <input type="text"  class="form-control" id="endDate" oninput="checkInputValidity(this.id)" onchange="checkInputValidity(this.id)"  required >
+                                <span id="endDateSelected"></span>
+                            </div>
+                            <input id="endTime" class="form-control" type="input" pattern="^(1\d|2[0-3]|0?\d)(:(([1-5])\d|0?\d)){0,2}$" oninput="addTime(this.id)" placeholder="00:00:00" disabled />
                         </div>
                     </div>
-            <!-- Date-Picker -->
+                <!-- Date-Picker -->
 
-            <!-- Log-Level -->
-                    <div class="d-flex flex-column p-4 col-md-4 text-center border rounded-3">
-                        <div>
-                            <div class="container">
-                                <h5 class="filter-header" class="mb-3">Log-Level: </h5>
-                                <div class="form-check">
-                                        <div class="row align-items-center">
-                                        <div class="col">
-                                            <div>
-                                                <div class="mt-3">
-                                                    <input class="form-check-input" type="checkbox" value="" id="FilterINFO">
-                                                    <label class="form-check-label" for="FilterINFO">
-                                                        INFO
-                                                    </label>
-                                                </div>
-                                                <div class="mt-3">
-                                                    <input class="form-check-input" type="checkbox" value="" id="FilterDEBUG">
-                                                    <label class="form-check-label" for="FilterDEBUG">
-                                                        DEBUG
-                                                    </label>
-                                                </div>
-                                                <div class="mt-3">
-                                                    <input class="form-check-input" type="checkbox" value="" id="FilterWARN">
-                                                    <label class="form-check-label" for="FilterWARN">
-                                                        WARN
-                                                    </label>
-                                                </div>
+                <!-- Log-Level -->
+                <div class="d-flex flex-column p-4 col-md-4 text-center border rounded-3">
+                        <div class="container">
+                            <h5 class="filter-header" class="mb-3">Log-Level: </h5>
+                            <div class="form-check">
+                                    <div class="row align-items-center">
+                                    <div class="col">
+                                        <div>
+                                            <div class="mt-3">
+                                                <input class="form-check-input" type="checkbox" value="" id="FilterINFO">
+                                                <label class="form-check-label" for="FilterINFO">
+                                                    INFO
+                                                </label>
+                                            </div>
+                                            <div class="mt-3">
+                                                <input class="form-check-input" type="checkbox" value="" id="FilterDEBUG">
+                                                <label class="form-check-label" for="FilterDEBUG">
+                                                    DEBUG
+                                                </label>
+                                            </div>
+                                            <div class="mt-3">
+                                                <input class="form-check-input" type="checkbox" value="" id="FilterWARN">
+                                                <label class="form-check-label" for="FilterWARN">
+                                                    WARN
+                                                </label>
                                             </div>
                                         </div>
-                                        <div class="col">
-                                            <div>
-                                                <div class="mt-3">
-                                                    <input class="form-check-input" type="checkbox" value="" id="FilterERROR">
-                                                    <label class="form-check-label" for="FilterERROR">
-                                                        ERROR
-                                                    </label>
-                                                </div>
-                                                <div class="mt-3">
-                                                    <input class="form-check-input" type="checkbox" value="" id="FilterTRACE">
-                                                    <label class="form-check-label" for="FilterTRACE">
-                                                        TRACE
-                                                    </label>
-                                                </div>
-                                                <div class="mt-3">
-                                                    <input class="form-check-input" type="checkbox" value="" id="FilterFATAL">
-                                                    <label class="form-check-label" for="FilterFATAL">
-                                                        FATAL
-                                                    </label>
-                                                </div>
+                                    </div>
+                                    <div class="col">
+                                        <div>
+                                            <div class="mt-3">
+                                                <input class="form-check-input" type="checkbox" value="" id="FilterERROR">
+                                                <label class="form-check-label" for="FilterERROR">
+                                                    ERROR
+                                                </label>
+                                            </div>
+                                            <div class="mt-3">
+                                                <input class="form-check-input" type="checkbox" value="" id="FilterTRACE">
+                                                <label class="form-check-label" for="FilterTRACE">
+                                                    TRACE
+                                                </label>
+                                            </div>
+                                            <div class="mt-3">
+                                                <input class="form-check-input" type="checkbox" value="" id="FilterFATAL">
+                                                <label class="form-check-label" for="FilterFATAL">
+                                                    FATAL
+                                                </label>
                                             </div>
                                         </div>
                                     </div>
@@ -234,12 +216,11 @@
 
             <!-- Other options -->
                     <div class="d-flex flex-column p-4 col-md-4 text-center border rounded-3">
-                        <div>
                             <div class="container">
                                 <h5 class="filter-header mb-2">Other options </h5>
                                 <div>
                                     <label for="modulDataList" class="form-label">Modul:</label>
-                                    <input class="form-control" list="datalistOptionsModul" id="modulDataList" placeholder="Drop down or Search">
+                                    <input class="form-control" list="datalistOptionsModul" id="modulDataList" oninput="checkIfListInputExists(this.id, this.list.id)" placeholder="Drop down or Search">
                                     <datalist id="datalistOptionsModul">
                                         <option value="Modul 1">
                                         <option value="Kein Modul">
@@ -250,7 +231,7 @@
                                 </div>
                                 <div>
                                     <label for="classDataList" class="form-label">Klasse:</label>
-                                    <input class="form-control" list="datalistOptionsClass" id="classDataList" placeholder="Drop down or Search">
+                                    <input class="form-control" list="datalistOptionsClass" id="classDataList" oninput="checkIfListInputExists(this.id, this.list.id)" placeholder="Drop down or Search">
                                     <datalist id="datalistOptionsClass">
                                         <option value="Modul 1">
                                         <option value="Kein Modul">
@@ -261,7 +242,7 @@
                                 </div>
                                 <div>
                                     <label for="ExceptionDataList" class="form-label">Exception:</label>
-                                    <input class="form-control" list="datalistOptionsClass" id="ExceptionDataList" placeholder="Drop down or Search">
+                                    <input class="form-control" list="datalistOptionsClass" id="ExceptionDataList" oninput="checkIfListInputExists(this.id, this.list.id)" placeholder="Drop down or Search">
                                     <datalist id="datalistOptionsException">
                                         <option value="Modul 1">
                                         <option value="Kein Modul">
@@ -273,8 +254,7 @@
                             </div>
                         </div>
                     </div>
-            <!-- Other options -->
-
+             <!-- Other options -->
                 </div>
             </div>
             <div class="text-center justify-content-center">
@@ -287,57 +267,58 @@
 
 <!-- Statistics -->
 <div class="statistics">
-    <div class="container">
         <div class="container">
-            <div class="d-flex flex-row row border rounded-3" id="productContainer">
+            <div class="container">
+                <div class="d-flex flex-row row border rounded-3" id="productContainer">
 
+                        <div class="d-flex flex-column p-4 col-md-4 text-center">
+                            <div class="mt-auto">
+                                <div class="card chart-container">
+                                    <canvas id="chart"></canvas>
+                                </div>
+                                <script>
+                                    const ctx = document.getElementById("chart").getContext('2d');
+                                    const myChart = new Chart(ctx, {
+                                        type: 'bar',
+                                        data: {
+                                            labels: ["Info", "Debug", "Warn", "Error",
+                                                "Trace", "FATAL"],
+                                            datasets: [{
+                                                label: 'ugre',
+                                                backgroundColor: 'rgba(161, 198, 247, 1)',
+                                                borderColor: 'rgb(47, 128, 237)',
+                                                data: [1238, 178, 69, 5, 2, 1],
+                                            }]
+                                        },
+                                        options: {
+                                            scales: {
+                                                yAxes: [{
+                                                    ticks: {
+                                                        beginAtZero: true,
+                                                    }
+                                                }]
+                                            }
+                                        },
+                                    });
+                                </script>
+                            </div>
+                        </div>
                     <div class="d-flex flex-column p-4 col-md-4 text-center">
                         <div class="mt-auto">
-                            <div class="card chart-container">
-                                <canvas id="chart"></canvas>
-                            </div>
-                            <script>
-                                const ctx = document.getElementById("chart").getContext('2d');
-                                const myChart = new Chart(ctx, {
-                                    type: 'bar',
-                                    data: {
-                                        labels: ["Info", "Debug", "Warn", "Error",
-                                            "Trace", "FATAL"],
-                                        datasets: [{
-                                            label: 'ugre',
-                                            backgroundColor: 'rgba(161, 198, 247, 1)',
-                                            borderColor: 'rgb(47, 128, 237)',
-                                            data: [1238, 178, 69, 5, 2, 1],
-                                        }]
-                                    },
-                                    options: {
-                                        scales: {
-                                            yAxes: [{
-                                                ticks: {
-                                                    beginAtZero: true,
-                                                }
-                                            }]
-                                        }
-                                    },
-                                });
-                            </script>
+                            <h5 class="my-3">test 3</h5>
                         </div>
                     </div>
+
                 <div class="d-flex flex-column p-4 col-md-4 text-center">
                     <div class="mt-auto">
                         <h5 class="my-3">test 3</h5>
                     </div>
                 </div>
 
-            <div class="d-flex flex-column p-4 col-md-4 text-center">
-                <div class="mt-auto">
-                    <h5 class="my-3">test 3</h5>
-                </div>
-            </div>
-
-            <div class="d-flex flex-column p-4 col-md-4 text-center">
-                <div class="mt-auto">
-                    <h5 class="my-3">test 3</h5>
+                <div class="d-flex flex-column p-4 col-md-4 text-center">
+                    <div class="mt-auto">
+                        <h5 class="my-3">test 3</h5>
+                    </div>
                 </div>
             </div>
         </div>
@@ -352,37 +333,37 @@
         <div class="column">
             <div class="row mt-2">
                 <div class="col-sm-3 text-center log-date border rounded-3">
-                    <p class="my-3">08.06.2022 18:15</p>
+                    <p>08.06.2022 18:15</p>
                 </div>
                 <div class="col-sm-6 border rounded-3">
-                    <p class="my-3"> Loremagna aliqua. Dolor morbi non arcu risus quis varius quam quisque. Nunc scelerisque viver...</p>
+                    <p> Loremagna aliqua. Dolor morbi non arcu risus quis varius quam quisque. Nunc scelerisque viver...</p>
                 </div>
                 <div class="col-sm-3 border rounded-3">
-                    <p class="my-3"> Log-Level</p>
+                    <p> Log-Level</p>
                 </div>
             </div>
             <div class="row mt-2">
                 <div class="col-sm-3 text-center log-date border rounded-3">
-                    <p class="my-3">08.06.2022 18:15</p>
+                    <p>08.06.2022 18:15</p>
                 </div>
                 <div class="col-sm-6 border rounded-3">
-                    <p class="my-3"> Loremagna aliqua. Dolor morbi non arcu risquis quis varius quam quisque. Nunc scelerisque viver...quis varius quam quisque. Nunc scelerisque viver...quis vari
+                    <p> Loremagna aliqua. Dolor morbi non arcu risquis quis varius quam quisque. Nunc scelerisque viver...quis varius quam quisque. Nunc scelerisque viver...quis vari
                         Loremagna aliqua. Dolor morbi non arcu risquis quis varius quam quisque. Nunc quisque. Nunc
                     </p>
                 </div>
                 <div class="col-sm-3 border rounded-3">
-                    <p class="my-3"> Log-Level</p>
+                    <p> Log-Level</p>
                 </div>
             </div>
             <div class="row mt-2">
                 <div class="col-sm-3 text-center log-date border rounded-3">
-                    <p class="my-3">08.06.2022 18:15</p>
+                    <p>08.06.2022 18:15</p>
                 </div>
                 <div class="col-sm-6 border rounded-3">
-                    <p class="my-3">  quis varius quam quisque. Nunc scelerisque viver...</p>
+                    <p>  quis varius quam quisque. Nunc scelerisque viver...</p>
                 </div>
                 <div class="col-sm-3 border rounded-3">
-                    <p class="my-3"> Log-Level</p>
+                    <p> Log-Level</p>
                 </div>
             </div>
         </div>
@@ -510,6 +491,8 @@
     </div>
 </div>
 <!-- Log Modal -->
+<link rel="stylesheet" href="css/validation.css">
+<script src="js/validation.js"></script>
 
 <script>
     //TODO: Add message to texArea
@@ -517,11 +500,10 @@
         document.getElementById("floatingTextarea").innerText = row.innerHTML;
     }))
 
-    //TODO: Add red if its a NullPointerException
-    document.querySelectorAll(".table > tbody > tr").forEach();
+   //TODO: Add red if its a NullPointerException
+    /* document.querySelectorAll(".table > tbody > tr").forEach();*/
 
     //TODO: Add yellow if they are searched for (only if fetch nearby is active)
-    document.querySelectorAll(".table > tbody > tr").forEach();
+   /* document.querySelectorAll(".table > tbody > tr").forEach();*/
 </script>
-</body>
-</html>
+<
