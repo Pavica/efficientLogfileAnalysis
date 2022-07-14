@@ -38,11 +38,6 @@ public class LogfileResource {
     @Produces("application/json")
     public Response filteredSearch(FilterData filterData)
     {
-        //empty list in js gets converted into null for some reason
-        if(filterData.logLevels == null) {
-            filterData.logLevels = new ArrayList<>();
-        }
-
         Filter.FilterBuilder filterBuilder = Filter.builder();
 
         filterBuilder
