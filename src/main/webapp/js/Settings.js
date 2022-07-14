@@ -7,6 +7,9 @@
 /** used for the active statistics that are to be displayed */
 let activeStatistics = [];
 
+/** contains all currently available statistics */
+let allStatistics = ['barChart', 'pieChart', 'lineChart', 'polarAreaChart'];
+
 /**
  * Function used to show the statistics which are clicked in the settings menu
  *
@@ -22,15 +25,34 @@ function onShowStatistics(checkbox, chartName, chartValue)
            "chartName" : chartName,
            "chartValue" : chartValue
         });
-        console.log(activeStatistics);
     }
      else
     {
         let index = activeStatistics.map(o => o.chartName).indexOf(chartName);
-        console.log(index)
         if(index > -1)
             activeStatistics.splice(index, 1);
-        console.log(activeStatistics);
     }
      showActiveStatistics(activeStatistics, chartValue);
+
+     let checkboxesDisabled = [];
+
+     if(activeStatistics.length == 3){
+         for(let i = 0 ; i < allStatistics.length ; i++){
+             let checkbox = document.getElementById("show" + allStatistics[i]);
+             if(!checkbox.checked){
+                 checkbox.disabled = true;
+                 checkboxesDisabled.push(checkbox);
+             }
+         }
+     }
+      else if(activeStatistics.length < 3){
+
+         for(let i = 0 ; i < allStatistics.length ; i++){
+             let checkbox = document.getElementById("show" + allStatistics[i]);
+             if(checkbox.disabled){
+                 checkbox.disabled = false;
+                 checkboxesDisabled.splice(i,1);
+             }
+         }
+     }
 }

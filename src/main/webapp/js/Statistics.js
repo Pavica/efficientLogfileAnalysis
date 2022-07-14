@@ -1,7 +1,7 @@
 /**
  * author: Clark
  * version: 1.0
- * last changed: 13.07.2022
+ * last changed: 14.07.2022
  */
 
 /**
@@ -16,7 +16,7 @@ function loadBarChart(){
                 "Trace", "FATAL"],
             datasets: [{
                 label: 'Statistik',
-                backgroundColor: 'rgba(161, 198, 247, 1)',
+                backgroundColor: '#c978b8',
                 data: [1238, 178, 69, 5, 2, 1],
             }]
         },
@@ -42,12 +42,12 @@ function loadPieChart(){
         plugins: [ChartDataLabels],
         type: 'pie',
         data: {
-            labels: ["Info", "Debug", "Warn", "Error",
-                "Trace", "FATAL"],
+            labels: ["INFO", "DEBUG", "WARN", "ERROR",
+                "TRACE", "FATAL"],
             datasets: [{
                 label: 'food Items',
-                backgroundColor: ["#0BDA51", "#0000FF", "#FFFF00",
-                    "#f00000", "#FFA500", "#B10DC9"],
+                backgroundColor: ["#36c590", "#5188ca", "#fbf571",
+                    "#ff7168", "#ffa566", "#c978b8"],
                 data: [1238, 150, 278, 5, 2, 1],
             }]
         },options: {
@@ -103,7 +103,7 @@ function loadLineChart(){
                 "Trace", "FATAL"],
             datasets: [{
                 label: 'Statistik',
-                backgroundColor: 'rgba(161, 198, 247, 1)',
+                backgroundColor: '#36c590',
                 data: [1238, 178, 69, 5, 2, 1],
             }]
         },
@@ -115,6 +115,37 @@ function loadLineChart(){
                         beginAtZero: true,
                     }
                 }]
+            }
+        },
+    });
+}
+
+/**
+ * Function used to create and load the polarArea chart into the corresponding canvas.
+ */
+function loadpolarAreaChart(){
+    const polarAreaChartContext = document.getElementById("polarAreaChart").getContext('2d');
+    const polarAreaChart = new Chart(polarAreaChartContext, {
+        type: 'polarArea',
+        data: {
+            labels: ["Warn", "Error", "Trace", "FATAL"],
+            datasets: [{
+                label: 'Statistik',
+                backgroundColor: ["#fbf571", "#ff7168", "#ffa566", "#c978b8"],
+                data: [69, 24, 15, 5],
+            }]
+        },
+        options: {
+            maintainAspectRatio: false,
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                title: {
+                    display: true,
+                    text: 'Warnings and above'
+                }
             }
         },
     });
@@ -208,5 +239,7 @@ function reloadStatistics(statistic){
         loadPieChart();
     }else if(statistic == 'lineChart'){
         loadLineChart();
+    } else if(statistic == 'polarAreaChart'){
+        loadpolarAreaChart();
     }
 }
