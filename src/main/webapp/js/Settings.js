@@ -7,7 +7,7 @@
 /** used for the active statistics that are to be displayed */
 let activeStatistics = [];
 
-
+/** contains all currently available statistics */
 let allStatistics = ['barChart', 'pieChart', 'lineChart', 'polarAreaChart'];
 
 /**
@@ -25,39 +25,34 @@ function onShowStatistics(checkbox, chartName, chartValue)
            "chartName" : chartName,
            "chartValue" : chartValue
         });
-        console.log(activeStatistics);
     }
      else
     {
         let index = activeStatistics.map(o => o.chartName).indexOf(chartName);
-        console.log(index)
         if(index > -1)
             activeStatistics.splice(index, 1);
-        console.log(activeStatistics);
     }
      showActiveStatistics(activeStatistics, chartValue);
 
-     /**
      let checkboxesDisabled = [];
 
      if(activeStatistics.length == 3){
          for(let i = 0 ; i < allStatistics.length ; i++){
-             alert("show" + allStatistics[i])
-             if(document.getElementById("show" + allStatistics[i]).checked == false){
-                 alert("in");
-                 let checkbox = document.getElementById(allStatistics[i]);
+             let checkbox = document.getElementById("show" + allStatistics[i]);
+             if(!checkbox.checked){
                  checkbox.disabled = true;
                  checkboxesDisabled.push(checkbox);
              }
          }
      }
-      else
-     {
-         for(let i = 0 ; i < checkboxesDisabled.length ; i++){
-             checkboxesDisabled[i].disabled = false;
-             let index = checkboxesDisabled.indexOf(checkboxesDisabled[i].chartName);
-             checkboxesDisabled.splice(index, 1)
+      else if(activeStatistics.length < 3){
+
+         for(let i = 0 ; i < allStatistics.length ; i++){
+             let checkbox = document.getElementById("show" + allStatistics[i]);
+             if(checkbox.disabled){
+                 checkbox.disabled = false;
+                 checkboxesDisabled.splice(i,1);
+             }
          }
      }
-      */
 }

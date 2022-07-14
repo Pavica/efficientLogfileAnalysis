@@ -1,7 +1,7 @@
 /**
  * author: Clark
  * version: 1.0
- * last changed: 13.07.2022
+ * last changed: 14.07.2022
  */
 
 /**
@@ -120,6 +120,9 @@ function loadLineChart(){
     });
 }
 
+/**
+ * Function used to create and load the polarArea chart into the corresponding canvas.
+ */
 function loadpolarAreaChart(){
     const polarAreaChartContext = document.getElementById("polarAreaChart").getContext('2d');
     const polarAreaChart = new Chart(polarAreaChartContext, {
