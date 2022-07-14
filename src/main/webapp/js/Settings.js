@@ -7,6 +7,9 @@
 /** used for the active statistics that are to be displayed */
 let activeStatistics = [];
 
+
+let allStatistics = ['barChart', 'pieChart', 'lineChart', 'polarAreaChart'];
+
 /**
  * Function used to show the statistics which are clicked in the settings menu
  *
@@ -33,4 +36,28 @@ function onShowStatistics(checkbox, chartName, chartValue)
         console.log(activeStatistics);
     }
      showActiveStatistics(activeStatistics, chartValue);
+
+     /**
+     let checkboxesDisabled = [];
+
+     if(activeStatistics.length == 3){
+         for(let i = 0 ; i < allStatistics.length ; i++){
+             alert("show" + allStatistics[i])
+             if(document.getElementById("show" + allStatistics[i]).checked == false){
+                 alert("in");
+                 let checkbox = document.getElementById(allStatistics[i]);
+                 checkbox.disabled = true;
+                 checkboxesDisabled.push(checkbox);
+             }
+         }
+     }
+      else
+     {
+         for(let i = 0 ; i < checkboxesDisabled.length ; i++){
+             checkboxesDisabled[i].disabled = false;
+             let index = checkboxesDisabled.indexOf(checkboxesDisabled[i].chartName);
+             checkboxesDisabled.splice(index, 1)
+         }
+     }
+      */
 }
