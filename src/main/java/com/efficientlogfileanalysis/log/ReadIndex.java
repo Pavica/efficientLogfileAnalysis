@@ -6,9 +6,8 @@ import com.efficientlogfileanalysis.data.LogEntry;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 
@@ -87,10 +86,17 @@ public class ReadIndex {
             System.out.println(ioe.toString());
         }
 
-        Query query = LongPoint.newRangeQuery("date",
+        Query dateQuery = LongPoint.newRangeQuery("date",
             convertToLong(2022, 7, 5, 12, 53, 58),
             convertToLong(2022, 7, 5, 12, 54, 0)
         );
+
+        Query moduleQuery = new TermQuery(new Term("module", "NGKP-RCV Chl: 1, Port: 2012"));
+
+        Query query = new BooleanQuery.Builder()
+                .add(dateQuery, BooleanClause.Occur.MUST)
+                .add(moduleQuery, BooleanClause.Occur.MUST)
+                .build();
 
         ScoreDoc[] hits = null;
         try {

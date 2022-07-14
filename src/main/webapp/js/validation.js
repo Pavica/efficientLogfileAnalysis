@@ -153,7 +153,9 @@ function addTime(){
         addValidity($('#endTime')[0]);
     }
     trueStartDate = createTrueDateTime(stringToDate($('#startDate')), stringToTime($('#startTime')));
+    console.log(trueStartDate.getTime());
     trueEndDate = createTrueDateTime(stringToDate($('#endDate')), stringToTime($('#endTime')));
+    console.log(trueEndDate.getTime());
 }
 
 /**
