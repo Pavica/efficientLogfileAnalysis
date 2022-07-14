@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <script src="js/Filter.js"></script>
+    <script src="js/Settings.js"></script>
+
 
     <!-- Bootstrap 5 Main -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
@@ -15,7 +17,9 @@
     <!-- Bootstrap 5 Main -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.js"></script>
+    <!-- Statistics Main -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.0.0/chartjs-plugin-datalabels.min.js" integrity="sha512-R/QOHLpV1Ggq22vfDAWYOaMd5RopHrJNMxi8/lJu8Oihwi4Ho4BRFeiMiCefn9rasajKjnx9/fTQ/xkWnkDACg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
     <link rel="stylesheet" href="//code.jquery.com/ui/1.13.1/themes/base/jquery-ui.css">
     <script src="https://code.jquery.com/jquery-3.6.0.js"></script>
@@ -48,6 +52,10 @@
 
         .filter-header{
             border-bottom: solid black 1px;
+        }
+
+        .chartHeight{
+            height: 400px;
         }
 
         .table-wrapper {
@@ -86,6 +94,16 @@
 
         .log-date{
             background-color: #fff200;
+        }
+
+        .log-center{
+            display: flex;
+            align-items: center;
+        }
+
+        .badge-color{
+            font-family: monospace;
+            color: black;
         }
 
         @media only screen and (max-width: 768px) {
@@ -266,61 +284,9 @@
 <!-- Filter-Menu -->
 
 <!-- Statistics -->
-<div class="statistics">
-        <div class="container">
-            <div class="container">
-                <div class="d-flex flex-row row border rounded-3" id="productContainer">
-
-                        <div class="d-flex flex-column p-4 col-md-4 text-center">
-                            <div class="mt-auto">
-                                <div class="card chart-container">
-                                    <canvas id="chart"></canvas>
-                                </div>
-                                <script>
-                                    const ctx = document.getElementById("chart").getContext('2d');
-                                    const myChart = new Chart(ctx, {
-                                        type: 'bar',
-                                        data: {
-                                            labels: ["Info", "Debug", "Warn", "Error",
-                                                "Trace", "FATAL"],
-                                            datasets: [{
-                                                label: 'ugre',
-                                                backgroundColor: 'rgba(161, 198, 247, 1)',
-                                                borderColor: 'rgb(47, 128, 237)',
-                                                data: [1238, 178, 69, 5, 2, 1],
-                                            }]
-                                        },
-                                        options: {
-                                            scales: {
-                                                yAxes: [{
-                                                    ticks: {
-                                                        beginAtZero: true,
-                                                    }
-                                                }]
-                                            }
-                                        },
-                                    });
-                                </script>
-                            </div>
-                        </div>
-                    <div class="d-flex flex-column p-4 col-md-4 text-center">
-                        <div class="mt-auto">
-                            <h5 class="my-3">test 3</h5>
-                        </div>
-                    </div>
-
-                <div class="d-flex flex-column p-4 col-md-4 text-center">
-                    <div class="mt-auto">
-                        <h5 class="my-3">test 3</h5>
-                    </div>
-                </div>
-
-                <div class="d-flex flex-column p-4 col-md-4 text-center">
-                    <div class="mt-auto">
-                        <h5 class="my-3">test 3</h5>
-                    </div>
-                </div>
-            </div>
+<div class="statistics coll">
+    <div class="container">
+        <div class="d-flex flex-row row" id="statisticsHolder">
         </div>
     </div>
 </div>
@@ -332,38 +298,62 @@
     <div class="container">
         <div class="column">
             <div class="row mt-2">
-                <div class="col-sm-3 text-center log-date border rounded-3">
+                <div class="col-sm-3 justify-content-center text-center log-date log-center border rounded-3">
                     <p>08.06.2022 18:15</p>
                 </div>
                 <div class="col-sm-6 border rounded-3">
                     <p> Loremagna aliqua. Dolor morbi non arcu risus quis varius quam quisque. Nunc scelerisque viver...</p>
                 </div>
-                <div class="col-sm-3 border rounded-3">
-                    <p> Log-Level</p>
+                <div class="col-sm-3 log-center border rounded-3">
+                    <p class="my-3 m-5">Log-Level</p>
+                    <span class="log-center h-100 badge badge-color" style="background-color: #5188ca">D</span>
+                    <span class="log-center h-100 badge badge-color" style="background-color: #ff7168">E</span>
                 </div>
             </div>
             <div class="row mt-2">
-                <div class="col-sm-3 text-center log-date border rounded-3">
-                    <p>08.06.2022 18:15</p>
+                <div class="col-sm-3 justify-content-center text-center log-date log-center border rounded-3">
+                    <p class="my-3">08.06.2022 18:15</p>
                 </div>
                 <div class="col-sm-6 border rounded-3">
                     <p> Loremagna aliqua. Dolor morbi non arcu risquis quis varius quam quisque. Nunc scelerisque viver...quis varius quam quisque. Nunc scelerisque viver...quis vari
                         Loremagna aliqua. Dolor morbi non arcu risquis quis varius quam quisque. Nunc quisque. Nunc
                     </p>
                 </div>
-                <div class="col-sm-3 border rounded-3">
-                    <p> Log-Level</p>
+                <div class="col-sm-3 log-center border rounded-3">
+                    <p class="my-3 m-5">Log-Level</p>
+                    <span class="log-center h-100 badge badge-color" style="background-color: #fbf571">W</span>
+                    <span class="log-center h-100 badge badge-color" style="background-color: #36c590">I</span>
+                    <span class="log-center h-100 badge badge-color" style="background-color: #ffa566">T</span>
                 </div>
             </div>
             <div class="row mt-2">
-                <div class="col-sm-3 text-center log-date border rounded-3">
-                    <p>08.06.2022 18:15</p>
+                <div class="col-sm-3 justify-content-center text-center log-date log-center border rounded-3">
+                    <p class="my-3">08.06.2022 18:15</p>
+                </div>
+                <div class="col-sm-6 border rounded-3">
+                    <p class="my-3">  quis varius quam quisque. Nunc scelerisque viver...</p>
+                </div>
+                <div class="col-sm-3 log-center border rounded-3">
+                    <p class="my-3 m-5">Log-Level</p>
+                    <span class="log-center h-100 badge badge-color" style="background-color: #fbf571">W</span>
+                    <span class="log-center h-100 badge badge-color" style="background-color: #36c590">I</span>
+                    <span class="log-center h-100 badge badge-color" style="background-color: #5188ca">D</span>
+                    <span class="log-center h-100 badge badge-color" style="background-color: #ff7168">E</span>
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-sm-3 justify-content-center text-center log-date log-center border rounded-3">
+                    <p class="my-3">08.06.2022 18:15</p>
                 </div>
                 <div class="col-sm-6 border rounded-3">
                     <p>  quis varius quam quisque. Nunc scelerisque viver...</p>
                 </div>
-                <div class="col-sm-3 border rounded-3">
-                    <p> Log-Level</p>
+                <div class="col-sm-3 log-center border rounded-3">
+                    <p class="my-3 m-5">Log-Level</p>
+                    <span class="log-center h-100 badge badge-color" style="background-color: #fbf571">W</span>
+                    <span class="log-center h-100 badge badge-color" style="background-color: #ff7168">E</span>
+                    <span class="log-center h-100 badge badge-color" style="background-color: #ffa566">T</span>
+                    <span class="log-center h-100 badge badge-color" style="background-color: #c978b8">F</span>
                 </div>
             </div>
         </div>
@@ -381,7 +371,41 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <p></p>
+
+                <div class="dropdown">
+                    <button class="btn btn-secondary w-100 dropdown-toggle" style="background-color: #fff200; color: black" type="button" id="statisticsDropDown" data-bs-toggle="dropdown" aria-expanded="false">
+                        Display Statistics
+                    </button>
+                    <ul class="dropdown-menu p-2" aria-labelledby="statisticsDropDown">
+                        <li>
+                            <input class="form-check-input" type="checkbox" value="" id="showBarChart" onclick="onShowStatistics(document.getElementById('showBarChart'), 'barChart', 2)">
+                            <label class="form-check-label" for="FilterDEBUG">
+                                Show Bar-Chart
+                            </label>
+                        </li>
+                        <li>
+                            <input class="form-check-input" type="checkbox" value="" id="showPieChart" onclick="onShowStatistics(document.getElementById('showPieChart'), 'pieChart', 1)">
+                            <label class="form-check-label" for="FilterDEBUG">
+                                Show Pie-Chart
+                            </label>
+                        </li>
+                        <li>
+                            <input class="form-check-input" type="checkbox" value="" id="showLineChart" onclick="onShowStatistics(document.getElementById('showLineChart'), 'lineChart', 2)">
+                            <label class="form-check-label" for="FilterDEBUG">
+                                Show Line-Chart
+                            </label>
+                        </li>
+                        <!--
+                        <li>
+                            <input class="form-check-input" type="checkbox" value="" id="showPolarAreaChart" onclick="onShowStatistics(document.getElementById('showPolarAreaChart'), 'polarAreaChart', 1)">
+                            <label class="form-check-label" for="FilterDEBUG">
+                                Show PolarArea-Chart
+                            </label>
+                        </li>
+                        -->
+                    </ul>
+                </div>
+
                 <div class="d-flex bd-highlight">
                     <button data-bs-dismiss="modal" class="btn btn-warning mt-3 m-1 w-100" type="submit">Ok</button>
                 </div>
@@ -491,9 +515,11 @@
     </div>
 </div>
 <!-- Log Modal -->
+
 <link rel="stylesheet" href="css/validation.css">
 <script src="js/validation.js"></script>
-
+<!-- Statistics-Script -->
+<script src="js/Statistics.js"></script>
 <script>
     //TODO: Add message to texArea
     document.querySelectorAll(".table > tbody > tr").forEach(row => row.addEventListener("click", evt => {
@@ -506,4 +532,5 @@
     //TODO: Add yellow if they are searched for (only if fetch nearby is active)
    /* document.querySelectorAll(".table > tbody > tr").forEach();*/
 </script>
-<
+</body>
+</html>

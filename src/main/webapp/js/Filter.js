@@ -1,4 +1,3 @@
-
 function onCollapseFilter(buttonFilter, doCollapse)
 {
     if(doCollapse){
