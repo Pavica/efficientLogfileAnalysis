@@ -41,7 +41,7 @@ public class ReadIndex {
      * @param logEntryID The nth log entry inside a file
      * @return The log entry that has the id of the variable fileIndex inside the file with the id in logEntryID
      */
-    private static LogEntry getLogEntry(String path, short fileIndex, long logEntryID) {
+    public static LogEntry getLogEntry(String path, short fileIndex, long logEntryID) {
         File logFile = new File(path + "/" + FileIDManager.getInstance().get(fileIndex));
         String line = "";
 

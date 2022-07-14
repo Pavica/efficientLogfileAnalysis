@@ -10,12 +10,15 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 
 import java.io.IOException;
+import java.io.Reader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static com.efficientlogfileanalysis.log.ReadIndex.getLogEntry;
 
 public class Search {
 
@@ -85,14 +88,23 @@ public class Search {
         {
             Document document = searcher.doc(hit.doc);
 
-            results.add(new LogEntry(
-                //value.get("date").numericValue().longValue() , existiert nicht wegen longpoint
-                1,
-                document.getField("logLevel").stringValue(),
-                document.getField("module").stringValue(),
-                document.getField("classname").stringValue(),
-                document.getField("message").stringValue()
-            ));
+            LogEntry result = new LogEntry(
+                    0,
+                    document.getField("logLevel").stringValue(),
+                    document.getField("module").stringValue(),
+                    document.getField("classname").stringValue(),
+                    document.getField("message").stringValue(),
+                    Long.parseLong(document.getField("logEntryID").stringValue())
+            );
+
+            result.setLocalDateTime(getLogEntry(
+                    "test_logs",
+                    Short.parseShort(document.getField("fileIndex").stringValue()),
+                    result.getLogFileStartOfBytes()
+                ).getLocalDateTime()
+            );
+
+            results.add(result);
         }
 
         return results;
