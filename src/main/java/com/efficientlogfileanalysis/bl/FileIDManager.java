@@ -1,39 +1,54 @@
 package com.efficientlogfileanalysis.bl;
 
+import com.efficientlogfileanalysis.data.BiMap;
+
 import java.io.File;
-import java.util.HashMap;
 
 /**
- * Manages a Hashmap Containing all available file names.
+ * Singleton class that manages the names and ids of the logfiles.
+ * @author Andreas Kurz, Jan Mandl 
  */
 public class FileIDManager {
 
-    private final HashMap<String, Integer> fileIDs;
-
     private static FileIDManager instance;
 
-    public static synchronized FileIDManager getInstance()
-    {
-        if(instance == null)
-        {
+    private BiMap<Integer, String> fileInformations;
+
+    public static synchronized FileIDManager getInstance() {
+        if(instance == null) {
             instance = new FileIDManager();
         }
-
         return instance;
     }
 
-    private FileIDManager()
-    {
-        fileIDs = new HashMap<>();
+    private FileIDManager() {
+        fileInformations = new BiMap<>();
 
-        for( File file : new File("test_logs").listFiles() )
-        {
-            fileIDs.put(file.getName(), fileIDs.size());
+        for(File file : new File("test_logs").listFiles()) {
+            fileInformations.putKey(file.getName(), fileInformations.size());
         }
     }
 
-    public int getFileID(String filename)
-    {
-        return fileIDs.getOrDefault(filename, -1);
+    /**
+     * Looks for new logfiles and give them an ID. Also deletes old IDs of deleted logfiles.
+     */
+    public void update() {
+        new Exception("Not implemented yet");
+    }
+
+    /**
+     * Gets the ID of the logfile.
+     */
+    public short get(String key) {
+        Integer i = fileInformations.getKey(key);
+        return i == null ? null : i.shortValue();
+    }
+
+    /**
+     * Gets the name of the logfile.
+     */
+    public String get(short key) {
+        String s = fileInformations.getValue(new Integer(key));
+        return s;
     }
 }

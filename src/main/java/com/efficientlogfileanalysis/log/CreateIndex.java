@@ -1,7 +1,9 @@
 package com.efficientlogfileanalysis.log;
 
+import com.efficientlogfileanalysis.Timer;
 import com.efficientlogfileanalysis.bl.FileIDManager;
 import com.efficientlogfileanalysis.data.LogEntry;
+import com.efficientlogfileanalysis.data.Logfile;
 import lombok.SneakyThrows;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -18,8 +20,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Class with main method which indexes all log files.
@@ -27,23 +27,24 @@ import java.util.List;
 public class CreateIndex {
 
     /**
-     * Reads all the Logentries from a directory.
+     * Reads all the files in a dirctory into a Logfile array.
      * @param path The path to the folder
-     * @return A list containing all LogEntries from a directory with Logfiles
+     * @return A list containing all Logentries grouped by the file they are in
      */
     @SneakyThrows
-    public static List<LogEntry> readAllLogEntries(String path)
+    public static Logfile[] readAllLogEntries(String path)
     {
-        List<LogEntry> logEntries = new ArrayList<>();
+        File[] logFolderFileList = new File(path).listFiles();
+        Logfile[] logfiles = new Logfile[logFolderFileList.length];
+        short currentFileIndex = 0;
 
-        File logFolder = new File(path);
-
-        for (File file : logFolder.listFiles())
-        {
+        for (File file : logFolderFileList) {
             BufferedReader br = new BufferedReader(new FileReader(file));
-
             String line = "";
             String currentLine;
+            long currentByteCount = 0;
+
+            logfiles[currentFileIndex] = new Logfile(file.getName());
 
             while ((currentLine = br.readLine()) != null) {
 
@@ -53,17 +54,26 @@ public class CreateIndex {
                 }
 
                 LogEntry newLogEntry = new LogEntry(line);
+                
+                //add a \n for the exact bytecount
+                line += "\n";
+                newLogEntry.setLogFileStartOfBytes(currentByteCount);
+                currentByteCount += line.getBytes().length;
+                
                 line = currentLine;
+                logfiles[currentFileIndex].addEntry(newLogEntry);
 
-                //temporary
-                logEntries.add(newLogEntry);
             }
+
+            ++currentFileIndex;
         }
 
-        return logEntries;
+        return logfiles;
     }
 
     public static void main(String[] args) throws IOException {
+
+        Timer timer = new Timer();
 
         //Create path object
         Path indexPath = Paths.get("index");
@@ -84,24 +94,29 @@ public class CreateIndex {
         IndexWriter indexWriter = new IndexWriter(indexDirectory, indexWriterConfig);
 
         //Read all the log entries from all the files into a list
-        List<LogEntry> logEntries = readAllLogEntries("test_logs");
+        Logfile[] logfiles = readAllLogEntries("test_logs");
         FileIDManager mgr = FileIDManager.getInstance();
 
-        for(LogEntry logEntry : logEntries)
-        {
-            Document document = new Document();
-            
-            document.add(new LongPoint("date", logEntry.getTime()));
-            document.add(new StringField("logLevel", logEntry.getLogLevel(), Field.Store.YES));
-            document.add(new TextField("message", logEntry.getMessage(), Field.Store.YES));
-            document.add(new StringField("classname", logEntry.getClassName(), Field.Store.YES));
-            document.add(new StringField("module", logEntry.getModule(), Field.Store.YES));
-            //machen das referenz azf fiel gmeacht wird
-            //document.add();
-            
-            indexWriter.addDocument(document);
+        for(Logfile logfile : logfiles) {
+
+            for(LogEntry logEntry : logfile.getEntries()) {
+                Document document = new Document();
+                
+                document.add(new LongPoint("date", logEntry.getTime()));
+                document.add(new StoredField("logEntryID", logEntry.getLogFileStartOfBytes()));
+                document.add(new StringField("logLevel", logEntry.getLogLevel(), Field.Store.YES));
+                document.add(new TextField("message", logEntry.getMessage(), Field.Store.YES));
+                document.add(new StringField("classname", logEntry.getClassName(), Field.Store.YES));
+                document.add(new StringField("module", logEntry.getModule(), Field.Store.YES));
+                document.add(new StoredField("fileIndex", mgr.get(logfile.filename)));
+
+                indexWriter.addDocument(document);
+            }
+
         }
 
         indexWriter.close();
+
+        System.out.println("Time elapsed: " + timer.time() + "ms");
     }
 }
