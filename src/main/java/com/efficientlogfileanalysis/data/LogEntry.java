@@ -10,6 +10,8 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
+import com.efficientlogfileanalysis.log.ReadIndex;
+
 /**
  * Data class representing a single log entry.
  * @author Andreas Kurz, Jan Mandl
@@ -21,15 +23,31 @@ public class LogEntry
 {
     private static final DateTimeFormatter DTF = DateTimeFormatter.ofPattern("dd LLL yyyy HH:mm:ss,SSS").withLocale(Locale.ENGLISH);
 
+    /**
+     * The time the message was logged in miliseconds
+     */
     private long time;
     private String logLevel;
+    /**
+     * The value between a pair of []
+     */
     private String module;
+    /**
+     * The value before :?
+     */
     private String className;
+    /**
+     * The logged message
+     */
     private String message;
+    /**
+     * The nth byte at which position the log entry starts in the file
+     */
+    private long logFileStartOfBytes;
     
     public LogEntry(String logEntry)
     {
-        setLocalDateTime(logEntry.substring(0, 24));
+        setLocalDateTimeFromString(logEntry.substring(0, 24));
         this.logLevel = logEntry.substring(24, 31).trim();
 
         int indexOfClosedParenthesis = logEntry.indexOf("]", 32);
@@ -42,14 +60,34 @@ public class LogEntry
 
     public LogEntry(String time, String logLevel, String module, String className, String message)
     {
-        setLocalDateTime(time);
+        setLocalDateTimeFromString(time);
         this.logLevel = logLevel;
         this.module = module;
         this.className = className;
         this.message = message;
     }
 
-    public void setLocalDateTime(String time)
+    /**
+     * Convenience function. Converts date an time to a long value in milliseconds.
+     * @return The current date and time in miliseconds with precision of seconds.
+     */
+    public static long toLong(LocalDateTime ldt) {
+        LocalDateTime time = LocalDateTime.of(
+            ldt.getYear(),
+            ldt.getMonth(),
+            ldt.getDayOfMonth(),
+            ldt.getHour(),
+            ldt.getMinute(),
+            ldt.getSecond()
+        );
+        return time.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+    }
+
+    public void setLocalDateTime(LocalDateTime ldt) {
+        this.time = LogEntry.toLong(ldt);
+    }
+
+    public void setLocalDateTimeFromString(String time)
     {
         this.time = LocalDateTime.parse(time, DTF).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
     }
