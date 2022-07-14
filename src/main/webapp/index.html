@@ -83,6 +83,11 @@
             background-color: white;
         }
 
+        .button-style{
+            background-color: #fff200;
+            color: black;
+        }
+
         .search-button{
             margin-left: 1rem;
             background-color: #fff200;
@@ -104,6 +109,10 @@
         .badge-color{
             font-family: monospace;
             color: black;
+        }
+
+        #statisticsHolder{
+            margin-top: 1rem;
         }
 
         @media only screen and (max-width: 768px) {
@@ -146,8 +155,8 @@
         <div class="row d-flex">
             <div class="search-container">
                   <div class="d-flex justify-content-center">
-                      <input type="text" class="search-bar form-control" placeholder="Search for Log-Messages..." name="search">
-                      <button type="submit" class="btn btn-warning search-button">Search</button>
+                      <input type="text" class="search-bar form-control" placeholder="Suche nach Log-Messages..." name="search">
+                      <button type="submit" class="btn btn-warning search-button">Suchen</button>
                   </div>
             </div>
         </div>
@@ -159,7 +168,7 @@
 <!-- Filter-Menu -->
 <div class="filter-menu">
     <div class="container">
-        <div class="collapse" id="collapseExample">
+        <div class="collapse" id="collapseFilter">
             <div class="d-flex flex-row row" id="FilterContainer">
             <!-- Date-Picker -->
                     <div class="flex-column p-4 col-md-4 text-center border rounded-3">
@@ -240,7 +249,7 @@
             <!-- Other options -->
                     <div class="d-flex flex-column p-4 col-md-4 text-center border rounded-3">
                             <div class="container">
-                                <h5 class="filter-header mb-2">Other options </h5>
+                                <h5 class="filter-header mb-2">Weitere Optionen </h5>
                                 <div>
                                     <label for="modulDataList" class="form-label">Modul:</label>
                                     <input class="form-control" list="datalistOptionsModul" id="modulDataList" oninput="checkIfListInputExists(this.id, this.list.id)" placeholder="Drop down or Search">
@@ -281,7 +290,7 @@
                 </div>
             </div>
             <div class="text-center justify-content-center">
-                <button onclick="onCollapseFilter(document.getElementById('btnFilter'), document.getElementById('btnFilter').innerText == 'Expand Filter')" id="btnFilter" class="btn btn-warning" style="background-color: #fff200;" type="button" data-bs-toggle="collapse" data-bs-target="#collapseExample" aria-expanded="false" aria-controls="collapseExample">Expand Filter</button>
+                <button onclick="onCollapseFilter(document.getElementById('btnFilter'), document.getElementById('btnFilter').innerText == 'Filter ausklappen')" id="btnFilter" class="btn button-style" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFilter" aria-expanded="false" aria-controls="collapseFilter">Filter ausklappen</button>
             </div>
         </div>
     </div>
@@ -289,10 +298,58 @@
 <!-- Filter-Menu -->
 
 <!-- Statistics -->
-<div class="statistics coll">
+<div class="statistics">
     <div class="container">
-        <div class="d-flex flex-row row" id="statisticsHolder">
+        <div class="collapse" id="collapseStatistics">
+            <div class="w-100" id="StatisticsContainer">
+                <!-- Statistics Dropdown Button -->
+                <div class="dropdown text-center">
+                    <button class="btn dropdown-toggle button-style" type="button" id="statisticsDropDown" data-bs-toggle="dropdown" aria-expanded="false">
+                        Display statistics
+                    </button>
+                    <ul class="dropdown-menu p-2" aria-labelledby="statisticsDropDown">
+                        <li>
+                            <input class="form-check-input" type="checkbox" value="" id="showbarChart" onclick="onShowStatistics(document.getElementById('showbarChart'), 'barChart', 2)">
+                            <label class="form-check-label" for="showbarChart">
+                                Show Bar-Chart
+                            </label>
+                        </li>
+                        <li>
+                            <input class="form-check-input" type="checkbox" value="" id="showpieChart" onclick="onShowStatistics(document.getElementById('showpieChart'), 'pieChart', 1)">
+                            <label class="form-check-label" for="showpieChart">
+                                Show Pie-Chart
+                            </label>
+                        </li>
+                        <li>
+                            <input class="form-check-input" type="checkbox" value="" id="showlineChart" onclick="onShowStatistics(document.getElementById('showlineChart'), 'lineChart', 2)">
+                            <label class="form-check-label" for="showlineChart">
+                                Show Line-Chart
+                            </label>
+                        </li>
+                        <li>
+                            <input class="form-check-input" type="checkbox" value="" id="showpolarAreaChart" onclick="onShowStatistics(document.getElementById('showpolarAreaChart'), 'polarAreaChart', 1)">
+                            <label class="form-check-label" for="showpolarAreaChart">
+                                Show PolarArea-Chart
+                            </label>
+                        </li>
+                    </ul>
+                </div>
+                <!-- Statistics Dropdown Button -->
+
+                <!-- Statistics Container -->
+                <div class="coll">
+                    <div>
+                        <div class="d-flex flex-row row" id="statisticsHolder">
+                        </div>
+                    </div>
+                </div>
+                <!-- Statistics Container-->
+
+            </div>
         </div>
+    </div>
+    <div class="text-center justify-content-center">
+        <button onclick="onCollapseFilter(document.getElementById('btnStatistics'), document.getElementById('btnStatistics').innerText == 'Statistiken ausklappen')" id="btnStatistics" class="btn button-style" type="button" data-bs-toggle="collapse" data-bs-target="#collapseStatistics" aria-expanded="false" aria-controls="collapseStatistics">Statistiken ausklappen</button>
     </div>
 </div>
 <!-- Statistics -->
@@ -379,40 +436,6 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-
-                <div class="dropdown">
-                    <button class="btn btn-secondary w-100 dropdown-toggle" style="background-color: #fff200; color: black" type="button" id="statisticsDropDown" data-bs-toggle="dropdown" aria-expanded="false">
-                        Display Statistics
-                    </button>
-                    <ul class="dropdown-menu p-2" aria-labelledby="statisticsDropDown">
-                        <li>
-                            <input class="form-check-input" type="checkbox" value="" id="showBarChart" onclick="onShowStatistics(document.getElementById('showBarChart'), 'barChart', 2)">
-                            <label class="form-check-label" for="FilterDEBUG">
-                                Show Bar-Chart
-                            </label>
-                        </li>
-                        <li>
-                            <input class="form-check-input" type="checkbox" value="" id="showPieChart" onclick="onShowStatistics(document.getElementById('showPieChart'), 'pieChart', 1)">
-                            <label class="form-check-label" for="FilterDEBUG">
-                                Show Pie-Chart
-                            </label>
-                        </li>
-                        <li>
-                            <input class="form-check-input" type="checkbox" value="" id="showLineChart" onclick="onShowStatistics(document.getElementById('showLineChart'), 'lineChart', 2)">
-                            <label class="form-check-label" for="FilterDEBUG">
-                                Show Line-Chart
-                            </label>
-                        </li>
-                        <!--
-                        <li>
-                            <input class="form-check-input" type="checkbox" value="" id="showPolarAreaChart" onclick="onShowStatistics(document.getElementById('showPolarAreaChart'), 'polarAreaChart', 1)">
-                            <label class="form-check-label" for="FilterDEBUG">
-                                Show PolarArea-Chart
-                            </label>
-                        </li>
-                        -->
-                    </ul>
-                </div>
 
                 <div class="d-flex bd-highlight">
                     <button data-bs-dismiss="modal" class="btn btn-warning mt-3 m-1 w-100" type="submit">Ok</button>

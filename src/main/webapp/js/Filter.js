@@ -1,11 +1,22 @@
-function onCollapseFilter(buttonFilter, doCollapse)
+function onCollapseFilter(button, doCollapse)
 {
     if(doCollapse){
-        buttonFilter.innerText = "Collapse Filter";
-        doCollapse == !doCollapse;
+        if(button.id == 'btnFilter'){
+            button.innerText = "Filter zuklappen";
+            doCollapse == !doCollapse;
+        }else if(button.id == 'btnStatistics'){
+            button.innerText = "Statistiken zuklappen";
+            doCollapse == !doCollapse;
+        }
+
     }else{
-        buttonFilter.innerText = "Expand Filter";
-        doCollapse == !doCollapse;
+        if(button.id == 'btnFilter'){
+            button.innerText = "Filter ausklappen";
+            doCollapse == !doCollapse;
+        }else if(button.id == 'btnStatistics'){
+            button.innerText = "Statistiken ausklappen";
+            doCollapse == !doCollapse;
+        }
     }
 }
 
