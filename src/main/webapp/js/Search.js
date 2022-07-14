@@ -3,7 +3,7 @@ async function search(startDate, endDate, logLevel = [], module = null, classNam
     let filterData = {
         beginDate : startDate,
         endDate : endDate,
-        logLevel : logLevel,
+        logLevels : logLevel,
         module : module,
         className : className,
         exception : exception

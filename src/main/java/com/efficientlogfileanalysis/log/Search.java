@@ -15,6 +15,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class Search {
 
@@ -47,7 +48,8 @@ public class Search {
             //Apply all logLevel filters
             //TODO improve that
             String[] allLogLevels = {"INFO", "DEBUG", "WARN", "ERROR", "TRACE", "FATAL"};
-            for(String notInlcuded : filter.getLogLevels())
+
+            for(String notInlcuded : Arrays.stream(allLogLevels).filter(s -> !filter.getLogLevels().contains(s)).collect(Collectors.toList()))
             {
                 queryBuilder.add(
                     new TermQuery(new Term("logLevel", notInlcuded)),
@@ -69,7 +71,7 @@ public class Search {
         if(filter.getClassName() != null)
         {
             queryBuilder.add(
-                new TermQuery(new Term("className", filter.getClassName())),
+                new TermQuery(new Term("classname", filter.getClassName())),
                 BooleanClause.Occur.MUST
             );
         }
