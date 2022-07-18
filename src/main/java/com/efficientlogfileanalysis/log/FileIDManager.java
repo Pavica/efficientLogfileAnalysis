@@ -3,6 +3,7 @@ package com.efficientlogfileanalysis.log;
 import com.efficientlogfileanalysis.data.BiMap;
 
 import java.io.File;
+import java.io.IOException;
 
 /**
  * Singleton class that manages the names and ids of the logfiles.
@@ -11,7 +12,7 @@ import java.io.File;
 public class FileIDManager {
 
     private static FileIDManager instance;
-
+    
     private BiMap<Integer, String> fileInformations;
 
     public static synchronized FileIDManager getInstance() {
@@ -33,11 +34,12 @@ public class FileIDManager {
      * Looks for new logfiles and give them an ID. Also deletes old IDs of deleted logfiles.
      */
     public void update() {
-        new Exception("Not implemented yet");
+        new IOException("Not implemented yet");
     }
 
     /**
      * Gets the ID of the logfile.
+     * @return key The name of the log file
      */
     public short get(String key) {
         Integer i = fileInformations.getKey(key);
@@ -46,9 +48,9 @@ public class FileIDManager {
 
     /**
      * Gets the name of the logfile.
+     * @return key The ID of the log file
      */
     public String get(short key) {
-        String s = fileInformations.getValue(new Integer(key));
-        return s;
+        return fileInformations.getValue(Integer.valueOf(key));
     }
 }
