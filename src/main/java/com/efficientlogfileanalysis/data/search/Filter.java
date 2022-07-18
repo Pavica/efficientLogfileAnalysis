@@ -1,4 +1,4 @@
-package com.efficientlogfileanalysis.log;
+package com.efficientlogfileanalysis.data.search;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

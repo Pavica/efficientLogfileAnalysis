@@ -5,6 +5,7 @@ import com.efficientlogfileanalysis.data.LogFile;
 import lombok.SneakyThrows;
 
 import java.io.*;
+import java.util.HashMap;
 
 public class LogReader {
 
@@ -62,13 +63,13 @@ public class LogReader {
      * @param logEntryID The nth log entry inside a file
      * @return The log entry that has the id of the variable fileIndex inside the file with the id in logEntryID
      */
+    //TODO this method is incredibly slow
     public static LogEntry getLogEntry(String path, short fileIndex, long logEntryID) {
         File logFile = new File(path + "/" + FileIDManager.getInstance().get(fileIndex));
         String line = "";
 
-        try {
-            RandomAccessFile raf = new RandomAccessFile(logFile, "r");
-
+        try (RandomAccessFile raf = new RandomAccessFile(logFile, "r"))
+        {
             String tempLine = "";
 
             line = raf.readLine();
@@ -81,12 +82,12 @@ public class LogReader {
             ) {
                 line += tempLine;
             }
-
-        } catch (IOException ioe) {
+        }
+        catch (IOException ioe) {
             System.out.println(ioe);
         }
 
-        return new LogEntry(line);
+        return new LogEntry(line, logEntryID);
     }
 
 }
