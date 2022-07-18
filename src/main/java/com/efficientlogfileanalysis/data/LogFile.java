@@ -7,11 +7,11 @@ import java.util.List;
  * Data class. Stores the name of a file and the Logentries it contains.
  * @author Jan Mandl
  */
-public class Logfile {
+public class LogFile {
     public String filename;
     private List<LogEntry> entries;
 
-    public Logfile(String filename) {
+    public LogFile(String filename) {
         this.filename = filename;
         entries = new ArrayList<>();
     }

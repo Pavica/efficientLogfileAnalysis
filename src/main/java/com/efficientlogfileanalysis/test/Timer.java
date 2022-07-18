@@ -1,4 +1,4 @@
-package com.efficientlogfileanalysis;
+package com.efficientlogfileanalysis.test;
 
 import java.time.Instant;
 

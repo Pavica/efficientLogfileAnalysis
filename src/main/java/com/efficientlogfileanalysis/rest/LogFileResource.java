@@ -1,4 +1,4 @@
-package com.efficientlogfileanalysis;
+package com.efficientlogfileanalysis.rest;
 
 import com.efficientlogfileanalysis.data.LogEntry;
 import com.efficientlogfileanalysis.log.Filter;
@@ -6,19 +6,14 @@ import com.efficientlogfileanalysis.log.Search;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Response;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.io.File;
 import java.io.IOException;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 
 @Path("/search")
-public class LogfileResource {
+public class LogFileResource {
 
     @Data
     @NoArgsConstructor
