@@ -2,6 +2,9 @@ package com.efficientlogfileanalysis.log;
 
 import com.efficientlogfileanalysis.data.LogEntry;
 import com.efficientlogfileanalysis.data.LogFile;
+import com.efficientlogfileanalysis.data.search.Filter;
+import com.efficientlogfileanalysis.data.search.SearchEntry;
+import com.efficientlogfileanalysis.test.Timer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.index.DirectoryReader;
@@ -33,7 +36,7 @@ public class Search {
         searcher = new IndexSearcher(directoryReader);
     }
 
-    public List<LogFile> search(Filter filter) throws IOException
+    public List<SearchEntry> search(Filter filter) throws IOException
     {
         BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
 
@@ -80,9 +83,13 @@ public class Search {
 
         Query query = queryBuilder.build();
 
+        System.out.println("Lucene start:");
         ScoreDoc[] hits = searcher.search(query, Integer.MAX_VALUE).scoreDocs;
+        System.out.println("Lucene end:");
 
-        HashMap<Short, LogFile> logFiles = new HashMap<>();
+        System.out.println("stupid start");
+        HashMap<Short, SearchEntry> logFiles = new HashMap<>();
+
         for(ScoreDoc hit : hits)
         {
             Document document = searcher.doc(hit.doc);
@@ -96,18 +103,27 @@ public class Search {
                 entryIndex
             );
 
-            logFiles.putIfAbsent(fileIndex, new LogFile(FileIDManager.getInstance().get(fileIndex)));
-            logFiles.get(fileIndex).addEntry(result);
+            logFiles.putIfAbsent(fileIndex, new SearchEntry(FileIDManager.getInstance().get(fileIndex)));
+            logFiles.get(fileIndex).addLogEntry(result);
         }
+        System.out.println("stupid end");
 
         return new ArrayList<>(logFiles.values());
     }
 
     public static void main(String[] args) throws IOException {
-        Search search = new Search();
+//        Search search = new Search();
+//
+//        Filter f = Filter.builder().build();
+//        search.search(f).forEach(System.out::println);
 
-        Filter f = Filter.builder().build();
-        search.search(f).forEach(System.out::println);
+        Timer timer = new Timer();
+
+        Timer.Time time = timer.timeExecutionSpeed(() -> {
+            LogEntry result = new LogEntry("04 Jul 2022 14:27:28,743 DEBUG [key] AbstractDialog:? - hide end: MAP036 timestamp: 1656937674040");
+        }, 100_000);
+
+        System.out.println(time);
     }
 
 }
