@@ -1,6 +1,7 @@
 package com.efficientlogfileanalysis.log;
 
 import com.efficientlogfileanalysis.data.LogEntry;
+import com.efficientlogfileanalysis.data.LogFile;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.index.DirectoryReader;
@@ -13,6 +14,7 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -31,7 +33,7 @@ public class Search {
         searcher = new IndexSearcher(directoryReader);
     }
 
-    public List<LogEntry> search(Filter filter) throws IOException
+    public List<LogFile> search(Filter filter) throws IOException
     {
         BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
 
@@ -80,7 +82,7 @@ public class Search {
 
         ScoreDoc[] hits = searcher.search(query, Integer.MAX_VALUE).scoreDocs;
 
-        List<LogEntry> results = new ArrayList<>();
+        HashMap<Short, LogFile> logFiles = new HashMap<>();
         for(ScoreDoc hit : hits)
         {
             Document document = searcher.doc(hit.doc);
@@ -88,12 +90,17 @@ public class Search {
             short fileIndex = document.getField("fileIndex").numericValue().shortValue();
             long entryIndex = document.getField("logEntryID").numericValue().longValue();
 
-            LogEntry result = LogReader.getLogEntry("test_logs", fileIndex, entryIndex);
+            LogEntry result = LogReader.getLogEntry(
+                "test_logs",
+                fileIndex,
+                entryIndex
+            );
 
-            results.add(result);
+            logFiles.putIfAbsent(fileIndex, new LogFile(FileIDManager.getInstance().get(fileIndex)));
+            logFiles.get(fileIndex).addEntry(result);
         }
 
-        return results;
+        return new ArrayList<>(logFiles.values());
     }
 
     public static void main(String[] args) throws IOException {
