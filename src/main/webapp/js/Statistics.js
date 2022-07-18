@@ -123,7 +123,7 @@ function loadLineChart(){
 /**
  * Function used to create and load the polarArea chart into the corresponding canvas.
  */
-function loadpolarAreaChart(){
+function loadPolarAreaChart(){
     const polarAreaChartContext = document.getElementById("polarAreaChart").getContext('2d');
     const polarAreaChart = new Chart(polarAreaChartContext, {
         type: 'polarArea',
@@ -198,7 +198,6 @@ function showActiveStatistics(activeStatistics)
 
             break;
     }
-
     for(let i = 0 ; i < countStatistics ; i++)
         reloadStatistics(activeStatistics[i].chartName)
 }
@@ -232,7 +231,6 @@ function createChartContainer(charts, chartWidths){
  * @param statistic
  */
 function reloadStatistics(statistic){
-
     if(statistic == 'barChart'){
         loadBarChart();
     }else if(statistic == 'pieChart'){
@@ -240,6 +238,35 @@ function reloadStatistics(statistic){
     }else if(statistic == 'lineChart'){
         loadLineChart();
     } else if(statistic == 'polarAreaChart'){
-        loadpolarAreaChart();
+        loadPolarAreaChart();
+    }
+}
+
+let statisticsMap = {
+    "barChart": "showbarChart",
+    "pieChart": "showpieChart",
+    "lineChart": "showlineChart",
+    "polarAreaChart": "showpolarAreaChart"
+};
+
+function checkIfChecked(elementId){
+   return document.getElementById(elementId).checked;
+}
+
+
+
+//TODO: fix with Clark, his code is bad and needs to change
+function reloadAllActiveStatistics(){
+    if(checkIfChecked(statisticsMap["barChart"])){
+        onShowStatistics(document.getElementById('showbarChart'), 'barChart', 2)
+    }
+    if(checkIfChecked(statisticsMap["pieChart"])){
+        onShowStatistics(document.getElementById('showpieChart'), 'pieChart', 1)
+    }
+    if(checkIfChecked(statisticsMap["lineChart"])){
+        onShowStatistics(document.getElementById('showlineChart'), 'lineChart', 2)
+    }
+    if(checkIfChecked(statisticsMap["polarAreaChart"])){
+        onShowStatistics(document.getElementById('showpolarAreaChart'), 'polarAreaChart', 1)
     }
 }

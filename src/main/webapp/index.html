@@ -110,6 +110,7 @@
         .badge-color{
             font-family: monospace;
             color: black;
+
         }
 
         #statisticsHolder{
@@ -122,14 +123,12 @@
                 margin-right: auto;
             }
             .badge-color{
-                font-family: monospace;
-                color: black;
                 width: 4rem;
             }
         }
     </style>
 </head>
-<body>
+<body onload="loadCookies()">
 
 <!-- NavBar -->
 <nav class="navbar navbar-expand-lg navbar-light sticky-top">
@@ -310,25 +309,25 @@
                     </button>
                     <ul class="dropdown-menu p-2" aria-labelledby="statisticsDropDown">
                         <li>
-                            <input class="form-check-input" type="checkbox" value="" id="showbarChart" onclick="onShowStatistics(document.getElementById('showbarChart'), 'barChart', 2)">
+                            <input class="form-check-input statisticsCheckbox" type="checkbox" value="" id="showbarChart" onclick="onShowStatistics(document.getElementById('showbarChart'), 'barChart', 2)">
                             <label class="form-check-label" for="showbarChart">
                                 Show Bar-Chart
                             </label>
                         </li>
                         <li>
-                            <input class="form-check-input" type="checkbox" value="" id="showpieChart" onclick="onShowStatistics(document.getElementById('showpieChart'), 'pieChart', 1)">
+                            <input class="form-check-input statisticsCheckbox" type="checkbox" value="" id="showpieChart" onclick="onShowStatistics(document.getElementById('showpieChart'), 'pieChart', 1)">
                             <label class="form-check-label" for="showpieChart">
                                 Show Pie-Chart
                             </label>
                         </li>
                         <li>
-                            <input class="form-check-input" type="checkbox" value="" id="showlineChart" onclick="onShowStatistics(document.getElementById('showlineChart'), 'lineChart', 2)">
+                            <input class="form-check-input statisticsCheckbox" type="checkbox" value="" id="showlineChart" onclick="onShowStatistics(document.getElementById('showlineChart'), 'lineChart', 2)">
                             <label class="form-check-label" for="showlineChart">
                                 Show Line-Chart
                             </label>
                         </li>
                         <li>
-                            <input class="form-check-input" type="checkbox" value="" id="showpolarAreaChart" onclick="onShowStatistics(document.getElementById('showpolarAreaChart'), 'polarAreaChart', 1)">
+                            <input class="form-check-input statisticsCheckbox" type="checkbox" value="" id="showpolarAreaChart" onclick="onShowStatistics(document.getElementById('showpolarAreaChart'), 'polarAreaChart', 1)">
                             <label class="form-check-label" for="showpolarAreaChart">
                                 Show PolarArea-Chart
                             </label>
@@ -548,7 +547,10 @@
 </div>
 <!-- Log Modal -->
 
-<script src="js/validation.js"></script>
+<!-- Cookie-Script -->
+<script src="js/Cookie.js"></script>
+<!-- Validation-Script -->
+<script src="js/Validation.js"></script>
 <!-- Statistics-Script -->
 <script src="js/Statistics.js"></script>
 <script>
