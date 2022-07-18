@@ -47,7 +47,7 @@ public class Settings {
     }
 
     /**
-     * Writes the config file to the directory inside configFilePath. The format is just [variable name]=[value].
+     * Writes the config file to the directory inside configFilePath. The format is [variable name]=[value]. Comments can be made with prepending a # to a line.
      * @throws IOException if the config file couldnt be written.
      */
     private void writeConfigFile() throws IOException {
