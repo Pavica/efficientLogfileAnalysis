@@ -1,6 +1,7 @@
 package com.efficientlogfileanalysis.rest;
 
 import com.efficientlogfileanalysis.data.LogEntry;
+import com.efficientlogfileanalysis.data.LogFile;
 import com.efficientlogfileanalysis.log.Filter;
 import com.efficientlogfileanalysis.log.Search;
 import jakarta.ws.rs.*;
@@ -64,7 +65,7 @@ public class LogFileResource {
         try
         {
             Search search = new Search();
-            List<LogEntry> result = search.search(filter);
+            List<LogFile> result = search.search(filter);
 
             return Response.ok(result).build();
         }
