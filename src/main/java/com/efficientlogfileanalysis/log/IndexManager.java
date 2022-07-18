@@ -1,4 +1,4 @@
-package com.efficientlogfileanalysis.bl;
+package com.efficientlogfileanalysis.log;
 
 import com.efficientlogfileanalysis.data.Tuple;
 

@@ -10,8 +10,6 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
-import com.efficientlogfileanalysis.log.ReadIndex;
-
 /**
  * Data class representing a single log entry.
  * @author Andreas Kurz, Jan Mandl

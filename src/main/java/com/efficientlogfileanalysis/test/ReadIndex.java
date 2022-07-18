@@ -1,7 +1,7 @@
-package com.efficientlogfileanalysis.log;
+package com.efficientlogfileanalysis.test;
 
-import com.efficientlogfileanalysis.Timer;
-import com.efficientlogfileanalysis.bl.FileIDManager;
+import com.efficientlogfileanalysis.log.LogReader;
+import com.efficientlogfileanalysis.log.FileIDManager;
 import com.efficientlogfileanalysis.data.LogEntry;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.LongPoint;
@@ -11,9 +11,7 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
@@ -32,40 +30,6 @@ public class ReadIndex {
     {
         LocalDateTime time = LocalDateTime.of(year, month, dayOfMonth, hour, minute, second);
         return time.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
-    }
-
-    /**
-     * Creates a Logentry object from a FileIndex and a logentryID
-     * @param path The path to the folder containing the log files
-     * @param fileIndex The index of the file
-     * @param logEntryID The nth log entry inside a file
-     * @return The log entry that has the id of the variable fileIndex inside the file with the id in logEntryID
-     */
-    public static LogEntry getLogEntry(String path, short fileIndex, long logEntryID) {
-        File logFile = new File(path + "/" + FileIDManager.getInstance().get(fileIndex));
-        String line = "";
-
-        try {
-            RandomAccessFile raf = new RandomAccessFile(logFile, "r");
-            //todo: use Stringbuilder
-            String tempLine = "";
-
-            line = raf.readLine();
-            raf.seek(logEntryID);
-            
-            //while there is no date at the beginning of the line
-            while(
-                (tempLine = raf.readLine()) != null &&
-                !tempLine.matches("\\d{2} \\w{3} \\d{4}.*")
-            ) {
-                line += tempLine;
-            }
-
-        } catch (IOException ioe) {
-            System.out.println(ioe);
-        }
-        
-        return new LogEntry(line);
     }
     
     public static void main(String[] args) {        
@@ -124,7 +88,7 @@ public class ReadIndex {
                     Long.parseLong(value.getField("logEntryID").stringValue())
                 );
 
-                result.setLocalDateTime(getLogEntry(
+                result.setLocalDateTime(LogReader.getLogEntry(
                         "test_logs",
                         Short.parseShort(value.getField("fileIndex").stringValue()),
                         result.getLogFileStartOfBytes()
