@@ -56,13 +56,20 @@ public class LogEntry
         this.message = logEntry.substring(logEntry.indexOf(" - ", indexOfColon) + 3);
     }
 
-    public LogEntry(String time, String logLevel, String module, String className, String message)
+    public LogEntry(String logEntry, long logFileStartOfBytes)
+    {
+        this(logEntry);
+        this.logFileStartOfBytes = logFileStartOfBytes;
+    }
+
+    public LogEntry(String time, String logLevel, String module, String className, String message, long logFileStartOfBytes)
     {
         setLocalDateTimeFromString(time);
         this.logLevel = logLevel;
         this.module = module;
         this.className = className;
         this.message = message;
+        this.logFileStartOfBytes = logFileStartOfBytes;
     }
 
     /**

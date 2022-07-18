@@ -1,8 +1,8 @@
 package com.efficientlogfileanalysis.rest;
 
-import com.efficientlogfileanalysis.data.LogEntry;
 import com.efficientlogfileanalysis.data.LogFile;
-import com.efficientlogfileanalysis.log.Filter;
+import com.efficientlogfileanalysis.data.search.Filter;
+import com.efficientlogfileanalysis.data.search.SearchEntry;
 import com.efficientlogfileanalysis.log.Search;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Response;
@@ -10,6 +10,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
@@ -65,7 +66,7 @@ public class LogFileResource {
         try
         {
             Search search = new Search();
-            List<LogFile> result = search.search(filter);
+            List<SearchEntry> result = search.search(filter);
 
             return Response.ok(result).build();
         }

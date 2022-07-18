@@ -1,5 +1,7 @@
 package com.efficientlogfileanalysis.test;
 
+import lombok.ToString;
+
 import java.time.Instant;
 
 /**
@@ -19,6 +21,7 @@ public class Timer {
      * @author Jan Mandl
      * Last-changed: 11.7.2022
      */
+    @ToString
     public class Time {
         public long totalTime;
         public long longestTime;

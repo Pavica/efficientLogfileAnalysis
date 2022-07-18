@@ -23,7 +23,10 @@ async function search(startDate, endDate, logLevel = [], module = null, classNam
         return;
     }
 
-    let data = await response.json();
+    let jsonContent = await response.text();
+    console.log(jsonContent);
+
+    let data = JSON.parse(jsonContent);
 
     alert("It worked :D");
     return data;
