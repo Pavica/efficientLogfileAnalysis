@@ -3,12 +3,9 @@ package com.efficientlogfileanalysis.log;
 import com.efficientlogfileanalysis.data.LogEntry;
 import com.efficientlogfileanalysis.data.LogFile;
 import com.efficientlogfileanalysis.test.Timer;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 
-import java.awt.*;
 import java.io.*;
-import java.util.Arrays;
 import java.util.HashMap;
 
 public class LogReader implements Closeable {
