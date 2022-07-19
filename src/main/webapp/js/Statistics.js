@@ -253,8 +253,6 @@ function checkIfChecked(elementId){
    return document.getElementById(elementId).checked;
 }
 
-
-
 //TODO: fix with Clark, his code is bad and needs to change
 function reloadAllActiveStatistics(){
     if(checkIfChecked(statisticsMap["barChart"])){

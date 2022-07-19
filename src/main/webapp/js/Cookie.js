@@ -23,7 +23,6 @@ function getCookie(cname) {
 function checkCookie(name) {
     let cookie = getCookie(name);
     if (cookie != "") {
-       console.log(cookie);
        return true;
     } else {
         return false;
@@ -45,6 +44,7 @@ function reloadStatisticsCookie(){
         statisticsValues += $(this).prop("checked") + "|";
     });
     statisticsValues = statisticsValues.substring(0,statisticsValues.length-1);
+    //currently set to 3 days
     setCookie("statistics", statisticsValues, 3);
 }
 

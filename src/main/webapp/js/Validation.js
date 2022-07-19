@@ -6,6 +6,7 @@
 
 
 // Example starter JavaScript for disabling form submissions if there are invalid fields
+//Basic Bootstrap 5 validation
 (function () {
     'use strict'
 
@@ -15,13 +16,26 @@
     // Loop over them and prevent submission
     Array.prototype.slice.call(forms)
         .forEach(function (form) {
-            form.addEventListener('submit', function (event) {
+            form.querySelector("button").addEventListener('click', function (event) {
                 if (!form.checkValidity()) {
                     event.preventDefault()
                     event.stopPropagation()
                 }
 
-                form.classList.add('was-validated')
+                form.classList.add('was-validated');
+
+                if(form.checkValidity())
+                {
+                    const action = form.querySelector(".onSubmit");
+                    if(action != null)
+                    {
+                        action.click();
+                    }
+                    else
+                    {
+                        console.error("form: " + form + " hat keine definierte action");
+                    }
+                }
             }, false)
         })
 })()
