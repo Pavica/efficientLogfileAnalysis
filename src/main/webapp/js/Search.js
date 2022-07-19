@@ -50,9 +50,8 @@ async function readyForSearch(){
     let exceptionName =  $('#exceptionDataList').val();
 
     console.log(startDate, endDate, logLevel);
-    let result = await search(startDate, endDate, logLevel);
-
-    createLogFileElements(result);
+    info = await search(startDate, endDate, logLevel);
+    createLogFileElements();
 }
 
 let levelColor = {
@@ -74,11 +73,13 @@ function formatDate(date){
         ("0" + date.getUTCSeconds()).slice(-2);
 }
 
-function createLogFileElements(info){
+let info;
+function createLogFileElements(){
     let container = document.getElementById("logFileElementHolder");
     let text ="";
     info.forEach(file =>{
         text +=`
+    <a data-bs-toggle="modal" data-bs-target="#logModal" onclick="displayFileLogEntries('${file.filename}')">
         <div class="row mt-2">
             <div class="col-md-3 justify-content-center text-center log-date log-center border rounded-3">
                 <p class="my-3">${formatDate(new Date(file.firstDate))} - ${formatDate(new Date(file.lastDate))}</p>
@@ -92,7 +93,79 @@ function createLogFileElements(info){
                 });
         text +=`
             </div>
-        </div>`;
+        </div>
+    </a>`;
     })
     container.innerHTML = text;
+}
+
+async function displayFileLogEntries(filename){
+    let file = findFile(filename);
+    let data = await loadLogEntries(file.filename, file.logEntryIDs);
+    console.log(data);
+
+    document.getElementById("logFileTitle").innerText = "Log file name: " + file.filename;
+
+    let container = document.getElementById("logEntryHolder");
+    let text = "";
+
+    let num = 0;
+    data.forEach( logEntry => {
+        text +=
+        `<tr id="logEntry${num}">
+            <td>${formatDate(new Date(logEntry.time))}</td>
+            <td>${logEntry.logLevel}</td>
+            <td>${logEntry.module}</td>
+            <td>${logEntry.className}</td>
+        </tr>`;
+        num++;
+    });
+   container.innerHTML = text;
+
+   num = 0;
+    data.forEach( logEntry => {
+        let id = "logEntry"+num;
+        console.log(id);
+        $('#'+id).click(function(){
+            document.getElementById("floatingTextarea").innerText = logEntry.message;
+        });
+        num++;
+    });
+
+
+    /*$("logFileElementHolder > tr").forEach(row => row.addEventListener("click", evt => {
+
+    }))*/
+
+
+    //TODO: Add red if its a NullPointerException
+    /* document.querySelectorAll(".table > tbody > tr").forEach();*/
+
+    //TODO: Add yellow if they are searched for (only if fetch nearby is active)
+    /* document.querySelectorAll(".table > tbody > tr").forEach();*/
+}
+
+function findFile(filename){
+    let data;
+    info.forEach( file =>{
+        if(file.filename.toString() === filename.toString()){
+            data = file;
+        }
+    })
+    return data;
+}
+
+async function loadLogEntries(filename, logEntryIDs){
+    let response = await fetch("api/logFiles/" + filename + "/specificEntries", {
+        method: "POST",
+        body: JSON.stringify(logEntryIDs),
+        headers: {
+            "content-type":"application/json"
+        }
+    });
+    if(!response.ok){
+        alert("oh oh")
+        return;
+    }
+    return await response.json();
 }
