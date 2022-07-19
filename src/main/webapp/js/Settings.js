@@ -19,6 +19,9 @@ let allStatistics = ['barChart', 'pieChart', 'lineChart', 'polarAreaChart'];
  */
 function onShowStatistics(checkbox, chartName, chartValue)
 {
+    //adds the current selection to cookies
+    reloadStatisticsCookie();
+
     if (checkbox.checked)
     {
         activeStatistics.push({
@@ -32,6 +35,7 @@ function onShowStatistics(checkbox, chartName, chartValue)
         if(index > -1)
             activeStatistics.splice(index, 1);
     }
+     //what does chartValue do here?
      showActiveStatistics(activeStatistics, chartValue);
 
      let checkboxesDisabled = [];
