@@ -88,6 +88,8 @@ public class Search {
         System.out.println("stupid start");
         HashMap<Short, SearchEntry> logFiles = new HashMap<>();
 
+        LogReader logReader = new LogReader();
+
         for(ScoreDoc hit : hits)
         {
             Document document = searcher.doc(hit.doc);
@@ -95,7 +97,7 @@ public class Search {
             short fileIndex = document.getField("fileIndex").numericValue().shortValue();
             long entryIndex = document.getField("logEntryID").numericValue().longValue();
 
-            LogEntry result = LogReader.getLogEntry(
+            LogEntry result = logReader.getLogEntry(
                 "test_logs",
                 fileIndex,
                 entryIndex
@@ -104,6 +106,8 @@ public class Search {
             logFiles.putIfAbsent(fileIndex, new SearchEntry(FileIDManager.getInstance().get(fileIndex)));
             logFiles.get(fileIndex).addLogEntry(result);
         }
+        logReader.close();
+
         System.out.println("stupid end");
 
         return new ArrayList<>(logFiles.values());

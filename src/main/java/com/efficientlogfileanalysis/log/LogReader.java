@@ -2,12 +2,16 @@ package com.efficientlogfileanalysis.log;
 
 import com.efficientlogfileanalysis.data.LogEntry;
 import com.efficientlogfileanalysis.data.LogFile;
+import com.efficientlogfileanalysis.test.Timer;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 
+import java.awt.*;
 import java.io.*;
+import java.util.Arrays;
 import java.util.HashMap;
 
-public class LogReader {
+public class LogReader implements Closeable {
 
     private static final String REGEX_BEGINNING_OF_LOG_ENTRY = "^\\d{2} \\w{3} \\d{4}.*";
 
@@ -27,7 +31,7 @@ public class LogReader {
             BufferedReader br = new BufferedReader(new FileReader(file));
             String line = "";
             String currentLine;
-            long currentByteCount = 0;
+            long currentByteCount = -1;
 
             logFiles[currentFileIndex] = new LogFile(file.getName());
 
@@ -38,11 +42,10 @@ public class LogReader {
                     continue;
                 }
 
-                LogEntry newLogEntry = new LogEntry(line);
+                LogEntry newLogEntry = new LogEntry(line, currentByteCount == -1 ? 0 : currentByteCount);
 
                 //add a \n for the exact bytecount
                 line += "\n";
-                newLogEntry.setLogFileStartOfBytes(currentByteCount);
                 currentByteCount += line.getBytes().length;
 
                 line = currentLine;
@@ -50,10 +53,27 @@ public class LogReader {
 
             }
 
+            logFiles[currentFileIndex].addEntry(new LogEntry(line, currentByteCount == -1 ? 0 : currentByteCount));
+
             ++currentFileIndex;
         }
 
         return logFiles;
+    }
+
+    private HashMap<Short, RandomAccessFile> openFiles;
+
+    public LogReader()
+    {
+        openFiles = new HashMap<>();
+    }
+
+    public void close() throws IOException
+    {
+        for( RandomAccessFile randomAccessFile : openFiles.values() )
+        {
+            randomAccessFile.close();
+        }
     }
 
     /**
@@ -64,30 +84,50 @@ public class LogReader {
      * @return The log entry that has the id of the variable fileIndex inside the file with the id in logEntryID
      */
     //TODO this method is incredibly slow
-    public static LogEntry getLogEntry(String path, short fileIndex, long logEntryID) {
-        File logFile = new File(path + "/" + FileIDManager.getInstance().get(fileIndex));
-        String line = "";
-
-        try (RandomAccessFile raf = new RandomAccessFile(logFile, "r"))
+    public LogEntry getLogEntry(String path, short fileIndex, long logEntryID) throws IOException {
+        if(!openFiles.containsKey(fileIndex))
         {
-            String tempLine = "";
-
-            line = raf.readLine();
-            raf.seek(logEntryID);
-
-            //while there is no date at the beginning of the line
-            while(
-                (tempLine = raf.readLine()) != null &&
-                !tempLine.matches(REGEX_BEGINNING_OF_LOG_ENTRY)
-            ) {
-                line += tempLine;
-            }
+            openFiles.put(fileIndex, new RandomAccessFile(path + "/" + FileIDManager.getInstance().get(fileIndex), "r"));
         }
-        catch (IOException ioe) {
-            System.out.println(ioe);
+
+        RandomAccessFile file = openFiles.get(fileIndex);
+
+        String line = "";
+        String tempLine = "";
+
+        file.seek(logEntryID);
+        line = file.readLine();
+
+        //while there is no date at the beginning of the line
+        while(
+            (tempLine = file.readLine()) != null &&
+            !tempLine.matches(REGEX_BEGINNING_OF_LOG_ENTRY)
+        )
+        {
+            line += tempLine;
         }
 
         return new LogEntry(line, logEntryID);
+    }
+
+    @SneakyThrows
+    public static void main(String[] args) {
+
+        Timer timer = new Timer();
+
+        LogReader logReader = new LogReader();
+
+        Timer.Time time = timer.timeExecutionSpeed(() -> {
+            try
+            {
+                logReader.getLogEntry("test_logs", (short)1, 0);
+            }
+            catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }, 100_000);
+
+        System.out.println(time);
     }
 
 }
