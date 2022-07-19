@@ -2,6 +2,7 @@ package com.efficientlogfileanalysis.log;
 
 import com.efficientlogfileanalysis.data.LogEntry;
 import com.efficientlogfileanalysis.data.LogFile;
+import com.efficientlogfileanalysis.data.Settings;
 import com.efficientlogfileanalysis.data.search.Filter;
 import com.efficientlogfileanalysis.data.search.SearchEntry;
 import com.efficientlogfileanalysis.test.Timer;
@@ -98,7 +99,7 @@ public class Search {
             long entryIndex = document.getField("logEntryID").numericValue().longValue();
 
             LogEntry result = logReader.getLogEntry(
-                "test_logs",
+                Settings.getInstance().getLogFilePath(),
                 fileIndex,
                 entryIndex
             );

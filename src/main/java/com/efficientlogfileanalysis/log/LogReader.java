@@ -2,6 +2,7 @@ package com.efficientlogfileanalysis.log;
 
 import com.efficientlogfileanalysis.data.LogEntry;
 import com.efficientlogfileanalysis.data.LogFile;
+import com.efficientlogfileanalysis.data.Settings;
 import com.efficientlogfileanalysis.test.Timer;
 import lombok.SneakyThrows;
 
@@ -117,7 +118,11 @@ public class LogReader implements Closeable {
         Timer.Time time = timer.timeExecutionSpeed(() -> {
             try
             {
-                logReader.getLogEntry("test_logs", (short)1, 0);
+                logReader.getLogEntry(
+                    Settings.getInstance().getLogFilePath(),
+                    (short)1,
+                    0
+                );
             }
             catch (IOException e) {
                 throw new RuntimeException(e);

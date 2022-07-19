@@ -3,6 +3,8 @@ package com.efficientlogfileanalysis.log;
 import com.efficientlogfileanalysis.test.Timer;
 import com.efficientlogfileanalysis.data.LogEntry;
 import com.efficientlogfileanalysis.data.LogFile;
+import com.efficientlogfileanalysis.data.Settings;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.*;
@@ -53,7 +55,7 @@ public class LuceneIndexManager {
         IndexWriter indexWriter = new IndexWriter(indexDirectory, indexWriterConfig);
 
         //Read all the log entries from all the files into a list
-        LogFile[] logFiles = LogReader.readAllLogFiles("test_logs");
+        LogFile[] logFiles = LogReader.readAllLogFiles(Settings.getInstance().getLogFilePath());
         FileIDManager mgr = FileIDManager.getInstance();
 
         for(LogFile logfile : logFiles) {
