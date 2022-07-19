@@ -1,79 +1,85 @@
 package com.efficientlogfileanalysis.rest;
 
-import com.efficientlogfileanalysis.data.LogFile;
-import com.efficientlogfileanalysis.data.search.Filter;
-import com.efficientlogfileanalysis.data.search.SearchEntry;
-import com.efficientlogfileanalysis.log.Search;
+import com.efficientlogfileanalysis.data.LogEntry;
+import com.efficientlogfileanalysis.data.Settings;
+import com.efficientlogfileanalysis.log.FileIDManager;
+import com.efficientlogfileanalysis.log.LogReader;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Response;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
-@Path("/search")
+@Path("/logFiles")
 public class LogFileResource {
 
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class FilterData
-    {
-        private long beginDate;
-        private long endDate;
-        private List<String> logLevels;
-        private String module;
-        private String className;
-        private String exception;
-    }
-
-    @POST
-    @Path("/filter")
+    @GET
     @Produces("application/json")
-    public Response filteredSearch(FilterData filterData)
+    public Response getAllLogfiles()
     {
-        Filter.FilterBuilder filterBuilder = Filter.builder();
+        return Response.ok(FileIDManager.getInstance().getLogFileData()).build();
+    }
 
-        filterBuilder
-                .beginDate(filterData.beginDate)
-                .endDate(filterData.endDate);
+    @GET
+    @Path("/{logFileName}/{id}")
+    @Produces("application/json")
+    public Response getLogEntry(
+        @PathParam("logFileName") String logFileName,
+        @PathParam("id") long entryID
+    )
+    {
+        short fileID = FileIDManager.getInstance().get(logFileName);
 
-        filterData.logLevels.forEach(filterBuilder::addLogLevel);
-
-        if(filterData.module != null)
+        try( LogReader logReader = new LogReader())
         {
-            filterBuilder.module(filterData.module);
+            LogEntry requestedEntry = logReader.getLogEntry(
+                Settings.getInstance().getLogFilePath(),
+                fileID,
+                entryID
+            );
+
+            return Response.ok(requestedEntry).build();
         }
-
-        if(filterData.className != null)
+        catch(IOException exception)
         {
-            filterBuilder.className(filterData.className);
-        }
-
-        if(filterData.exception != null)
-        {
-            filterBuilder.exception(filterData.exception);
-        }
-
-
-        Filter filter = filterBuilder.build();
-
-        System.out.println();
-
-        try
-        {
-            Search search = new Search();
-            List<SearchEntry> result = search.search(filter);
-
-            return Response.ok(result).build();
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-            return Response.status(Response.Status.BAD_GATEWAY).build();
+            exception.printStackTrace();
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+     @POST
+    @Path("/{logFileName}/specificEntries")
+    @Produces("application/json")
+    public Response getLogEntries(
+        @PathParam("logFileName") String logFileName,
+        List<Long> requestedIDs
+    )
+    {
+        short fileID = FileIDManager.getInstance().get(logFileName);
+
+        try( LogReader logReader = new LogReader())
+        {
+            String logFilePath = Settings.getInstance().getLogFilePath();
+
+            List<LogEntry> logEntries = new ArrayList<>();
+
+            for(long entryID : requestedIDs)
+            {
+                logEntries.add(logReader.getLogEntry(
+                    logFilePath,
+                    fileID,
+                    entryID
+                ));
+            }
+
+            return Response.ok(logEntries).build();
+        }
+        catch(IOException exception)
+        {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+
 }

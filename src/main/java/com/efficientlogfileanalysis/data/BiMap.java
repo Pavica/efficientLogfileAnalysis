@@ -1,6 +1,7 @@
 package com.efficientlogfileanalysis.data;
 
 import java.util.HashMap;
+import java.util.Set;
 
 /**
  * A data class that stores key value pairs where the keys can also be accessed via the value. Both the key and value need to be unique.
@@ -50,7 +51,28 @@ public class BiMap<K, V> {
         return map2.getOrDefault(value, null);
     }
 
+    /**
+     * Returns the size of the map
+     */
     public int size() {
         return map1.size();
+    }
+
+    /**
+     * Returns a Set containing all the keys in the map
+     * @return all the keys in the map
+     */
+    public Set<K> getKeySet()
+    {
+        return map1.keySet();
+    }
+
+    /**
+     * Returns a Set containing all the values of the map
+     * @return all the values
+     */
+    public Set<V> getValueSet()
+    {
+        return map2.keySet();
     }
 }
