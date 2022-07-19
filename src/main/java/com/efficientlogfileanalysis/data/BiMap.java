@@ -22,7 +22,7 @@ public class BiMap<K, V> {
     }
 
     /**
-     * Saves a value into the Bimap.
+     * Saves a value and key into the Bimap.
      */
     public void putValue(K key, V value) {
         map1.put(key, value);
@@ -30,21 +30,21 @@ public class BiMap<K, V> {
     }
 
     /**
-     * Wrapper method for put(K, V)
+     * Wrapper method for putValue(K, V)
      */
     public void putKey(V key, K value) {
         putValue(value, key);
     }
 
     /**
-     * Gets the value with the key.
+     * Gets the value with the key. If the requested key isnt inside the map null is returned.
      */
     public V getValue(K key) {
         return map1.getOrDefault(key, null);
     }
 
     /**
-     * Gets the key with the value.
+     * Gets the key with the value. If the requested value isnt inside the map null is returned.
      */
     public K getKey(V value) {
         return map2.getOrDefault(value, null);
