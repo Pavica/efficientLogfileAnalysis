@@ -4,6 +4,8 @@ import com.efficientlogfileanalysis.log.LogReader;
 import com.efficientlogfileanalysis.log.LuceneIndexManager;
 import com.efficientlogfileanalysis.log.FileIDManager;
 import com.efficientlogfileanalysis.data.LogEntry;
+import com.efficientlogfileanalysis.data.Settings;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.index.DirectoryReader;
@@ -91,7 +93,7 @@ public class ReadIndex {
 
                 LogReader logReader = new LogReader();
                 result.setLocalDateTime(logReader.getLogEntry(
-                        "test_logs",
+                        Settings.getInstance().getLogFilePath(),
                         Short.parseShort(value.getField("fileIndex").stringValue()),
                         result.getLogFileStartOfBytes()
                     ).getLocalDateTime()
