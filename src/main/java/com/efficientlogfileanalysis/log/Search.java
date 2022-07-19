@@ -1,11 +1,11 @@
 package com.efficientlogfileanalysis.log;
 
 import com.efficientlogfileanalysis.data.LogEntry;
-import com.efficientlogfileanalysis.data.LogFile;
 import com.efficientlogfileanalysis.data.Settings;
 import com.efficientlogfileanalysis.data.search.Filter;
 import com.efficientlogfileanalysis.data.search.SearchEntry;
 import com.efficientlogfileanalysis.test.Timer;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.index.DirectoryReader;
@@ -90,6 +90,7 @@ public class Search {
         HashMap<Short, SearchEntry> logFiles = new HashMap<>();
 
         LogReader logReader = new LogReader();
+        String path = Settings.getInstance().getLogFilePath();
 
         for(ScoreDoc hit : hits)
         {
@@ -98,11 +99,31 @@ public class Search {
             short fileIndex = document.getField("fileIndex").numericValue().shortValue();
             long entryIndex = document.getField("logEntryID").numericValue().longValue();
 
+            LogEntry result = new LogEntry();
+            result.setLogFileStartOfBytes(entryIndex);
+            result.setTime(
+                logReader.readDateOfEntry(
+                    path,
+                    fileIndex,
+                    entryIndex
+                )
+            );
+            result.setLogLevel(
+                logReader.readLogLevelOfEntry(
+                    path, 
+                    fileIndex, 
+                    entryIndex
+                )
+            );
+
+            //slower version
+            /*
             LogEntry result = logReader.getLogEntry(
-                Settings.getInstance().getLogFilePath(),
+                path,
                 fileIndex,
                 entryIndex
             );
+            */
 
             logFiles.putIfAbsent(fileIndex, new SearchEntry(FileIDManager.getInstance().get(fileIndex)));
             logFiles.get(fileIndex).addLogEntry(result);
@@ -115,18 +136,32 @@ public class Search {
     }
 
     public static void main(String[] args) throws IOException {
-//        Search search = new Search();
-//
-//        Filter f = Filter.builder().build();
-//        search.search(f).forEach(System.out::println);
+        Timer timer = new Timer();
 
+        Timer.Time time = timer.timeExecutionSpeed(() -> {
+
+            try {
+                Search search = new Search();
+        
+                Filter f = Filter.builder().build();
+                search.search(f);
+            } 
+            catch (Exception e) {
+                e.printStackTrace();
+            }
+
+        }, 1);
+
+        System.out.println(time);
+
+        /*
         Timer timer = new Timer();
 
         Timer.Time time = timer.timeExecutionSpeed(() -> {
             LogEntry result = new LogEntry("04 Jul 2022 14:27:28,743 DEBUG [key] AbstractDialog:? - hide end: MAP036 timestamp: 1656937674040");
         }, 100_000);
 
-        System.out.println(time);
+        System.out.println(time);*/
     }
 
 }

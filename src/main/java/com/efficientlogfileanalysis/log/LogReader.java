@@ -167,12 +167,12 @@ public class LogReader implements Closeable {
         byte[] bytes = new byte[24];
         file.read(bytes);
 
-        long miliseconds = LocalDateTime.parse(
+        long milliseconds = LocalDateTime.parse(
             new String(bytes),
             LogEntry.DTF
         ).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
 
-        return miliseconds;
+        return milliseconds;
     }
 
     /**
