@@ -22,11 +22,20 @@ import java.nio.file.Paths;
  */
 public class LuceneIndexManager {
 
+    /**
+     * The directory where the index gets created.
+     */
+    public static final String PATH_TO_INDEX = "index";
+
+    /**
+     * Creates the Index that is needed for Lucene to search through the log files.
+     * @throws IOException
+     */
     public static void createIndex() throws IOException {
         Timer timer = new Timer();
 
         //Create path object
-        Path indexPath = Paths.get("index");
+        Path indexPath = Paths.get(PATH_TO_INDEX);
 
         //Delete previous directory
         Files.walk(indexPath).map(Path::toFile).forEach(File::delete);

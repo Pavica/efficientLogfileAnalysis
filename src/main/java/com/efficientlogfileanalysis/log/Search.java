@@ -24,14 +24,12 @@ import java.util.stream.Collectors;
 
 public class Search {
 
-    public static final String PATH_TO_INDEX = "index";
-
     private IndexSearcher searcher;
 
     public Search() throws IOException
     {
         //Open the Index
-        Directory indexDirectory = FSDirectory.open(Paths.get("index"));
+        Directory indexDirectory = FSDirectory.open(Paths.get(LuceneIndexManager.PATH_TO_INDEX));
         DirectoryReader directoryReader = DirectoryReader.open(indexDirectory);
         searcher = new IndexSearcher(directoryReader);
     }

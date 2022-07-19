@@ -70,6 +70,11 @@ public class IndexManager<K, V>{
         values = new HashMap<>();
     }
 
+    /**
+     * Reads the index from a file and puts it into the values HashMap.
+     * @param file A RandomAccessFile containing an index
+     * @throws IOException
+     */
     public void readIndex(RandomAccessFile file) throws IOException
     {
         if(file.getFilePointer() + 8 >= file.length()){
@@ -91,6 +96,11 @@ public class IndexManager<K, V>{
         }
     }
 
+    /**
+     * Writes the Index to a RandomAccessFile with a binary format. Serialization is done by the TypeConverter class. 
+     * @param file A RandomAccessFile the index is being written to
+     * @throws IOException
+     */
     public void writeIndex(RandomAccessFile file) throws IOException
     {
         long startLocation = file.getFilePointer();

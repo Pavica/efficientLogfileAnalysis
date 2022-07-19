@@ -1,6 +1,7 @@
 package com.efficientlogfileanalysis.test;
 
 import com.efficientlogfileanalysis.log.LogReader;
+import com.efficientlogfileanalysis.log.LuceneIndexManager;
 import com.efficientlogfileanalysis.log.FileIDManager;
 import com.efficientlogfileanalysis.data.LogEntry;
 import org.apache.lucene.document.Document;
@@ -36,7 +37,7 @@ public class ReadIndex {
         Timer timer = new Timer();
 
         //Create path object
-        Path indexPath = Paths.get("index");
+        Path indexPath = Paths.get(LuceneIndexManager.PATH_TO_INDEX);
 
         //Open the index directory (creates the directory if it doesn't exist)
         IndexSearcher indexSearcher = null;
