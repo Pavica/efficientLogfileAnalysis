@@ -69,4 +69,8 @@ public class LuceneIndexManager {
 
         System.out.println("Time elapsed: " + timer.time() + "ms");
     }
+
+    public static void main(String[] args) throws IOException {
+        createIndex();
+    }
 }

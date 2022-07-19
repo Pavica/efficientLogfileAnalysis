@@ -88,12 +88,14 @@ public class ReadIndex {
                     Long.parseLong(value.getField("logEntryID").stringValue())
                 );
 
-                result.setLocalDateTime(LogReader.getLogEntry(
+                LogReader logReader = new LogReader();
+                result.setLocalDateTime(logReader.getLogEntry(
                         "test_logs",
                         Short.parseShort(value.getField("fileIndex").stringValue()),
                         result.getLogFileStartOfBytes()
                     ).getLocalDateTime()
                 );
+                logReader.close();
 
                 System.out.println(mgr.get(Short.parseShort(value.getField("fileIndex").stringValue())));
                 System.out.println(result + "\n");
