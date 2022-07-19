@@ -1,6 +1,7 @@
 package com.efficientlogfileanalysis.log;
 
 import com.efficientlogfileanalysis.data.BiMap;
+import com.efficientlogfileanalysis.data.Settings;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -29,8 +30,12 @@ public class FileIDManager {
     private FileIDManager() {
         fileInformations = new BiMap<>();
 
-        for(File file : new File("test_logs").listFiles()) {
-            fileInformations.putKey(file.getName(), (short) fileInformations.size());
+        try {
+            for(File file : new File(Settings.getInstance().getLogFilePath()).listFiles()) {
+                fileInformations.putKey(file.getName(), fileInformations.size());
+            }
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
         }
     }
 

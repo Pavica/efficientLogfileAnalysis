@@ -19,7 +19,7 @@ import java.util.Locale;
 @NoArgsConstructor
 public class LogEntry
 {
-    private static final DateTimeFormatter DTF = DateTimeFormatter.ofPattern("dd LLL yyyy HH:mm:ss,SSS").withLocale(Locale.ENGLISH);
+    public static final DateTimeFormatter DTF = DateTimeFormatter.ofPattern("dd LLL yyyy HH:mm:ss,SSS").withLocale(Locale.ENGLISH);
 
     /**
      * The time the message was logged in miliseconds
