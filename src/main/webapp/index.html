@@ -356,7 +356,6 @@
 <!-- Statistics -->
 
 <!-- Logfile results -->
-<a data-bs-toggle="modal" data-bs-target="#logModal">
 <div class="logfile-results">
     <div class="container">
         <div class="column" id="logFileElementHolder">
@@ -425,7 +424,6 @@
         </div>
     </div>
 </div>
-</a>
 <!-- Logfile results -->
 
 <!-- Settings Modal -->
@@ -456,7 +454,7 @@
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Log file name:</h5>
+                <h5 class="modal-title" id="logFileTitle">Log file name:</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -467,10 +465,11 @@
                             <th scope="col">Datum</th>
                             <th scope="col">Log Level</th>
                             <th scope="col">Modul</th>
+                            <th scope="col">Klasse</th>
                         </tr>
                         </thead>
-                        <tbody>
-                        <tr>
+                        <tbody id="logEntryHolder">
+                        <!--<tr>
                             <td>Mark</td>
                             <td>Otto</td>
                             <td>@mdo</td>
@@ -539,7 +538,7 @@
                             <td>Larry the Bird</td>
                             <td>Thornton</td>
                             <td>@twitter</td>
-                        </tr>
+                        </tr>-->
                         </tbody>
                     </table>
                 </div>
@@ -558,17 +557,5 @@
 <script src="js/Validation.js"></script>
 <!-- Statistics-Script -->
 <script src="js/Statistics.js"></script>
-<script>
-    //TODO: Add message to texArea
-    document.querySelectorAll(".table > tbody > tr").forEach(row => row.addEventListener("click", evt => {
-        document.getElementById("floatingTextarea").innerText = row.innerHTML;
-    }))
-
-   //TODO: Add red if its a NullPointerException
-    /* document.querySelectorAll(".table > tbody > tr").forEach();*/
-
-    //TODO: Add yellow if they are searched for (only if fetch nearby is active)
-   /* document.querySelectorAll(".table > tbody > tr").forEach();*/
-</script>
 </body>
 </html>
