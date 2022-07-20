@@ -1,10 +1,10 @@
 package com.efficientlogfileanalysis.log;
 
+import com.efficientlogfileanalysis.data.BiMap;
 import com.efficientlogfileanalysis.data.Tuple;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.util.HashMap;
 
 /**
  * Class that creates an Index based on a key and value pair.<br>
@@ -58,7 +58,7 @@ public class IndexManager<K, V>{
     private I_TypeConverter<K> keyConverter;
     private I_TypeConverter<V> valueConverter;
 
-    private HashMap<K, V> values;
+    private BiMap<K, V> values;
 
     private long indexLength;
 
@@ -67,7 +67,7 @@ public class IndexManager<K, V>{
         this.keyConverter = keyConverter;
         this.valueConverter = valueConverter;
 
-        values = new HashMap<>();
+        values = new BiMap<>();
     }
 
     /**
@@ -92,7 +92,7 @@ public class IndexManager<K, V>{
             indexSize -= key.value2;
             indexSize -= value.value2;
 
-            values.put(key.value1, value.value1);
+            values.putValue(key.value1, value.value1);
         }
     }
 
@@ -107,9 +107,9 @@ public class IndexManager<K, V>{
         long newIndexLength = 0;
 
         file.seek(startLocation + 8);
-        for(K key : values.keySet())
+        for(K key : values.getKeySet())
         {
-            V value = values.get(key);
+            V value = values.getValue(key);
 
             newIndexLength += keyConverter.write(file, key);
             newIndexLength += valueConverter.write(file, value);
@@ -134,11 +134,20 @@ public class IndexManager<K, V>{
     }
 
     public V getValue(K key){
-        return values.get(key);
+        return values.getValue(key);
     }
 
     public void putValue(K key, V value){
-        values.put(key, value);
+        values.putValue(key, value);
+    }
+
+
+    public K getKey(V value){
+        return values.getKey(value);
+    }
+
+    public void putKey(V value, K key){
+        values.putKey(value, key);
     }
 
 }

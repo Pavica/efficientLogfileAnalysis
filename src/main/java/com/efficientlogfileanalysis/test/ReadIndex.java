@@ -92,11 +92,11 @@ public class ReadIndex {
                 );
 
                 LogReader logReader = new LogReader();
-                result.setLocalDateTime(logReader.getLogEntry(
+                result.setDateAsLocalDateTime(logReader.getLogEntry(
                         Settings.getInstance().getLogFilePath(),
                         Short.parseShort(value.getField("fileIndex").stringValue()),
-                        result.getLogFileStartOfBytes()
-                    ).getLocalDateTime()
+                        result.getEntryID()
+                    ).retrieveDateAsLocalDateTime()
                 );
                 logReader.close();
 

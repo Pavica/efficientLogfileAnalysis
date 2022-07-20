@@ -100,7 +100,7 @@ public class Search {
             long entryIndex = document.getField("logEntryID").numericValue().longValue();
 
             LogEntry result = new LogEntry();
-            result.setLogFileStartOfBytes(entryIndex);
+            result.setEntryID(entryIndex);
             result.setTime(
                 logReader.readDateOfEntry(
                     path,

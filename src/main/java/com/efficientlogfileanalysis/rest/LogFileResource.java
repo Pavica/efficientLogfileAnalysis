@@ -48,7 +48,7 @@ public class LogFileResource {
         }
     }
 
-     @POST
+    @POST
     @Path("/{logFileName}/specificEntries")
     @Produces("application/json")
     public Response getLogEntries(

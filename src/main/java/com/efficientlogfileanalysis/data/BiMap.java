@@ -59,6 +59,26 @@ public class BiMap<K, V> {
     }
 
     /**
+     * Returns if the key is present in the map
+     * @param key the key-value to be tested
+     * @return true if the map contains the specified key; false if not
+     */
+    public boolean containsKey(K key)
+    {
+        return map1.containsKey(key);
+    }
+
+    /**
+     * Returns if the value is present in the map
+     * @param value the value to be tested
+     * @return true if the map contains the specified value; false if not
+     */
+    public boolean containsValue(V value)
+    {
+        return map2.containsKey(value);
+    }
+
+    /**
      * Returns a Set containing all the keys in the map
      * @return all the keys in the map
      */
