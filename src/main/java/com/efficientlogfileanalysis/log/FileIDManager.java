@@ -32,7 +32,7 @@ public class FileIDManager {
 
         try {
             for(File file : new File(Settings.getInstance().getLogFilePath()).listFiles()) {
-                fileInformations.putKey(file.getName(), fileInformations.size());
+                fileInformations.putKey(file.getName(), (short)fileInformations.size());
             }
         } catch (IOException ioe) {
             ioe.printStackTrace();

@@ -125,7 +125,6 @@ async function displayFileLogEntries(filename){
    num = 0;
     data.forEach( logEntry => {
         let id = "logEntry"+num;
-        console.log(id);
         $('#'+id).click(function(){
             document.getElementById("floatingTextarea").innerText = logEntry.message;
         });
