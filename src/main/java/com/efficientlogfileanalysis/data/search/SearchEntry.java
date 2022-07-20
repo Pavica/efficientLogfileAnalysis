@@ -26,7 +26,7 @@ public class SearchEntry {
 
     public void addLogEntry(LogEntry logEntry)
     {
-        logEntryIDs.add(logEntry.getLogFileStartOfBytes());
+        logEntryIDs.add(logEntry.getEntryID());
 
         if(!logLevels.contains(logEntry.getLogLevel()))
         {

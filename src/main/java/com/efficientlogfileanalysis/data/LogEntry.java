@@ -41,11 +41,11 @@ public class LogEntry
     /**
      * The nth byte at which position the log entry starts in the file
      */
-    private long logFileStartOfBytes;
+    private long entryID;
     
     public LogEntry(String logEntry)
     {
-        setLocalDateTimeFromString(logEntry.substring(0, 24));
+        setDateFromString(logEntry.substring(0, 24));
         this.logLevel = logEntry.substring(24, 31).trim();
 
         int indexOfClosedParenthesis = logEntry.indexOf("]", 32);
@@ -56,20 +56,20 @@ public class LogEntry
         this.message = logEntry.substring(logEntry.indexOf(" - ", indexOfColon) + 3);
     }
 
-    public LogEntry(String logEntry, long logFileStartOfBytes)
+    public LogEntry(String logEntry, long entryID)
     {
         this(logEntry);
-        this.logFileStartOfBytes = logFileStartOfBytes;
+        this.entryID = entryID;
     }
 
-    public LogEntry(String time, String logLevel, String module, String className, String message, long logFileStartOfBytes)
+    public LogEntry(String time, String logLevel, String module, String className, String message, long entryID)
     {
-        setLocalDateTimeFromString(time);
+        setDateFromString(time);
         this.logLevel = logLevel;
         this.module = module;
         this.className = className;
         this.message = message;
-        this.logFileStartOfBytes = logFileStartOfBytes;
+        this.entryID = entryID;
     }
 
     /**
@@ -88,16 +88,16 @@ public class LogEntry
         return time.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
     }
 
-    public void setLocalDateTime(LocalDateTime ldt) {
-        this.time = LogEntry.toLong(ldt);
-    }
-
-    public void setLocalDateTimeFromString(String time)
+    public void setDateFromString(String time)
     {
         this.time = LocalDateTime.parse(time, DTF).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
     }
 
-    public LocalDateTime getLocalDateTime()
+    public void setDateAsLocalDateTime(LocalDateTime ldt) {
+        this.time = LogEntry.toLong(ldt);
+    }
+
+    public LocalDateTime retrieveDateAsLocalDateTime()
     {
         return LocalDateTime.ofInstant(Instant.ofEpochMilli(time), ZoneId.systemDefault());
     }
@@ -105,7 +105,7 @@ public class LogEntry
     @Override
     public String toString()
     {
-        return String.format("%s %s [%s] %s:? - %s", getLocalDateTime().format(DTF), logLevel, module, className, message);
+        return String.format("%s %s [%s] %s:? - %s", retrieveDateAsLocalDateTime().format(DTF), logLevel, module, className, message);
     }
 
     public static void main(String[] args)

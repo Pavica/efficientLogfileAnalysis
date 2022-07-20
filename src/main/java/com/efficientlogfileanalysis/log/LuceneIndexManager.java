@@ -64,7 +64,7 @@ public class LuceneIndexManager {
                 Document document = new Document();
 
                 document.add(new LongPoint("date", logEntry.getTime()));
-                document.add(new StoredField("logEntryID", logEntry.getLogFileStartOfBytes()));
+                document.add(new StoredField("logEntryID", logEntry.getEntryID()));
                 document.add(new StringField("logLevel", logEntry.getLogLevel(), Field.Store.YES));
                 document.add(new TextField("message", logEntry.getMessage(), Field.Store.YES));
                 document.add(new StringField("classname", logEntry.getClassName(), Field.Store.YES));
