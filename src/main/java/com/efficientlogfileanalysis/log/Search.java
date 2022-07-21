@@ -1,11 +1,8 @@
 package com.efficientlogfileanalysis.log;
 
-import com.efficientlogfileanalysis.data.LogEntry;
 import com.efficientlogfileanalysis.data.Settings;
-import com.efficientlogfileanalysis.data.search.FileSearch;
 import com.efficientlogfileanalysis.data.search.Filter;
 import com.efficientlogfileanalysis.data.search.SearchEntry;
-import com.efficientlogfileanalysis.test.Timer;
 
 import com.efficientlogfileanalysis.util.ByteConverter;
 import org.apache.lucene.document.Document;
@@ -35,8 +32,6 @@ import java.util.stream.Collectors;
  * @author Andreas Kurz
  */
 public class Search implements Closeable {
-
-public class Search {
 
     public static final String[] allLogLevels = {"INFO", "DEBUG", "WARN", "ERROR", "TRACE", "FATAL"};
 
@@ -88,10 +83,10 @@ public class Search {
             //Apply all logLevel filters
             //TODO improve that
 
-            for(String notInlcuded : Arrays.stream(allLogLevels).filter(s -> !filter.getLogLevels().contains(s)).collect(Collectors.toList()))
+            for(String notIncluded : Arrays.stream(allLogLevels).filter(s -> !filter.getLogLevels().contains(s)).collect(Collectors.toList()))
             {
                 queryBuilder.add(
-                        new TermQuery(new Term("logLevel", notInlcuded)),
+                        new TermQuery(new Term("logLevel", notIncluded)),
                         BooleanClause.Occur.MUST_NOT
                 );
             }
