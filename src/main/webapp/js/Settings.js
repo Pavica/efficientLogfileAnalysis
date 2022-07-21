@@ -18,11 +18,6 @@ async function getPath()
     return path;
 }
 
-async function loadPathIntoField(){
-    let path = await getPath();
-    $('#path').val(path);
-}
-
 async function setPath(path)
 {
     let response = await fetch("api/settings/path", {
@@ -37,4 +32,34 @@ async function setPath(path)
     }
 
     return true;
+}
+
+async function loadPathIntoField(){
+    let path = await getPath();
+    $('#path').val(path);
+}
+
+let baseColor ="#fff200";
+let baseTextColor ="#ffffff";
+
+function saveColor(color){
+    document.documentElement.style.setProperty('--main-color', color);
+    reloadColorCookie();
+}
+
+function saveTextColor(color){
+    document.documentElement.style.setProperty('--main-text-color', color);
+    reloadColorCookie();
+}
+
+function resetColor(){
+    saveColor(baseColor);
+    saveTextColor(baseTextColor);
+
+    setInputColors(baseColor,baseTextColor);
+}
+
+function setInputColors(color, textColor){
+    $('#color').val(color);
+    $('#textColor').val(textColor);
 }
