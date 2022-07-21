@@ -169,6 +169,7 @@ public class LogReader implements Closeable {
         StringBuilder stringBuilder = new StringBuilder("");
 
         LogEntry logEntry = new LogEntry();
+        logEntry.setEntryID(logEntryID);
 
         //Read the date
         byte[] bytes = new byte[24];
