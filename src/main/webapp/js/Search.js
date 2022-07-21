@@ -1,6 +1,6 @@
 function createFilterData(startDate, endDate, logLevel = [], module = null, className = null, exception = null)
 {
-    return filterData = {
+    return {
         beginDate : startDate,
         endDate : endDate,
         logLevels : logLevel,
@@ -8,6 +8,42 @@ function createFilterData(startDate, endDate, logLevel = [], module = null, clas
         className : className,
         exception : exception
     };
+}
+
+async function searchForFiles(filterData)
+{
+    let response = await fetch("api/search/files", {
+        method : "POST",
+        body : JSON.stringify(filterData),
+        headers : {
+            "content-type" : "application/json"
+        }
+    });
+
+    if(!response.ok)
+    {
+        alert("Not okay :(");
+        return;
+    }
+    return await response.json();
+}
+
+async function searchInFile(filterData, filename)
+{
+    let response = await fetch(`api/search/file/${filename}`, {
+        method : "POST",
+        body : JSON.stringify(filterData),
+        headers : {
+            "content-type" : "application/json"
+        }
+    });
+
+    if(!response.ok)
+    {
+        alert("Not okay :(");
+        return;
+    }
+    return await response.json();
 }
 
 async function search(filterData)
@@ -27,6 +63,32 @@ async function search(filterData)
     }
     return await response.json();
 }
+
+async function loadLogEntry(filename, logEntryID)
+{
+    let response = await fetch(`api/logFiles/${filename}/${logEntryID}`);
+    if(!response.ok){
+        alert("Server Error: " + response.status);
+        return;
+    }
+    return await response.json();
+}
+
+async function loadLogEntries(filename, logEntryIDs){
+    let response = await fetch("api/logFiles/" + filename + "/specificEntries", {
+        method: "POST",
+        body: JSON.stringify(logEntryIDs),
+        headers: {
+            "content-type":"application/json"
+        }
+    });
+    if(!response.ok){
+        alert("Server Error: " + response.status);
+        return;
+    }
+    return await response.json();
+}
+
 
 async function readyForSearch(){
     let startDate = trueStartDate.getTime();
@@ -178,19 +240,4 @@ function findFile(filename){
         }
     })
     return data;
-}
-
-async function loadLogEntries(filename, logEntryIDs){
-    let response = await fetch("api/logFiles/" + filename + "/specificEntries", {
-        method: "POST",
-        body: JSON.stringify(logEntryIDs),
-        headers: {
-            "content-type":"application/json"
-        }
-    });
-    if(!response.ok){
-        alert("Server Error: " + response.status);
-        return;
-    }
-    return await response.json();
 }
