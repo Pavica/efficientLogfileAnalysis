@@ -24,23 +24,23 @@ public class SearchEntry {
         this.filename = filename;
     }
 
-    public void addLogEntry(LogEntry logEntry)
+    public void addLogEntry(long entryID, String logLevel, long date)
     {
-        logEntryIDs.add(logEntry.getEntryID());
+        logEntryIDs.add(entryID);
 
-        if(!logLevels.contains(logEntry.getLogLevel()))
+        if(!logLevels.contains(logLevel))
         {
-            logLevels.add(logEntry.getLogLevel());
+            logLevels.add(logLevel);
         }
 
-        if(logEntry.getTime() < firstDate)
+        if(date < firstDate)
         {
-            firstDate = logEntry.getTime();
+            firstDate = date;
         }
 
-        if(logEntry.getTime() > lastDate)
+        if(date > lastDate)
         {
-            lastDate = logEntry.getTime();
+            lastDate = date;
         }
     }
 }

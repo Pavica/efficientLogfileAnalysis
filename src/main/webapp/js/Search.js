@@ -1,6 +1,6 @@
-async function search(startDate, endDate, logLevel = [], module = null, className = null, exception = null)
+function createFilterData(startDate, endDate, logLevel = [], module = null, className = null, exception = null)
 {
-    let filterData = {
+    return filterData = {
         beginDate : startDate,
         endDate : endDate,
         logLevels : logLevel,
@@ -8,7 +8,10 @@ async function search(startDate, endDate, logLevel = [], module = null, classNam
         className : className,
         exception : exception
     };
+}
 
+async function search(filterData)
+{
     let response = await fetch("api/search/filter", {
         method : "POST",
         body : JSON.stringify(filterData),
@@ -22,14 +25,7 @@ async function search(startDate, endDate, logLevel = [], module = null, classNam
         alert("Not okay :(");
         return;
     }
-
-    let jsonContent = await response.text();
-    console.log(jsonContent);
-
-    let data = JSON.parse(jsonContent);
-
-    alert("It worked :D");
-    return data;
+    return await response.json();
 }
 
 async function readyForSearch(){
@@ -49,9 +45,23 @@ async function readyForSearch(){
     let className =  $('#classDataList').val();
     let exceptionName =  $('#exceptionDataList').val();
 
-    console.log(startDate, endDate, logLevel);
+    setSpinnerVisible(true);
     info = await search(startDate, endDate, logLevel);
+    setSpinnerVisible(false);
     createLogFileElements();
+}
+
+function setSpinnerVisible(isSpinnerVisible){
+    let button = $('#searchButton')[0];
+    if(isSpinnerVisible){
+        button.innerHTML =
+            `Suchen
+            <div class="spinner-border spinner-border-sm" role="status">
+                  <span class="visually-hidden">Loading...</span>
+            </div>`;
+    }else{
+        button.innerHTML = "Suchen";
+    }
 }
 
 let levelColor = {
@@ -62,6 +72,17 @@ let levelColor = {
     "TRACE": "#ffa566",
     "FATAL": "#c978b8"
 };
+
+function formatDate2(date){
+    return "" +
+        date.getUTCFullYear() + "." +
+        ("0" + (date.getUTCMonth()+1)).slice(-2) + "." +
+        ("0" + date.getUTCDate()).slice(-2) + " " +
+        ("0" + date.getUTCHours()).slice(-2) + ":" +
+        ("0" + date.getUTCMinutes()).slice(-2) + ":" +
+        ("0" + date.getUTCSeconds()).slice(-2);
+}
+
 
 function formatDate(date){
     return "" +
@@ -100,6 +121,8 @@ function createLogFileElements(){
 }
 
 async function displayFileLogEntries(filename){
+    $('#logEntryTable').DataTable().destroy()
+    ;
     let file = findFile(filename);
     let data = await loadLogEntries(file.filename, file.logEntryIDs);
     console.log(data);
@@ -113,7 +136,7 @@ async function displayFileLogEntries(filename){
     data.forEach( logEntry => {
         text +=
         `<tr id="logEntry${num}">
-            <td>${formatDate(new Date(logEntry.time))}</td>
+            <td>${formatDate2(new Date(logEntry.time))}</td>
             <td>${logEntry.logLevel}</td>
             <td>${logEntry.module}</td>
             <td>${logEntry.className}</td>
@@ -130,12 +153,7 @@ async function displayFileLogEntries(filename){
         });
         num++;
     });
-
-
-    /*$("logFileElementHolder > tr").forEach(row => row.addEventListener("click", evt => {
-
-    }))*/
-
+    $('#logEntryTable').DataTable();
 
     //TODO: Add red if its a NullPointerException
     /* document.querySelectorAll(".table > tbody > tr").forEach();*/
@@ -163,7 +181,7 @@ async function loadLogEntries(filename, logEntryIDs){
         }
     });
     if(!response.ok){
-        alert("oh oh")
+        alert("Server Error: " + response.status);
         return;
     }
     return await response.json();

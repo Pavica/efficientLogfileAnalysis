@@ -5,13 +5,18 @@ import com.efficientlogfileanalysis.data.LogEntry;
 import com.efficientlogfileanalysis.data.LogFile;
 import com.efficientlogfileanalysis.data.Settings;
 
+import com.efficientlogfileanalysis.util.ByteConverter;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.search.SortedNumericSortField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.BytesRef;
+import org.w3c.dom.Text;
 
 import java.io.File;
 import java.io.IOException;
@@ -78,6 +83,14 @@ public class LuceneIndexManager {
                 document.add(new StringField("classname", logEntry.getClassName(), Field.Store.YES));
                 document.add(new StringField("module", logEntry.getModule(), Field.Store.YES));
                 document.add(new StoredField("fileIndex", mgr.get(logfile.filename)));
+
+                //add the fileIndex as a IntPoint so that lucene can search for entries in a specific file
+                document.add(new IntPoint("fileIndex", mgr.get(logfile.filename)));
+
+                //add the file index as a sortedField so that lucene can group by it
+                document.add(new SortedDocValuesField("fileIndex",
+                    new BytesRef(ByteConverter.shortToByte(mgr.get(logfile.filename))))
+                );
 
                 indexWriter.addDocument(document);
             }

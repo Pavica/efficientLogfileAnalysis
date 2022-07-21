@@ -19,18 +19,7 @@
   <g
      transform="translate(-4.55,-490.9053)"
      id="layer1">
-    <g
-       transform="matrix(1.25,0,0,-1.25,4.55,1458.2278)"
-       id="g27">
-      <g
-         clip-path="url(#clipPath31)"
-         id="g29">
-        <path
-           d="M 0,707.527 L 552.72,707.527 L 552.72,773.858 L 0,773.858 L 0,707.527 z"
-           id="path35"
-           style="fill:#fff200;fill-opacity:1;fill-rule:nonzero;stroke:none" />
-      </g>
-    </g>
+
     <path
        d="M 390.79309,519.86636 L 401.00134,519.86636 L 401.00134,512.54936 L 390.79309,512.54936 L 390.79309,519.86636 z"
        id="path37"

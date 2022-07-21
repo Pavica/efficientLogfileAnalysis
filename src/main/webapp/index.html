@@ -22,11 +22,19 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.0.0/chartjs-plugin-datalabels.min.js" integrity="sha512-R/QOHLpV1Ggq22vfDAWYOaMd5RopHrJNMxi8/lJu8Oihwi4Ho4BRFeiMiCefn9rasajKjnx9/fTQ/xkWnkDACg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
-    <link rel="stylesheet" href="//code.jquery.com/ui/1.13.1/themes/base/jquery-ui.css">
+    <!-- Jquery-->
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.1/themes/base/jquery-ui.css">
     <script src="https://code.jquery.com/jquery-3.6.0.js"></script>
     <script src="https://code.jquery.com/ui/1.13.1/jquery-ui.js"></script>
 
-    <!-- Initiate datepickers -->
+    <!-- DataTables -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.1.3/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap5.min.css">
+
+    <script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap5.min.js"></script>
+
+    <!-- Initiate extension -->
     <script>
         $( function() {
             $( "#startDate" ).datepicker({
@@ -42,7 +50,6 @@
             setMinMaxDate("endDate");
         });
     </script>
-
     <title>Main</title>
     <style>
         .searchbar, .filter-menu, .statistics, .logfile-results{
@@ -59,12 +66,6 @@
             height: 400px;
         }
 
-        .table-wrapper {
-            max-height: 15rem;
-            overflow: auto;
-            display: block;
-        }
-
         nav{
             background-color: #fff200;
             white-space: nowrap;
@@ -76,12 +77,6 @@
 
         .log-table{
             border-collapse: separate;
-        }
-
-        .sticky-header{
-            top: 0;
-            position: sticky;
-            background-color: white;
         }
 
         .button-style{
@@ -96,6 +91,12 @@
 
         .search-bar{
             max-width: 40rem;
+        }
+
+        .table-wrapper{
+            display: block;
+            overflow-x: auto;
+            white-space: nowrap;
         }
 
         .log-date{
@@ -128,7 +129,7 @@
         }
     </style>
 </head>
-<body onload="loadCookies()">
+<body onload="loadDocument()">
 
 <!-- NavBar -->
 <nav class="navbar navbar-expand-lg navbar-light sticky-top">
@@ -156,8 +157,10 @@
             <div class="search-container">
                   <div class="d-flex justify-content-center">
                       <input type="text" class="search-bar form-control" placeholder="Suche nach Log-Messages..." name="search">
-                      <button type="button" class="btn btn-warning search-button">Suchen</button>
+                      <button type="button" class="btn btn-warning search-button" id="searchButton">Suchen
+                      </button>
                       <input type="hidden" class="onSubmit" onclick="readyForSearch()">
+
                   </div>
             </div>
         </div>
@@ -367,21 +370,25 @@
 
 <!-- Settings Modal -->
 <div class="modal fade" id="settingsModal" tabindex="-1" aria-labelledby="settingsModal" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Settings</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <label for="path" class="form-label">Log folder path:</label>
-                <div class="input-group mb-3">
-                    <span class="input-group-text" id="basic-addon3">current path</span>
-                    <input type="text" class="form-control" id="path" aria-describedby="basic-addon3">
-                </div>
-                <div class="d-flex bd-highlight">
-                    <button data-bs-dismiss="modal" class="btn btn-warning mt-3 m-1 w-100" type="submit">Ok</button>
-                </div>
+                <!--onkeydown is used to disable enter press in modal because it closes the window and reloads the page?-->
+                <form class="needs-validation" novalidate onkeydown="return event.key != 'Enter';">
+                    <label for="path" class="form-label">Log folder path:</label>
+                    <div class="input-group mb-3">
+                        <span class="input-group-text" id="basic-addon3">current path</span>
+                        <input type="text" class="form-control" id="path" aria-describedby="basic-addon3" pattern='^(~?[\\/]|\w:\\)([^\\/:*?"<>|][\\/]?)*$' required>
+                    </div>
+                    <div class="d-flex bd-highlight">
+                        <button class="btn button-style mt-3 m-1 w-100" type="button">Speichern</button>
+                        <input class="onSubmit" type="hidden" onclick="setPath($('#path').val())">
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -398,7 +405,7 @@
             </div>
             <div class="modal-body">
                 <div class="table-wrapper">
-                    <table class="table log-table">
+                    <table class="table log-table" id="logEntryTable">
                         <thead>
                         <tr class="sticky-header">
                             <th scope="col">Datum</th>
@@ -408,7 +415,6 @@
                         </tr>
                         </thead>
                         <tbody id="logEntryHolder">
-
                         </tbody>
                     </table>
                 </div>
@@ -422,6 +428,10 @@
 </div>
 <!-- Log Modal -->
 
+<!-- Index-Script -->
+<script src="js/index.js"></script>
+<!-- Settings-Script -->
+<script src="js/Settings.js"></script>
 <!-- Cookie-Script -->
 <script src="js/Cookie.js"></script>
 <!-- Validation-Script -->

@@ -11,6 +11,8 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * A class with methods for reading informations out of logfiles.
@@ -18,6 +20,7 @@ import java.util.HashMap;
  */
 public class LogReader implements Closeable {
 
+    //TODO recompiling the regex should speed up indexing time
     private static final String REGEX_BEGINNING_OF_LOG_ENTRY = "^\\d{2} \\w{3} \\d{4}.*";
 
     /**
@@ -108,8 +111,8 @@ public class LogReader implements Closeable {
      * @param path The path to the folder containing the log files
      * @param fileIndex The index of the file
      * @param logEntryID The nth log entry inside a file
-     * @return
-     * @throws IOException
+     * @return a RandomAccessFile whose FilePointer is right before the logEntry
+     * @throws IOException if the log directory can't be accessed
      */
     private RandomAccessFile prepareRandomAccessFile(
         String path,
@@ -131,7 +134,7 @@ public class LogReader implements Closeable {
      * @param fileIndex The index of the file
      * @param logEntryID The nth log entry inside a file
      * @return The log entry that has the id of the variable fileIndex inside the file with the id in logEntryID
-     * @throws IOException
+     * @throws IOException if the log directory can't be accessed
      */
     public LogEntry getLogEntry(String path, short fileIndex, long logEntryID) throws IOException {
         RandomAccessFile file = prepareRandomAccessFile(path, fileIndex, logEntryID);
@@ -152,6 +155,91 @@ public class LogReader implements Closeable {
 
         return new LogEntry(line, logEntryID);
     }
+
+    /**
+     * Creates a LogEntry object without the message from a FileIndex and a logEntryID
+     * @param path The path to the folder containing the log files
+     * @param fileIndex The index of the file
+     * @param logEntryID The nth log entry inside a file
+     * @return The log entry that has the id of the variable fileIndex inside the file with the id in logEntryID<br>The message is null.
+     * @throws IOException if the log directory can't be accessed
+     */
+    public LogEntry readLogEntryWithoutMessage(String path, short fileIndex, long logEntryID) throws IOException {
+        RandomAccessFile file = prepareRandomAccessFile(path, fileIndex, logEntryID);
+        StringBuilder stringBuilder = new StringBuilder("");
+
+        LogEntry logEntry = new LogEntry();
+
+        //Read the date
+        byte[] bytes = new byte[24];
+        file.read(bytes);
+        logEntry.setDateFromString(new String(bytes));
+
+        //Read the log level
+        file.readFully(bytes, 0, 7);
+        logEntry.setLogLevel(new String(bytes, 0, 7).trim());
+
+        //--- Read the module ---//
+        //skip the first square bracket
+        file.skipBytes(1);
+
+        //read the contents of the square bracket (the module)
+        boolean stillReading = true;
+        int character;
+        while(stillReading)
+        {
+            character = file.read();
+
+            switch(character)
+            {
+                case ']':
+                case -1:
+                    stillReading = false;
+                    break;
+
+                default:
+                    stringBuilder.append((char)character);
+            }
+        }
+
+        logEntry.setModule(stringBuilder.toString());
+
+        //--- Read the class ---//
+        //skip the whitespace after the bracket
+        file.skipBytes(1);
+        //clear the old string buffer (is faster than newStringBuilder)
+        stringBuilder.setLength(0);
+
+        int previousCharacter = ' ';
+        stillReading = true;
+        while(stillReading)
+        {
+            character = file.read();
+
+            switch (character)
+            {
+                case -1:
+                    stillReading = false;
+                    break;
+
+                case '?':
+                    if(previousCharacter == ':')
+                    {
+                        stillReading = false;
+                        break;
+                    }
+                default :
+                    previousCharacter = character;
+                    stringBuilder.append((char)character);
+                    break;
+            }
+        }
+
+        //set the class name as the stringBuilder content without the last character (the last character is always :)
+        logEntry.setClassName(stringBuilder.substring(0, stringBuilder.length()-1));
+
+        return logEntry;
+    }
     
     /**
      * Reads the date of the specified entry and returns it in miliseconds.
@@ -159,7 +247,7 @@ public class LogReader implements Closeable {
      * @param fileIndex The index of the file
      * @param logEntryID The nth log entry inside a file
      * @return The time at which the entry was logged
-     * @throws IOException
+     * @throws IOException if the log directory can't be accessed
      */
     public long readDateOfEntry(String path, short fileIndex, long logEntryID) throws IOException {
         RandomAccessFile file = prepareRandomAccessFile(path, fileIndex, logEntryID);
@@ -181,7 +269,7 @@ public class LogReader implements Closeable {
      * @param fileIndex The index of the file
      * @param logEntryID The nth log entry inside a file
      * @return The log level of the entry as a String object
-     * @throws IOException
+     * @throws IOException if the log directory can't be accessed
      */
     public String readLogLevelOfEntry(String path, short fileIndex, long logEntryID) throws IOException {
         prepareFile(path, fileIndex);
@@ -198,12 +286,47 @@ public class LogReader implements Closeable {
     @SneakyThrows
     public static void main(String[] args) {
 
-        ArrayList<LogEntry> sno = new ArrayList<>();
-        ArrayList<LogEntry> sho = new ArrayList<>();
+//        List<String> result = new ArrayList<>();
+//        for(LogFile logFile : LogReader.readAllLogFiles("test_logs"))
+//        {
+//            logFile.getEntries().stream().map(LogEntry::getLogLevel).forEach(level -> {
+//                if(!result.contains(level))
+//                {
+//                    result.add(level);
+//                }
+//            });
+//        }
+//
+//        result.forEach(System.out::println);
 
-        int N_TIMES = 2;
-        sno.ensureCapacity(N_TIMES);
-        sho.ensureCapacity(N_TIMES);
+//        LogReader reader = new LogReader();
+//
+//        System.out.println(reader.readLogEntryWithoutMessage(Settings.getInstance().getLogFilePath(), (short) 0, 142_566l));
+//
+//        Timer timer = new Timer();
+//
+//        short fileID = FileIDManager.getInstance().get("DesktopClient-My-User-PC.mshome.net.log");
+//        String path = Settings.getInstance().getLogFilePath();
+//
+//        Timer.Time time = timer.timeExecutionSpeed(() -> {
+//            try
+//            {
+//                reader.getLogEntry(path, fileID, 0l);
+//            }
+//            catch (IOException e) {
+//                throw new RuntimeException(e);
+//            }
+//        }, 100_000);
+//
+//        System.out.println(time);
+
+
+//        ArrayList<LogEntry> sno = new ArrayList<>();
+//        ArrayList<LogEntry> sho = new ArrayList<>();
+//
+//        int N_TIMES = 2;
+//        sno.ensureCapacity(N_TIMES);
+//        sho.ensureCapacity(N_TIMES);
         
         
         
