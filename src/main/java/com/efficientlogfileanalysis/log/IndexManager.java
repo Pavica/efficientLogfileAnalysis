@@ -11,6 +11,7 @@ import java.io.RandomAccessFile;
  * The Index can be saved and read from a file.
  * @param <K> The type of the key
  * @param <V> The type of the value
+ * @author Andreas Kurz
  */
 public class IndexManager<K, V>{
 
@@ -21,35 +22,139 @@ public class IndexManager<K, V>{
      */
     public interface I_TypeConverter<T>{
 
-        Tuple<T, Integer> read(RandomAccessFile file) throws IOException;
+        /**
+         * Function that gets called when reading from a file.
+         * @param file The file to read from
+         * @return A Tuple object that where the Integer objects is the amount of read bytes and T is the returned value
+         * @throws IOException
+         */
+        Tuple<Integer, T> read(RandomAccessFile file) throws IOException;
+        /**
+         * Function that gets called when writing a value to a file.
+         * @param file The file to write to
+         * @param value The value that is being written to the file 
+         * @return The amount of written bytes
+         * @throws IOException
+         */
         int write(RandomAccessFile file, T value) throws IOException;
 
+        /**
+         * Converter for Integer objects.
+         */
         I_TypeConverter<Integer> INTEGER_TYPE_CONVERTER = new I_TypeConverter<Integer>() {
+            /**
+             * Reads an Integer object from a RandomAccessFile.
+             * @param file A RandomAccessFile that is going to be written to
+             * @return A Tuple object that with the amount of bytes read and an Integer object
+             * @throws IOException 
+             */
             @Override
             public Tuple<Integer, Integer> read(RandomAccessFile file) throws IOException {
                 return new Tuple<>(4, file.readInt());
             }
-
+            
+            /**
+             * Writes an Integer object into a given RandomAccessFile and returns the amount of bytes that were written.
+             * @param file A RandomAccessFile that is going to be written to
+             * @param value The Integer object that is written to the file
+             * @return The amount of bytes that were written to the file
+             * @throws IOException 
+             */
             @Override
             public int write(RandomAccessFile file, Integer value) throws IOException {
                 file.writeInt(value);
                 return 4;
             }
         };
-        I_TypeConverter<String> STRING_TYPE_CONVERTER = new I_TypeConverter<String>() {
+
+        /**
+         * Converter for Short objects.
+         */
+        I_TypeConverter<Short> SHORT_TYPE_CONVERTER = new I_TypeConverter<Short>() {
+            /**
+             * Reads a Short object from a RandomAccessFile.
+             * @param file A RandomAccessFile that is going to be written to
+             * @return A Tuple object that with the amount of bytes read and an Shorts object
+             * @throws IOException 
+             */
             @Override
-            public Tuple<String, Integer> read(RandomAccessFile file) throws IOException {
+            public Tuple<Integer, Short> read(RandomAccessFile file) throws IOException {
+                return new Tuple<>(2, file.readShort());
+            }
+            
+            /**
+             * Writes a Short object into a given RandomAccessFile and returns the amount of bytes that were written.
+             * @param file A RandomAccessFile that is going to be written to
+             * @param value The Short object that is written to the file
+             * @return The amount of bytes that were written to the file
+             * @throws IOException 
+             */
+            @Override
+            public int write(RandomAccessFile file, Short value) throws IOException {
+                file.writeShort(value);
+                return 2;
+            }
+        };
+
+        /**
+         * Converter for Byte objects.
+         */
+        I_TypeConverter<Byte> BYTE_TYPE_CONVERTER = new I_TypeConverter<Byte>() {
+            /**
+             * Reads a Byte object from a RandomAccessFile.
+             * @param file A RandomAccessFile that is going to be written to
+             * @return A Tuple object that with the amount of bytes read and an Byte object
+             * @throws IOException 
+             */
+            @Override
+            public Tuple<Integer, Byte> read(RandomAccessFile file) throws IOException {
+                return new Tuple<>(1, file.readByte());
+            }
+            
+            /**
+             * Writes a Byte object into a given RandomAccessFile and returns the amount of bytes that were written.
+             * @param file A RandomAccessFile that is going to be written to
+             * @param value The Byte object that is written to the file
+             * @return The amount of bytes that were written to the file
+             * @throws IOException 
+             */
+            @Override
+            public int write(RandomAccessFile file, Byte value) throws IOException {
+                file.writeByte(value);
+                return 1;
+            }
+        };
+
+        /**
+         * Converter for String objects.
+         */
+        I_TypeConverter<String> STRING_TYPE_CONVERTER = new I_TypeConverter<String>() {
+            /**
+             * Reads an Integer object representing the length of the following String object and the String object from a RandomAccessFile.
+             * @param file A RandomAccessFile that is going to be written to
+             * @return A Tuple object that with the amount of bytes read and the String object 
+             * @throws IOException 
+             */
+            @Override
+            public Tuple<Integer, String> read(RandomAccessFile file) throws IOException {
                 int size = file.readInt();
                 byte[] bytes = new byte[size];
-                return new Tuple<>(new String(bytes), size + 4);
+                file.read(bytes);
+                return new Tuple<>(size + 4, new String(bytes));
             }
-
+            
+            /**
+             * Writes a String object into a given RandomAccessFile and returns the amount of bytes that were written.
+             * @param file A RandomAccessFile that is going to be written to
+             * @param value The String object that is written to the file
+             * @return The amount of bytes that were written to the file
+             * @throws IOException 
+             */
             @Override
             public int write(RandomAccessFile file, String value) throws IOException {
                 byte[] data = value.getBytes();
                 file.writeInt(data.length);
                 file.write(data);
-
                 return 4 + data.length;
             }
         };
@@ -58,7 +163,7 @@ public class IndexManager<K, V>{
     private I_TypeConverter<K> keyConverter;
     private I_TypeConverter<V> valueConverter;
 
-    private BiMap<K, V> values;
+    protected BiMap<K, V> values;
 
     private long indexLength;
 
@@ -67,6 +172,13 @@ public class IndexManager<K, V>{
         this.keyConverter = keyConverter;
         this.valueConverter = valueConverter;
 
+        createIndex();
+    }
+
+    /**
+     * Method that gets called when the index should get created.
+     */
+    protected void createIndex() {
         values = new BiMap<>();
     }
 
@@ -75,24 +187,22 @@ public class IndexManager<K, V>{
      * @param file A RandomAccessFile containing an index
      * @throws IOException
      */
-    public void readIndex(RandomAccessFile file) throws IOException
+    protected void readIndex(RandomAccessFile file) throws IOException
     {
         if(file.getFilePointer() + 8 >= file.length()){
             return;
         }
 
-        indexLength = file.readLong();
-
-        long indexSize = indexLength;
+        long indexSize = indexLength = file.readLong();
         while(indexSize > 0)
         {
-            Tuple<K, Integer> key = keyConverter.read(file);
-            Tuple<V, Integer> value = valueConverter.read(file);
+            Tuple<Integer, K> key = keyConverter.read(file);
+            Tuple<Integer, V> value = valueConverter.read(file);
 
-            indexSize -= key.value2;
-            indexSize -= value.value2;
+            indexSize -= key.value1;
+            indexSize -= value.value1;
 
-            values.putValue(key.value1, value.value1);
+            values.putValue(key.value2, value.value2);
         }
     }
 
@@ -101,7 +211,7 @@ public class IndexManager<K, V>{
      * @param file A RandomAccessFile the index is being written to
      * @throws IOException
      */
-    public void writeIndex(RandomAccessFile file) throws IOException
+    protected void writeIndex(RandomAccessFile file) throws IOException
     {
         long startLocation = file.getFilePointer();
         long newIndexLength = 0;
@@ -125,6 +235,15 @@ public class IndexManager<K, V>{
         }
     }
 
+    /**
+     * Prints the values inside the BiMap
+     */
+    protected void print() {
+        for (K key : values.getKeySet()) {
+            System.out.println("Key: " + key + " Value: " + values.getValue(key));
+        }
+    }
+
     public int getSize(){
         return values.size();
     }
@@ -133,21 +252,11 @@ public class IndexManager<K, V>{
         return values.containsKey(key);
     }
 
-    public V getValue(K key){
-        return values.getValue(key);
-    }
-
     public void putValue(K key, V value){
         values.putValue(key, value);
-    }
-
-
-    public K getKey(V value){
-        return values.getKey(value);
     }
 
     public void putKey(V value, K key){
         values.putKey(value, key);
     }
-
 }

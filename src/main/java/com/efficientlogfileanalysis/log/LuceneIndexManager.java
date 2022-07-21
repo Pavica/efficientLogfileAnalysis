@@ -45,7 +45,9 @@ public class LuceneIndexManager {
         Path indexPath = Paths.get(PATH_TO_INDEX);
 
         //Delete previous directory
-        Files.walk(indexPath).map(Path::toFile).forEach(File::delete);
+        if(indexPath.toFile().exists()) {
+            Files.walk(indexPath).map(Path::toFile).forEach(File::delete);
+        }
 
         //Open the index directory (creates the directory if it doesn't exist)
         Directory indexDirectory = FSDirectory.open(indexPath);
@@ -58,6 +60,12 @@ public class LuceneIndexManager {
         IndexWriterConfig indexWriterConfig = new IndexWriterConfig(analyzer);
         //Specify the Index to be written to and the config
         IndexWriter indexWriter = new IndexWriter(indexDirectory, indexWriterConfig);
+
+        //Check if the logfile directory exists
+        if(!new File(Settings.getInstance().getLogFilePath()).exists()) {
+            System.out.println("Specified log directory " + Settings.getInstance().getLogFilePath() + " does not exist");
+            System.exit(-1);
+        }
 
         //Read all the log entries from all the files into a list
         LogFile[] logFiles = LogReader.readAllLogFiles(Settings.getInstance().getLogFilePath());

@@ -36,6 +36,10 @@ import java.util.stream.Collectors;
  */
 public class Search implements Closeable {
 
+public class Search {
+
+    public static final String[] allLogLevels = {"INFO", "DEBUG", "WARN", "ERROR", "TRACE", "FATAL"};
+
     DirectoryReader directoryReader;
     private IndexSearcher searcher;
 
@@ -83,7 +87,6 @@ public class Search implements Closeable {
         {
             //Apply all logLevel filters
             //TODO improve that
-            String[] allLogLevels = {"INFO", "DEBUG", "WARN", "ERROR", "TRACE", "FATAL"};
 
             for(String notInlcuded : Arrays.stream(allLogLevels).filter(s -> !filter.getLogLevels().contains(s)).collect(Collectors.toList()))
             {
