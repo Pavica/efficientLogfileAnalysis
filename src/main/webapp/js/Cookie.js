@@ -48,11 +48,30 @@ function reloadStatisticsCookie(){
     setCookie("statistics", statisticsValues, 3);
 }
 
+function setColorCookie(){
+    let colorCookie = getCookie("color").split("|");
+    saveColor(colorCookie[0]);
+    saveTextColor(colorCookie[1]);
+}
+
+function reloadColorCookie(){
+    let style =document.documentElement.style;
+    let cookieValues = style.getPropertyValue('--main-color') + "|" + style.getPropertyValue('--main-text-color');
+    setCookie("color", cookieValues, 3);
+}
+
+
 function loadCookies(){
     if(checkCookie("statistics")){
         setStatisticsCookie();
         reloadAllActiveStatistics();
     }else{
         setCookie("statistics", "false|false|false|false", 3);
+    }
+
+    if(checkCookie("color")){
+        setColorCookie();
+    }else{
+        setCookie("color", "#fff200|#ffffff", 3);
     }
 }

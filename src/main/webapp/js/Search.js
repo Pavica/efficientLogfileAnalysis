@@ -120,6 +120,13 @@ function createLogFileElements(){
     container.innerHTML = text;
 }
 
+function addTrStyleSelected(){
+    $("#logEntryTable tr").click(function() {
+        $(this).parent().children().removeClass("selected");
+        $(this).addClass("selected");
+    });
+}
+
 async function displayFileLogEntries(filename){
     $('#logEntryTable').DataTable().destroy()
     ;
@@ -153,6 +160,7 @@ async function displayFileLogEntries(filename){
         });
         num++;
     });
+    addTrStyleSelected();
     $('#logEntryTable').DataTable();
 
     //TODO: Add red if its a NullPointerException
