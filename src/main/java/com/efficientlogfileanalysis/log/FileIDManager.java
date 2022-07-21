@@ -49,13 +49,6 @@ public class FileIDManager extends IndexManager<Short, String> {
     }
 
     /**
-     * Looks for new logfiles and give them an ID. Also deletes old IDs of deleted logfiles.
-     */
-    public void update() {
-        new IOException("Not implemented yet");
-    }
-
-    /**
      * Gets the ID of the logfile.
      * @return key The name of the log file
      */

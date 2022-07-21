@@ -97,6 +97,35 @@ public class IndexManager<K, V>{
         };
 
         /**
+         * Converter for Byte objects.
+         */
+        I_TypeConverter<Byte> BYTE_TYPE_CONVERTER = new I_TypeConverter<Byte>() {
+            /**
+             * Reads a Byte object from a RandomAccessFile.
+             * @param file A RandomAccessFile that is going to be written to
+             * @return A Tuple object that with the amount of bytes read and an Byte object
+             * @throws IOException 
+             */
+            @Override
+            public Tuple<Integer, Byte> read(RandomAccessFile file) throws IOException {
+                return new Tuple<>(1, file.readByte());
+            }
+            
+            /**
+             * Writes a Byte object into a given RandomAccessFile and returns the amount of bytes that were written.
+             * @param file A RandomAccessFile that is going to be written to
+             * @param value The Byte object that is written to the file
+             * @return The amount of bytes that were written to the file
+             * @throws IOException 
+             */
+            @Override
+            public int write(RandomAccessFile file, Byte value) throws IOException {
+                file.writeByte(value);
+                return 1;
+            }
+        };
+
+        /**
          * Converter for String objects.
          */
         I_TypeConverter<String> STRING_TYPE_CONVERTER = new I_TypeConverter<String>() {
@@ -203,6 +232,15 @@ public class IndexManager<K, V>{
         {
             indexLength = newIndexLength;
             System.err.println("Index Length changed!");
+        }
+    }
+
+    /**
+     * Prints the values inside the BiMap
+     */
+    protected void print() {
+        for (K key : values.getKeySet()) {
+            System.out.println("Key: " + key + " Value: " + values.getValue(key));
         }
     }
 
