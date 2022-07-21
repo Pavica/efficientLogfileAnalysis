@@ -1,6 +1,6 @@
-async function search(startDate, endDate, logLevel = [], module = null, className = null, exception = null)
+function createFilterData(startDate, endDate, logLevel = [], module = null, className = null, exception = null)
 {
-    let filterData = {
+    return filterData = {
         beginDate : startDate,
         endDate : endDate,
         logLevels : logLevel,
@@ -8,7 +8,10 @@ async function search(startDate, endDate, logLevel = [], module = null, classNam
         className : className,
         exception : exception
     };
+}
 
+async function search(filterData)
+{
     let response = await fetch("api/search/filter", {
         method : "POST",
         body : JSON.stringify(filterData),

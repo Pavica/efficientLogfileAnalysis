@@ -2,18 +2,26 @@ package com.efficientlogfileanalysis.log;
 
 import com.efficientlogfileanalysis.data.LogEntry;
 import com.efficientlogfileanalysis.data.Settings;
+import com.efficientlogfileanalysis.data.search.FileSearch;
 import com.efficientlogfileanalysis.data.search.Filter;
 import com.efficientlogfileanalysis.data.search.SearchEntry;
 import com.efficientlogfileanalysis.test.Timer;
 
+import com.efficientlogfileanalysis.util.ByteConverter;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
+import org.apache.lucene.search.grouping.GroupDocs;
+import org.apache.lucene.search.grouping.GroupingSearch;
+import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.BytesRef;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -22,28 +30,52 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Has various methods to search for specific logEntries and files
+ * @author Andreas Kurz
+ */
+public class Search implements Closeable {
 
-public class Search {
-
+    DirectoryReader directoryReader;
     private IndexSearcher searcher;
 
+    /**
+     * Creates a new Search Object<br>
+     * Opens up the Index Directory set in the settings<br>
+     * @throws IOException is thrown if the directory can't be read
+     */
     public Search() throws IOException
     {
         //Open the Index
         Directory indexDirectory = FSDirectory.open(Paths.get(LuceneIndexManager.PATH_TO_INDEX));
-        DirectoryReader directoryReader = DirectoryReader.open(indexDirectory);
+        directoryReader = DirectoryReader.open(indexDirectory);
         searcher = new IndexSearcher(directoryReader);
     }
 
-    public List<SearchEntry> search(Filter filter) throws IOException
+    /**
+     * Closes the Index
+     * The Search object can't be used afterwards
+     * @throws IOException
+     */
+    @Override
+    public void close() throws IOException {
+        directoryReader.close();
+    }
+
+    /**
+     * Parses a given Filter into a Query Builder which can be used to get a Lucene-Query
+     * @param filter specifies how the search should be filtered
+     * @return a Query Builder based on the filter
+     */
+    private BooleanQuery.Builder parseFilter(Filter filter)
     {
         BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
 
         //Add the time range
         queryBuilder.add(
             LongPoint.newRangeQuery("date",
-                filter.getBeginDate(),
-                filter.getEndDate()
+                    filter.getBeginDate(),
+                    filter.getEndDate()
             ), BooleanClause.Occur.MUST
         );
 
@@ -56,8 +88,8 @@ public class Search {
             for(String notInlcuded : Arrays.stream(allLogLevels).filter(s -> !filter.getLogLevels().contains(s)).collect(Collectors.toList()))
             {
                 queryBuilder.add(
-                    new TermQuery(new Term("logLevel", notInlcuded)),
-                    BooleanClause.Occur.MUST_NOT
+                        new TermQuery(new Term("logLevel", notInlcuded)),
+                        BooleanClause.Occur.MUST_NOT
                 );
             }
         }
@@ -66,8 +98,8 @@ public class Search {
         if(filter.getModule() != null)
         {
             queryBuilder.add(
-                new TermQuery(new Term("module", filter.getModule())),
-                BooleanClause.Occur.MUST
+                    new TermQuery(new Term("module", filter.getModule())),
+                    BooleanClause.Occur.MUST
             );
         }
 
@@ -75,23 +107,28 @@ public class Search {
         if(filter.getClassName() != null)
         {
             queryBuilder.add(
-                new TermQuery(new Term("classname", filter.getClassName())),
-                BooleanClause.Occur.MUST
+                    new TermQuery(new Term("classname", filter.getClassName())),
+                    BooleanClause.Occur.MUST
             );
         }
 
-        Query query = queryBuilder.build();
 
-        System.out.println("Lucene start:");
-        ScoreDoc[] hits = searcher.search(query, Integer.MAX_VALUE).scoreDocs;
-        System.out.println("Lucene end:");
+        return queryBuilder;
+    }
 
-        System.out.println("stupid start");
-        HashMap<Short, SearchEntry> logFiles = new HashMap<>();
-
-        LogReader logReader = new LogReader();
+    /**
+     * Returns all Search Entries present in a search
+     * @param hits an array of score docs found in a lucene search
+     * @return the data for all the search entries
+     * @throws IOException if the log folder can't be accessed
+     */
+    private List<SearchEntry> getResultsFromSearch(ScoreDoc[] hits) throws IOException
+    {
         String path = Settings.getInstance().getLogFilePath();
 
+        LogReader logReader = new LogReader();
+
+        HashMap<Short, SearchEntry> logFiles = new HashMap<>();
         for(ScoreDoc hit : hits)
         {
             Document document = searcher.doc(hit.doc);
@@ -99,60 +136,176 @@ public class Search {
             short fileIndex = document.getField("fileIndex").numericValue().shortValue();
             long entryIndex = document.getField("logEntryID").numericValue().longValue();
 
-            LogEntry result = new LogEntry();
-            result.setEntryID(entryIndex);
-            result.setTime(
-                logReader.readDateOfEntry(
-                    path,
-                    fileIndex,
-                    entryIndex
-                )
-            );
-            result.setLogLevel(
-                logReader.readLogLevelOfEntry(
-                    path, 
-                    fileIndex, 
-                    entryIndex
-                )
-            );
-
-            //slower version
-            /*
-            LogEntry result = logReader.getLogEntry(
-                path,
-                fileIndex,
-                entryIndex
-            );
-            */
+            long logEntryTime = logReader.readDateOfEntry(path, fileIndex, entryIndex);
+            String logLevel = logReader.readLogLevelOfEntry(path, fileIndex, entryIndex);
 
             logFiles.putIfAbsent(fileIndex, new SearchEntry(FileIDManager.getInstance().get(fileIndex)));
-            logFiles.get(fileIndex).addLogEntry(result);
+            logFiles.get(fileIndex).addLogEntry(entryIndex, logLevel, logEntryTime);
         }
-        logReader.close();
 
-        System.out.println("stupid end");
+        logReader.close();
 
         return new ArrayList<>(logFiles.values());
     }
 
+    /**
+     * Searches the whole lucine index for matching SearchEntries
+     * @param filter specifies what entries should be matched
+     * @return all the matching file entries
+     * @throws IOException if the log files cant be accessed
+     */
+    public List<SearchEntry> search(Filter filter) throws IOException
+    {
+        Query query = parseFilter(filter).build();
+
+        System.out.println("Lucene start...");
+        ScoreDoc[] hits = searcher.search(query, Integer.MAX_VALUE).scoreDocs;
+        System.out.println("Lucene finished");
+
+        return getResultsFromSearch(hits);
+    }
+
+    /**
+     * Searches for matching LogEntries in a given file
+     * @param filter other filter data that every log entry needs to match
+     * @param fileID the ID of the file to be searched
+     * @return the ID of all the matched log entries
+     * @throws IOException
+     */
+    public List<Long> searchInFile(Filter filter, short fileID) throws IOException
+    {
+        BooleanQuery.Builder queryBuilder = parseFilter(filter);
+
+        queryBuilder.add(
+            IntPoint.newExactQuery("fileIndex", fileID),
+            BooleanClause.Occur.MUST
+        );
+
+        Query query = queryBuilder.build();
+
+        ScoreDoc[] hits = searcher.search(query, Integer.MAX_VALUE).scoreDocs;
+
+        List<Long> logEntries = new ArrayList<>();
+        for(ScoreDoc hit : hits)
+        {
+            Document document = searcher.doc(hit.doc);
+            long entryID = document.getField("logEntryID").numericValue().longValue();
+
+            logEntries.add(entryID);
+        }
+
+        return logEntries;
+    }
+
+    /**
+     * Returns a list of files who have logEntries matched by a filter
+     * @param filter other filter data that the entries need to match
+     * @return a list of all matched logFileIDs
+     * @throws IOException if the Index directory can't be accessed
+     */
+    public List<Short> searchForFiles(Filter filter) throws IOException
+    {
+        Query query = parseFilter(filter).build();
+
+        GroupingSearch groupingSearch = new GroupingSearch("fileIndex");
+
+        //sets how the returned groups are sorted
+        //the default criteria is "RELEVANCE" which is why Field_doc (the index order) is faster
+        groupingSearch.setGroupSort(new Sort(SortField.FIELD_DOC));
+
+        //only return one result for each file:
+        groupingSearch.setGroupDocsLimit(1);
+
+        //perform group search
+        TopGroups topGroups = groupingSearch.search(searcher, query, 0, 1000);
+
+        List<Short> affectedFiles = new ArrayList<>();
+
+        for(GroupDocs doc : topGroups.groups)
+        {
+            short fileIndex = ByteConverter.byteToShort(((BytesRef) doc.groupValue).bytes);
+            affectedFiles.add(fileIndex);
+
+            /*
+                DEBUG: Print all found log entries
+
+                ScoreDoc[] entries = doc.scoreDocs;
+                LogReader logReader = new LogReader();
+                for(ScoreDoc entry : entries)
+                {
+                    System.out.println("\t" + entry);
+
+                    Document document = searcher.doc(entry.doc);
+                    short fileIndex = document.getField("fileIndex").numericValue().shortValue();
+                    long entryIndex = document.getField("logEntryID").numericValue().longValue();
+
+                    System.out.println("\t\t" + logReader.getLogEntry(Settings.getInstance().getLogFilePath(), fileIndex, entryIndex));
+                }
+             */
+        }
+
+        return affectedFiles;
+    }
+
     public static void main(String[] args) throws IOException {
-        Timer timer = new Timer();
 
-        Timer.Time time = timer.timeExecutionSpeed(() -> {
+//        System.out.println(Long.MAX_VALUE);
 
-            try {
-                Search search = new Search();
-        
-                Filter f = Filter.builder().build();
-                search.search(f);
-            } 
-            catch (Exception e) {
-                e.printStackTrace();
-            }
+        Search search = new Search();
+        Filter f = Filter
+                .builder()
+                .beginDate(0l)
+                .endDate(1658282400000l)
+                .addLogLevel("FATAL")
+                .build();
 
-        }, 1);
+        search.searchForFiles(f).stream().map(FileIDManager.getInstance()::get).forEach(System.out::println);
 
-        System.out.println(time);
+//        long fileID = FileIDManager.getInstance().get("DesktopClient-DE-GS-NB-0028.haribo.dom.log");
+//        System.out.println(fileID);
+
+//        List<Long> searchEntrys = search.searchInFile(f, FileIDManager.getInstance().get("DesktopClient-DE-GS-NB-0028.haribo.dom.log"));
+
+
+//        try(LogReader reader = new LogReader())
+//        {
+//            for(long id : searchEntrys)
+//            {
+//                System.out.println(id);
+//                System.out.println(reader.getLogEntry(Settings.getInstance().getLogFilePath(), FileIDManager.getInstance().get("DesktopClient-DE-GS-NB-0028.haribo.dom.log"), id));
+//            }
+//        }
+
+//        Timer timer = new Timer();
+//
+//        Timer.Time time = timer.timeExecutionSpeed(() -> {
+//            try {
+//                search.searchForFiles(f);
+//            } catch (IOException e) {
+//                throw new RuntimeException(e);
+//            }
+//        }, 100);
+
+//        System.out.println(time);
+
+
+//        Timer timer = new Timer();
+//
+//        Timer.Time time = timer.timeExecutionSpeed(() -> {
+//
+//            try {
+//                Search search = new Search();
+//
+//                Filter f = Filter.builder().build();
+//                search.search(f);
+//            }
+//            catch (Exception e) {
+//                e.printStackTrace();
+//            }
+//
+//        }, 1);
+//
+//        System.out.println(time);
 
         /*
         Timer timer = new Timer();
