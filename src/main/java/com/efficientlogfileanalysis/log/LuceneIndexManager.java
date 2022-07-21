@@ -5,13 +5,18 @@ import com.efficientlogfileanalysis.data.LogEntry;
 import com.efficientlogfileanalysis.data.LogFile;
 import com.efficientlogfileanalysis.data.Settings;
 
+import com.efficientlogfileanalysis.util.ByteConverter;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.search.SortedNumericSortField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.BytesRef;
+import org.w3c.dom.Text;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,7 +45,9 @@ public class LuceneIndexManager {
         Path indexPath = Paths.get(PATH_TO_INDEX);
 
         //Delete previous directory
-        Files.walk(indexPath).map(Path::toFile).forEach(File::delete);
+        if(indexPath.toFile().exists()) {
+            Files.walk(indexPath).map(Path::toFile).forEach(File::delete);
+        }
 
         //Open the index directory (creates the directory if it doesn't exist)
         Directory indexDirectory = FSDirectory.open(indexPath);
@@ -53,6 +60,12 @@ public class LuceneIndexManager {
         IndexWriterConfig indexWriterConfig = new IndexWriterConfig(analyzer);
         //Specify the Index to be written to and the config
         IndexWriter indexWriter = new IndexWriter(indexDirectory, indexWriterConfig);
+
+        //Check if the logfile directory exists
+        if(!new File(Settings.getInstance().getLogFilePath()).exists()) {
+            System.out.println("Specified log directory " + Settings.getInstance().getLogFilePath() + " does not exist");
+            System.exit(-1);
+        }
 
         //Read all the log entries from all the files into a list
         LogFile[] logFiles = LogReader.readAllLogFiles(Settings.getInstance().getLogFilePath());
@@ -70,6 +83,14 @@ public class LuceneIndexManager {
                 document.add(new StringField("classname", logEntry.getClassName(), Field.Store.YES));
                 document.add(new StringField("module", logEntry.getModule(), Field.Store.YES));
                 document.add(new StoredField("fileIndex", mgr.get(logfile.filename)));
+
+                //add the fileIndex as a IntPoint so that lucene can search for entries in a specific file
+                document.add(new IntPoint("fileIndex", mgr.get(logfile.filename)));
+
+                //add the file index as a sortedField so that lucene can group by it
+                document.add(new SortedDocValuesField("fileIndex",
+                    new BytesRef(ByteConverter.shortToByte(mgr.get(logfile.filename))))
+                );
 
                 indexWriter.addDocument(document);
             }
