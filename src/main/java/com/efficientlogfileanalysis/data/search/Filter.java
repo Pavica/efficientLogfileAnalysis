@@ -15,7 +15,7 @@ import java.util.List;
 public class Filter {
     private long beginDate;
     private long endDate;
-    private List<String> logLevels;
+    private List<Byte> logLevels;
     private String module;
     private String className;
     private String exception;
@@ -32,23 +32,10 @@ public class Filter {
             exception   =   null;
         }
 
-        public FilterBuilder addLogLevel(String logLevel)
+        public FilterBuilder addLogLevel(byte logLevel)
         {
             logLevels.add(logLevel);
             return this;
         }
-    }
-
-    public static void main(String[] args) {
-        Filter filter = Filter
-                .builder()
-                .addLogLevel("miauser")
-                .addLogLevel("miauser 2")
-                .build();
-
-        List list = Filter.builder().logLevels;
-        list.forEach(System.out::println);
-
-        System.out.println(filter);
     }
 }

@@ -4,6 +4,7 @@ import com.efficientlogfileanalysis.data.Settings;
 import com.efficientlogfileanalysis.data.search.Filter;
 import com.efficientlogfileanalysis.data.search.SearchEntry;
 
+import com.efficientlogfileanalysis.test.Timer;
 import com.efficientlogfileanalysis.util.ByteConverter;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.IntPoint;
@@ -83,10 +84,10 @@ public class Search implements Closeable {
             //Apply all logLevel filters
             //TODO improve that
 
-            for(String notIncluded : Arrays.stream(allLogLevels).filter(s -> !filter.getLogLevels().contains(s)).collect(Collectors.toList()))
+            for(Byte notIncluded : Arrays.stream(allLogLevels).map(LogLevelIDManager.getInstance()::get).filter(s -> !filter.getLogLevels().contains(s)).collect(Collectors.toList()))
             {
                 queryBuilder.add(
-                        new TermQuery(new Term("logLevel", notIncluded)),
+                        LongPoint.newExactQuery("logLevel", notIncluded),
                         BooleanClause.Occur.MUST_NOT
                 );
             }
@@ -123,7 +124,6 @@ public class Search implements Closeable {
     private List<SearchEntry> getResultsFromSearch(ScoreDoc[] hits) throws IOException
     {
         String path = Settings.getInstance().getLogFilePath();
-
         LogReader logReader = new LogReader();
 
         HashMap<Short, SearchEntry> logFiles = new HashMap<>();
@@ -196,7 +196,7 @@ public class Search implements Closeable {
     }
 
     /**
-     * Returns a list of files who have logEntries matched by a filter
+     * Returns a list of files which have logEntries matched by a filter
      * @param filter other filter data that the entries need to match
      * @return a list of all matched logFileIDs
      * @throws IOException if the Index directory can't be accessed
@@ -247,72 +247,84 @@ public class Search implements Closeable {
 
     public static void main(String[] args) throws IOException {
 
-//        System.out.println(Long.MAX_VALUE);
+        //System.out.println(Long.MAX_VALUE);
 
         Search search = new Search();
         Filter f = Filter
                 .builder()
                 .beginDate(0l)
                 .endDate(1658282400000l)
-                .addLogLevel("FATAL")
+                .addLogLevel(LogLevelIDManager.getInstance().get("FATAL"))
+                .addLogLevel(LogLevelIDManager.getInstance().get("ERROR"))
                 .build();
 
-        search.searchForFiles(f).stream().map(FileIDManager.getInstance()::get).forEach(System.out::println);
-
-//        long fileID = FileIDManager.getInstance().get("DesktopClient-DE-GS-NB-0028.haribo.dom.log");
-//        System.out.println(fileID);
-
-//        List<Long> searchEntrys = search.searchInFile(f, FileIDManager.getInstance().get("DesktopClient-DE-GS-NB-0028.haribo.dom.log"));
+        //search.searchForFiles(f).stream().map(FileIDManager.getInstance()::get).forEach(System.out::println);
 
 
-//        try(LogReader reader = new LogReader())
-//        {
-//            for(long id : searchEntrys)
-//            {
-//                System.out.println(id);
-//                System.out.println(reader.getLogEntry(Settings.getInstance().getLogFilePath(), FileIDManager.getInstance().get("DesktopClient-DE-GS-NB-0028.haribo.dom.log"), id));
-//            }
-//        }
-
-//        Timer timer = new Timer();
-//
-//        Timer.Time time = timer.timeExecutionSpeed(() -> {
-//            try {
-//                search.searchForFiles(f);
-//            } catch (IOException e) {
-//                throw new RuntimeException(e);
-//            }
-//        }, 100);
-
-//        System.out.println(time);
-
-
-//        Timer timer = new Timer();
-//
-//        Timer.Time time = timer.timeExecutionSpeed(() -> {
-//
-//            try {
-//                Search search = new Search();
-//
-//                Filter f = Filter.builder().build();
-//                search.search(f);
-//            }
-//            catch (Exception e) {
-//                e.printStackTrace();
-//            }
-//
-//        }, 1);
-//
-//        System.out.println(time);
+        long fileID = FileIDManager.getInstance().get("DesktopClient-DE-GS-NB-0028.haribo.dom.log");
+        System.out.println(fileID);
+        
+        Timer timer = new Timer();
+        Timer.Time time = timer.timeExecutionSpeed(() -> {
+            try {
+                List<Long> searchEntrys = search.searchInFile(f, FileIDManager.getInstance().get("DesktopClient-DE-GS-NB-0028.haribo.dom.log"));
+            } catch (IOException ioe) {
+                throw new RuntimeException(ioe);
+            }
+        }, 1_000);
+        
+        System.out.println(time);
 
         /*
+        try(LogReader reader = new LogReader())
+        {
+            for(long id : searchEntrys)
+            {
+                System.out.println(id);
+                System.out.println(reader.getLogEntry(Settings.getInstance().getLogFilePath(), FileIDManager.getInstance().get("DesktopClient-DE-GS-NB-0028.haribo.dom.log"), id));
+            }
+        }
+
+
+        Timer timer = new Timer();
+
+        Timer.Time time = timer.timeExecutionSpeed(() -> {
+            try {
+                search.searchForFiles(f);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }, 100);
+
+        System.out.println(time);
+
+
+        Timer timer = new Timer();
+
+        Timer.Time time = timer.timeExecutionSpeed(() -> {
+
+            try {
+                Search search = new Search();
+
+                Filter f = Filter.builder().build();
+                search.search(f);
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
+
+        }, 1);
+
+        System.out.println(time);
+
         Timer timer = new Timer();
 
         Timer.Time time = timer.timeExecutionSpeed(() -> {
             LogEntry result = new LogEntry("04 Jul 2022 14:27:28,743 DEBUG [key] AbstractDialog:? - hide end: MAP036 timestamp: 1656937674040");
         }, 100_000);
 
-        System.out.println(time);*/
+        System.out.println(time);
+        */
     }
 
 }

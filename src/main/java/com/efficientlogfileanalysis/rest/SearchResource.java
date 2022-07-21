@@ -5,6 +5,7 @@ import com.efficientlogfileanalysis.data.Settings;
 import com.efficientlogfileanalysis.data.search.Filter;
 import com.efficientlogfileanalysis.data.search.SearchEntry;
 import com.efficientlogfileanalysis.log.FileIDManager;
+import com.efficientlogfileanalysis.log.LogLevelIDManager;
 import com.efficientlogfileanalysis.log.LogReader;
 import com.efficientlogfileanalysis.log.Search;
 import jakarta.ws.rs.*;
@@ -27,7 +28,7 @@ public class SearchResource {
     {
         private long beginDate;
         private long endDate;
-        private List<String> logLevels;
+        private List<Byte> logLevels;
         private String module;
         private String className;
         private String exception;
@@ -92,9 +93,9 @@ public class SearchResource {
         private long firstDate = 0;
         private long lastDate = Long.MAX_VALUE;
         private String filename = null;
-        private List<String> logLevels = new ArrayList<>();
+        private List<Byte> logLevels = new ArrayList<>();
 
-        public void addLogLevel(String logLevel) {
+        public void addLogLevel(byte logLevel) {
             logLevels.add(logLevel);
         }
     }
@@ -118,7 +119,7 @@ public class SearchResource {
                 FileData fileData = new FileData();
                 fileData.setFirstDate(0);
                 fileData.setLastDate(Long.MAX_VALUE);
-                fileData.addLogLevel("INFO");
+                fileData.addLogLevel(LogLevelIDManager.getInstance().get("INFO"));
                 fileData.setFilename(FileIDManager.getInstance().get(fileID));
 
                 affectedFiles.add(fileData);
