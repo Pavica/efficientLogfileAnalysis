@@ -68,6 +68,35 @@ public class IndexManager<K, V>{
         };
 
         /**
+         * Converter for Short objects.
+         */
+        I_TypeConverter<Short> SHORT_TYPE_CONVERTER = new I_TypeConverter<Short>() {
+            /**
+             * Reads a Short object from a RandomAccessFile.
+             * @param file A RandomAccessFile that is going to be written to
+             * @return A Tuple object that with the amount of bytes read and an Shorts object
+             * @throws IOException 
+             */
+            @Override
+            public Tuple<Integer, Short> read(RandomAccessFile file) throws IOException {
+                return new Tuple<>(2, file.readShort());
+            }
+            
+            /**
+             * Writes a Short object into a given RandomAccessFile and returns the amount of bytes that were written.
+             * @param file A RandomAccessFile that is going to be written to
+             * @param value The Short object that is written to the file
+             * @return The amount of bytes that were written to the file
+             * @throws IOException 
+             */
+            @Override
+            public int write(RandomAccessFile file, Short value) throws IOException {
+                file.writeShort(value);
+                return 2;
+            }
+        };
+
+        /**
          * Converter for String objects.
          */
         I_TypeConverter<String> STRING_TYPE_CONVERTER = new I_TypeConverter<String>() {
@@ -81,6 +110,7 @@ public class IndexManager<K, V>{
             public Tuple<Integer, String> read(RandomAccessFile file) throws IOException {
                 int size = file.readInt();
                 byte[] bytes = new byte[size];
+                file.read(bytes);
                 return new Tuple<>(size + 4, new String(bytes));
             }
             
@@ -104,7 +134,7 @@ public class IndexManager<K, V>{
     private I_TypeConverter<K> keyConverter;
     private I_TypeConverter<V> valueConverter;
 
-    private BiMap<K, V> values;
+    protected BiMap<K, V> values;
 
     private long indexLength;
 
@@ -113,6 +143,13 @@ public class IndexManager<K, V>{
         this.keyConverter = keyConverter;
         this.valueConverter = valueConverter;
 
+        createIndex();
+    }
+
+    /**
+     * Method that gets called when the index should get created.
+     */
+    protected void createIndex() {
         values = new BiMap<>();
     }
 
@@ -121,15 +158,13 @@ public class IndexManager<K, V>{
      * @param file A RandomAccessFile containing an index
      * @throws IOException
      */
-    public void readIndex(RandomAccessFile file) throws IOException
+    protected void readIndex(RandomAccessFile file) throws IOException
     {
         if(file.getFilePointer() + 8 >= file.length()){
             return;
         }
 
-        indexLength = file.readLong();
-
-        long indexSize = indexLength;
+        long indexSize = indexLength = file.readLong();
         while(indexSize > 0)
         {
             Tuple<Integer, K> key = keyConverter.read(file);
@@ -147,7 +182,7 @@ public class IndexManager<K, V>{
      * @param file A RandomAccessFile the index is being written to
      * @throws IOException
      */
-    public void writeIndex(RandomAccessFile file) throws IOException
+    protected void writeIndex(RandomAccessFile file) throws IOException
     {
         long startLocation = file.getFilePointer();
         long newIndexLength = 0;
@@ -179,21 +214,11 @@ public class IndexManager<K, V>{
         return values.containsKey(key);
     }
 
-    public V getValue(K key){
-        return values.getValue(key);
-    }
-
     public void putValue(K key, V value){
         values.putValue(key, value);
-    }
-
-
-    public K getKey(V value){
-        return values.getKey(value);
     }
 
     public void putKey(V value, K key){
         values.putKey(value, key);
     }
-
 }
