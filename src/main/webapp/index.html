@@ -82,7 +82,7 @@
         }
 
         .log-textArea{
-            resize: none;
+            /*resize: none;*/
         }
 
         .log-table{
@@ -108,9 +108,9 @@
         }
 
         .table-wrapper{
-            display: block;
+            /*display: block;
             overflow-x: auto;
-            white-space: nowrap;
+            white-space: nowrap;*/
         }
 
         .log-date{
@@ -126,6 +126,12 @@
         .badge-color{
             font-family: monospace;
             color: var(--main-text-color);
+        }
+
+
+        table.dataTable td {
+            /*potentially change font size if necessary*/
+            /*font-size: 15px;*/
         }
 
         #logEntryHolder tr:hover{
@@ -422,7 +428,7 @@
                                 <label for="path" class="form-label">Log folder path:</label>
                             </div>
                             <div class="input-group px-2">
-                                <span class="input-group-text" id="basic-addon3">current path</span>
+                                <span class="input-group-text">current path</span>
                                 <input type="text" class="form-control" id="path" aria-describedby="basic-addon3" pattern='^(~?[\\/]|\w:\\)([^\\/:*?"<>|][\\/]?)*$' required>
                             </div>
                             <div class="p-2">
@@ -430,6 +436,45 @@
                                 <input class="onSubmit" type="hidden" onclick="setPath($('#path').val())">
                             </div>
                         </form>
+                    </div>
+                    <div>
+                        <h3>Fetch nearby</h3>
+                    </div>
+                    <div class="border rounded-3 mb-3">
+                        <div class="pt-2 px-2">
+                            <label for="path" class="form-label">fetch nearby limit:</label>
+                        </div>
+                            <div class="px-2">
+                                <select class="form-select" id="inlineFormSelectPref">
+                                    <option selected hidden>Choose...</option>
+                                    <option value="1">5</option>
+                                    <option value="2">10</option>
+                                    <option value="3">15</option>
+                                    <option value="3">20</option>
+                                    <option value="3">30</option>
+                                    <option value="3">50</option>
+                                    <option value="3">100</option>
+                                </select>
+                            </div>
+                            <div class="p-2">
+
+                            </div>
+                    </div>
+                    <div>
+                        <h3>Limit</h3>
+                    </div>
+                    <div class="border rounded-3 mb-3">
+                        <div class="pt-2 px-2">
+                            <label for="path" class="form-label">size limit:</label>
+                        </div>
+                        <div class="input-group px-2">
+                            <input type="text" class="form-control" id="limit" aria-describedby="basic-addon3" pattern='^(~?[\\/]|\w:\\)([^\\/:*?"<>|][\\/]?)*$' required>
+                            <span class="input-group-text">MB</span>
+                        </div>
+                        <div class="p-2">
+                            <button class="btn button-style w-100" type="button">Speichern</button>
+                            <input class="onSubmit" type="hidden">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -440,7 +485,7 @@
 
 <!-- Log Modal -->
 <div class="modal fade" id="logModal" tabindex="-1" aria-labelledby="logModal" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-dialog modal-fullscreen modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="logFileTitle">Log file name:</h5>

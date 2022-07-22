@@ -4,9 +4,6 @@
  * last changed: 14.07.2022
  */
 
-
-// Example starter JavaScript for disabling form submissions if there are invalid fields
-//Basic Bootstrap 5 validation
 (function () {
     'use strict'
 
