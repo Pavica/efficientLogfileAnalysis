@@ -1,5 +1,7 @@
 package com.efficientlogfileanalysis.data;
 
+import lombok.ToString;
+
 import java.util.HashMap;
 import java.util.Set;
 
@@ -7,6 +9,7 @@ import java.util.Set;
  * A data class that stores key value pairs where the keys can also be accessed via the value. Both the key and value need to be unique.
  * @author Jan Mandl
  */
+@ToString
 public class BiMap<K, V> {
     /**
      * Stores the (key | value)

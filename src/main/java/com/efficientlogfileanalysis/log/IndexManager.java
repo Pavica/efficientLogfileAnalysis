@@ -5,6 +5,8 @@ import com.efficientlogfileanalysis.data.Tuple;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Class that creates an Index based on a key and value pair.<br>
@@ -37,6 +39,51 @@ public class IndexManager<K, V>{
          * @throws IOException
          */
         int write(RandomAccessFile file, T value) throws IOException;
+
+        static<T> I_TypeConverter<List<T>> listConverter(I_TypeConverter<T> typeConverter){
+            return new ListTypeConverter(typeConverter);
+        };
+
+        class ListTypeConverter<T> implements I_TypeConverter<List<T>>
+        {
+            private I_TypeConverter<T> typeConverter;
+
+            public ListTypeConverter(I_TypeConverter<T> typeConverter)
+            {
+                this.typeConverter = typeConverter;
+            }
+
+            @Override
+            public Tuple<Integer, List<T>> read(RandomAccessFile file) throws IOException {
+                int lengthRead = 4;
+                int listLength = file.readInt();
+
+                List<T> list = new ArrayList<>(listLength);
+
+                for(int i = 0; i < listLength; i++)
+                {
+                    Tuple<Integer, T> listEntry = typeConverter.read(file);
+                    lengthRead += listEntry.value1;
+                    list.add(listEntry.value2);
+                }
+
+                return new Tuple(lengthRead, list);
+            }
+
+            @Override
+            public int write(RandomAccessFile file, List<T> value) throws IOException {
+                int lengthWritten = 4;
+
+                file.writeInt(value.size());
+
+                for(T element : value)
+                {
+                    lengthWritten += typeConverter.write(file, element);
+                }
+
+                return lengthWritten;
+            }
+        }
 
         /**
          * Converter for Integer objects.
