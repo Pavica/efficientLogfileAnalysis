@@ -77,6 +77,30 @@ async function searchInFile(filterData, filename)
     return await response.json();
 }
 
+async function searchInFileAmount(filterData, filename, lastSearchEntry, entryAmount)
+{
+    let request = {
+        "lastSearchEntry" : lastSearchEntry,
+        "filterData" : filter
+    };
+
+    let response = await fetch(`api/search/file/${filename}/${entryAmount}`, {
+        method : "POST",
+        body : JSON.stringify(request),
+        headers : {
+            "content-type" : "application/json"
+        }
+    });
+
+    if(!response.ok)
+    {
+        alert("Not okay :(");
+        return;
+    }
+    return await response.json();
+}
+
+
 /***
  * OLD function for searching for log entries
  * @param filterData specified filterData object based on search input
@@ -213,12 +237,12 @@ function formatDate2(date){
  */
 function formatDate(date){
     return "" +
-        ("0" + date.getUTCDate()).slice(-2) + "." +
-        ("0" + (date.getUTCMonth()+1)).slice(-2) + "." +
-        date.getUTCFullYear() + " " +
-        ("0" + date.getUTCHours()).slice(-2) + ":" +
-        ("0" + date.getUTCMinutes()).slice(-2) + ":" +
-        ("0" + date.getUTCSeconds()).slice(-2);
+        ("0" + date.getDate()).slice(-2) + "." +
+        ("0" + (date.getMonth()+1)).slice(-2) + "." +
+        date.getFullYear() + " " +
+        ("0" + date.getHours()).slice(-2) + ":" +
+        ("0" + date.getMinutes()).slice(-2) + ":" +
+        ("0" + date.getSeconds()).slice(-2);
 }
 
 /** variable used to tell which color belongs to which logLevel  */
@@ -261,16 +285,16 @@ function createLogFileElements(data){
 }
 
 /**
- * Functions used to add selected style to a tr tag
+ * Functions used to slice up an array
  */
-function addTrStyleSelected(){
-    $("#logEntryTable tr").click(function() {
-        $(this).parent().children().removeClass("selected");
-        $(this).addClass("selected");
-    });
+function sliceIntoChunks(arr, chunkSize) {
+    const res = [];
+    for (let i = 0; i < arr.length; i += chunkSize) {
+        const chunk = arr.slice(i, i + chunkSize);
+        res.push(chunk);
+    }
+    return res;
 }
-
-
 
 /**
  * Function used to display log entries of a specified file quickly by doing multiple fetches
@@ -290,19 +314,35 @@ async function displayFileLogEntriesFast(filename){
         pageLength: 5,
         lengthMenu: [5, 10, 20, 50, 100],
     });
-    let data = await searchInFile(filter, filename);
-    let num = 0;
-    data.forEach(logEntry =>{
-        table.row.add([formatDate2(new Date(logEntry.time)),logEntry.logLevel,logEntry.module,logEntry.className]).node().id = 'logEntry'+num;
-        $('#logEntry'+num).click(async function(){
-            document.getElementById("floatingTextarea").innerText = (await loadLogEntry(filename, logEntry.entryID)).message;
-        });
-        num++;
-    });
-    table.draw(false);
+
     $('#logModal'). on('shown.bs.modal', function (e) {
         $($.fn.dataTable.tables(true)).DataTable().columns.adjust();
-    })
+    });
+    let data = await searchInFile(filter, filename);
+    let partedData = sliceIntoChunks(data, 1000);
+
+    let num = 0;
+    for(let j=0; j<partedData.length; j++){
+        let help = num;
+        let currentData = partedData[j];
+        for(let i=0; i<currentData.length; i++){
+            table.row.add([formatDate2(new Date(currentData[i].time)),currentData[i].logLevel,currentData[i].module,currentData[i].className]).node().id = 'logEntry'+num;
+            num++;
+        }
+
+        num= help;
+        await new Promise(s => setTimeout(s, 1));
+        table.draw(false);
+
+        for(let i=0; i<currentData.length; i++){
+            $('table tbody').on('click', '#logEntry' + num, async function() {
+                $(this).parent().children().removeClass("selected");
+                $(this).addClass("selected");
+                document.getElementById("floatingTextarea").innerText = (await loadLogEntry(filename, currentData[i].entryID)).message;
+            });
+            num++;
+        }
+    }
 }
 
 /**
