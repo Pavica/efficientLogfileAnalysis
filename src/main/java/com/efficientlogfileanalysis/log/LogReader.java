@@ -3,6 +3,7 @@ package com.efficientlogfileanalysis.log;
 import com.efficientlogfileanalysis.data.LogEntry;
 import com.efficientlogfileanalysis.data.LogFile;
 import com.efficientlogfileanalysis.data.Settings;
+import com.efficientlogfileanalysis.data.search.Filter;
 import com.efficientlogfileanalysis.test.Timer;
 import lombok.SneakyThrows;
 
@@ -12,6 +13,8 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -22,6 +25,7 @@ public class LogReader implements Closeable {
 
     //TODO recompiling the regex should speed up indexing time
     private static final String REGEX_BEGINNING_OF_LOG_ENTRY = "^\\d{2} \\w{3} \\d{4}.*";
+    private static final Matcher REGEX_MATCHER_BEGINNING_OF_LOG_ENTRY = Pattern.compile(REGEX_BEGINNING_OF_LOG_ENTRY).matcher("");
 
     /**
      * Reads all the files in a directory into a Logfile array.
@@ -45,7 +49,8 @@ public class LogReader implements Closeable {
 
             while ((currentLine = br.readLine()) != null) {
 
-                if (line.equals("") || !currentLine.matches(REGEX_BEGINNING_OF_LOG_ENTRY)) {
+                if (line.equals("") || !REGEX_MATCHER_BEGINNING_OF_LOG_ENTRY.reset(currentLine).matches()) {
+//                if (line.equals("") || !currentLine.matches(REGEX_BEGINNING_OF_LOG_ENTRY)) {
                     line += currentLine + "\n";
                     continue;
                 }
@@ -147,7 +152,7 @@ public class LogReader implements Closeable {
         //while there is no date at the beginning of the line
         while(
             (tempLine = file.readLine()) != null &&
-            !tempLine.matches(REGEX_BEGINNING_OF_LOG_ENTRY)
+            !REGEX_MATCHER_BEGINNING_OF_LOG_ENTRY.reset(tempLine).matches()
         )
         {
             line += tempLine;
@@ -169,6 +174,7 @@ public class LogReader implements Closeable {
         StringBuilder stringBuilder = new StringBuilder("");
 
         LogEntry logEntry = new LogEntry();
+        logEntry.setEntryID(logEntryID);
 
         //Read the date
         byte[] bytes = new byte[24];

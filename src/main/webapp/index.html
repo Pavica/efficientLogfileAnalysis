@@ -30,28 +30,27 @@
     <!-- DataTables -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.1.3/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap5.min.css">
-
     <script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap5.min.js"></script>
 
-    <!-- Initiate extension -->
-    <script>
-        $( function() {
-            $( "#startDate" ).datepicker({
-                dateFormat: "dd.mm.yy"
-            });
-            setMinMaxDate("startDate");
-        });
+    <!-- Index-Script -->
+    <script src="js/index.js" defer></script>
+    <!-- Settings-Script -->
+    <script src="js/Settings.js" defer></script>
+    <!-- Cookie-Script -->
+    <script src="js/Cookie.js" defer></script>
+    <!-- Validation-Script -->
+    <script src="js/Validation.js" defer></script>
+    <!-- Statistics-Script -->
+    <script src="js/Statistics.js" defer></script>
 
-        $( function() {
-            $( "#endDate" ).datepicker({
-                dateFormat: "dd.mm.yy"
-            });
-            setMinMaxDate("endDate");
-        });
-    </script>
     <title>Main</title>
     <style>
+        :root{
+            --main-color: #fff200;
+            --main-text-color: white;
+        }
+
         .searchbar, .filter-menu, .statistics, .logfile-results{
             margin-right: 3rem;
             margin-left: 3rem;
@@ -66,13 +65,24 @@
             height: 400px;
         }
 
+        .page-link {
+            color: var(--main-color) !important;
+        }
+
+        .page-item.active .page-link, .selected td{
+            box-shadow: none !important;
+            background-color: var(--main-color) !important;
+            border: 1px solid var(--main-color) !important;
+            color: var(--main-text-color) !important;
+        }
+
         nav{
-            background-color: #fff200;
+            background-color: var(--main-color);
             white-space: nowrap;
         }
 
         .log-textArea{
-            resize: none;
+            /*resize: none;*/
         }
 
         .log-table{
@@ -80,13 +90,17 @@
         }
 
         .button-style{
-            background-color: #fff200;
-            color: black;
+            background-color: var(--main-color);
+            color: var(--main-text-color);
+        }
+
+        .button-style:hover{
+            color: var(--main-text-color);
         }
 
         .search-button{
             margin-left: 1rem;
-            background-color: #fff200;
+            background-color: var(--main-color);
         }
 
         .search-bar{
@@ -94,13 +108,14 @@
         }
 
         .table-wrapper{
-            display: block;
+            /*display: block;
             overflow-x: auto;
-            white-space: nowrap;
+            white-space: nowrap;*/
         }
 
         .log-date{
-            background-color: #fff200;
+            background-color: var(--main-color);
+            color: var(--main-text-color);
         }
 
         .log-center{
@@ -110,8 +125,17 @@
 
         .badge-color{
             font-family: monospace;
-            color: black;
+            color: var(--main-text-color);
+        }
 
+
+        table.dataTable td {
+            /*potentially change font size if necessary*/
+            /*font-size: 15px;*/
+        }
+
+        #logEntryHolder tr:hover{
+            background-color: lightgrey;
         }
 
         #statisticsHolder{
@@ -157,7 +181,7 @@
             <div class="search-container">
                   <div class="d-flex justify-content-center">
                       <input type="text" class="search-bar form-control" placeholder="Suche nach Log-Messages..." name="search">
-                      <button type="button" class="btn btn-warning search-button" id="searchButton">Suchen
+                      <button type="button" class="btn button-style search-button" id="searchButton">Suchen
                       </button>
                       <input type="hidden" class="onSubmit" onclick="readyForSearch()">
 
@@ -377,18 +401,82 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <!--onkeydown is used to disable enter press in modal because it closes the window and reloads the page?-->
-                <form class="needs-validation" novalidate onkeydown="return event.key != 'Enter';">
-                    <label for="path" class="form-label">Log folder path:</label>
-                    <div class="input-group mb-3">
-                        <span class="input-group-text" id="basic-addon3">current path</span>
-                        <input type="text" class="form-control" id="path" aria-describedby="basic-addon3" pattern='^(~?[\\/]|\w:\\)([^\\/:*?"<>|][\\/]?)*$' required>
+                <div class="d-flex flex-column bd-highlight mb-3">
+                    <div>
+                        <h3>Color</h3>
                     </div>
-                    <div class="d-flex bd-highlight">
-                        <button class="btn button-style mt-3 m-1 w-100" type="button">Speichern</button>
-                        <input class="onSubmit" type="hidden" onclick="setPath($('#path').val())">
+                    <div class="border rounded-3 mb-3">
+                        <div class="p-2">
+                            <label for="path" class="form-label">Element color:</label>
+                            <input type="color" id="color" class="w-100" oninput="saveColor($('#color').val())">
+                        </div>
+                        <div class="p-2">
+                            <label for="path" class="form-label">Element text color:</label>
+                            <input type="color" id="textColor" class="w-100" oninput="saveTextColor($('#textColor').val())">
+                        </div>
+                        <div class="p-2">
+                            <button class="btn button-style w-100" type="button" onclick="resetColor()">Reset</button>
+                        </div>
                     </div>
-                </form>
+                    <div>
+                        <h3>Log folder</h3>
+                    </div>
+                    <div class="border rounded-3 mb-3">
+                        <!--onkeydown is used to disable enter press in modal because it closes the window and reloads the page?-->
+                        <form class="needs-validation" novalidate onkeydown="return event.key != 'Enter';">
+                            <div class="pt-2 px-2">
+                                <label for="path" class="form-label">Log folder path:</label>
+                            </div>
+                            <div class="input-group px-2">
+                                <span class="input-group-text">current path</span>
+                                <input type="text" class="form-control" id="path" aria-describedby="basic-addon3" pattern='^(~?[\\/]|\w:\\)([^\\/:*?"<>|][\\/]?)*$' required>
+                            </div>
+                            <div class="p-2">
+                                <button class="btn button-style w-100" type="button">Speichern</button>
+                                <input class="onSubmit" type="hidden" onclick="setPath($('#path').val())">
+                            </div>
+                        </form>
+                    </div>
+                    <div>
+                        <h3>Fetch nearby</h3>
+                    </div>
+                    <div class="border rounded-3 mb-3">
+                        <div class="pt-2 px-2">
+                            <label for="path" class="form-label">fetch nearby limit:</label>
+                        </div>
+                            <div class="px-2">
+                                <select class="form-select" id="inlineFormSelectPref">
+                                    <option selected hidden>Choose...</option>
+                                    <option value="1">5</option>
+                                    <option value="2">10</option>
+                                    <option value="3">15</option>
+                                    <option value="3">20</option>
+                                    <option value="3">30</option>
+                                    <option value="3">50</option>
+                                    <option value="3">100</option>
+                                </select>
+                            </div>
+                            <div class="p-2">
+
+                            </div>
+                    </div>
+                    <div>
+                        <h3>Limit</h3>
+                    </div>
+                    <div class="border rounded-3 mb-3">
+                        <div class="pt-2 px-2">
+                            <label for="path" class="form-label">size limit:</label>
+                        </div>
+                        <div class="input-group px-2">
+                            <input type="text" class="form-control" id="limit" aria-describedby="basic-addon3" pattern='^(~?[\\/]|\w:\\)([^\\/:*?"<>|][\\/]?)*$' required>
+                            <span class="input-group-text">MB</span>
+                        </div>
+                        <div class="p-2">
+                            <button class="btn button-style w-100" type="button">Speichern</button>
+                            <input class="onSubmit" type="hidden">
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -397,7 +485,7 @@
 
 <!-- Log Modal -->
 <div class="modal fade" id="logModal" tabindex="-1" aria-labelledby="logModal" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-dialog modal-fullscreen modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="logFileTitle">Log file name:</h5>
@@ -427,16 +515,5 @@
     </div>
 </div>
 <!-- Log Modal -->
-
-<!-- Index-Script -->
-<script src="js/index.js"></script>
-<!-- Settings-Script -->
-<script src="js/Settings.js"></script>
-<!-- Cookie-Script -->
-<script src="js/Cookie.js"></script>
-<!-- Validation-Script -->
-<script src="js/Validation.js"></script>
-<!-- Statistics-Script -->
-<script src="js/Statistics.js"></script>
 </body>
 </html>

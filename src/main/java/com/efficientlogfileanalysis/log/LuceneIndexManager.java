@@ -74,6 +74,14 @@ public class LuceneIndexManager {
 
         for(LogFile logfile : logFiles) {
 
+            //save the begin and end date of each file
+            short fileID = FileIDManager.getInstance().get(logfile.filename);
+            LogDateManager.getInstance().setDateRange(
+                fileID,
+                logfile.getEntries().get(0).getTime(),
+                logfile.getEntries().get(logfile.getEntries().size()-1).getTime()
+            );
+
             for(LogEntry logEntry : logfile.getEntries()) {
                 Document document = new Document();
 
@@ -104,6 +112,7 @@ public class LuceneIndexManager {
         }
 
         indexWriter.close();
+        LogDateManager.getInstance().writeIndex();
 
         System.out.println("Time elapsed: " + timer.time() + "ms");
     }
