@@ -1,6 +1,7 @@
 package com.efficientlogfileanalysis.log;
 
 import com.efficientlogfileanalysis.data.Settings;
+import com.efficientlogfileanalysis.data.Tuple;
 import com.efficientlogfileanalysis.data.search.Filter;
 import com.efficientlogfileanalysis.data.search.SearchEntry;
 
@@ -251,6 +252,34 @@ public class Search implements Closeable {
         }
 
         return logEntries;
+    }
+
+    public Tuple<List<Long>, ScoreDoc> searchForLogEntryIDsWithPagination(Filter filter, int maxEntryAmount, ScoreDoc offset) throws IOException
+    {
+        Query query = parseFilter(filter).build();
+
+        ScoreDoc[] hits;
+        if(offset == null)
+        {
+            hits = searcher.search(query, maxEntryAmount).scoreDocs;
+        }
+        else
+        {
+            hits = searcher.searchAfter(offset, query, maxEntryAmount).scoreDocs;
+        }
+
+        List<Long> logEntries = new ArrayList<>();
+        for(ScoreDoc hit : hits)
+        {
+            Document document = searcher.doc(hit.doc);
+            long entryID = document.getField("logEntryID").numericValue().longValue();
+
+            logEntries.add(entryID);
+        }
+
+        ScoreDoc lastHit = hits[hits.length-1];
+
+        return new Tuple<>(logEntries, lastHit);
     }
 
     /**

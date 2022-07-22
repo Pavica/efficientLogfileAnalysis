@@ -2,6 +2,7 @@ package com.efficientlogfileanalysis.rest;
 
 import com.efficientlogfileanalysis.data.LogEntry;
 import com.efficientlogfileanalysis.data.Settings;
+import com.efficientlogfileanalysis.data.Tuple;
 import com.efficientlogfileanalysis.data.search.Filter;
 import com.efficientlogfileanalysis.data.search.SearchEntry;
 import com.efficientlogfileanalysis.log.*;
@@ -10,6 +11,7 @@ import jakarta.ws.rs.core.Response;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.apache.lucene.search.ScoreDoc;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -164,6 +166,81 @@ public class SearchResource {
             logReader.close();
 
             return Response.ok(result).build();
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class PageRequestData
+    {
+        FilterData filterData;
+        LuceneSearchEntry lastSearchEntry;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class LuceneSearchEntry
+    {
+        public int docNumber;
+        public float docScore;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ResultPageResponseData
+    {
+        LuceneSearchEntry lastSearchEntry;
+        List<LogEntry> logEntries;
+    }
+
+    @POST
+    @Path("/file/{fileName}/{amount}")
+    @Produces("application/json")
+    public Response getResultPage(
+        PageRequestData pageRequestData,
+        @PathParam("fileName") String fileName,
+        @PathParam("amount") int amount
+    )
+    {
+        Filter filter = parseFilterData(pageRequestData.filterData);
+        LuceneSearchEntry lastSearchData = pageRequestData.lastSearchEntry;
+
+        short fileID = FileIDManager.getInstance().get(fileName);
+
+        filter.setFileID(fileID);
+
+        try
+        {
+            Search search = new Search();
+
+            ScoreDoc lastSearchEntry = lastSearchData == null ? null : new ScoreDoc(lastSearchData.docNumber, lastSearchData.docScore);
+
+            Tuple<List<Long>, ScoreDoc> result = search.searchForLogEntryIDsWithPagination(filter, amount, lastSearchEntry);
+
+            ResultPageResponseData responseData = new ResultPageResponseData();
+            responseData.setLastSearchEntry(new LuceneSearchEntry(result.value2.doc, result.value2.score));
+
+            LogReader logReader = new LogReader();
+            String logPath = Settings.getInstance().getLogFilePath();
+
+            List<LogEntry> logEntries = new ArrayList<>();
+            for(long entryID : result.value1)
+            {
+                logEntries.add(logReader.readLogEntryWithoutMessage(logPath, fileID, entryID));
+            }
+
+            logReader.close();
+
+            responseData.setLogEntries(logEntries);
+
+            return Response.ok(responseData).build();
         }
         catch (IOException e) {
             e.printStackTrace();
