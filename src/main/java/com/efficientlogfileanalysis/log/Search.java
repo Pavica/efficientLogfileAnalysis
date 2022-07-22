@@ -34,6 +34,9 @@ import java.util.stream.Collectors;
  */
 public class Search implements Closeable {
 
+    /**
+     * A list with all log levels
+     */
     public static final String[] allLogLevels = {"INFO", "DEBUG", "WARN", "ERROR", "TRACE", "FATAL"};
 
     DirectoryReader directoryReader;
@@ -111,6 +114,14 @@ public class Search implements Closeable {
             );
         }
 
+        //apply file search filter
+        if(filter.getFileID() != -1)
+        {
+            queryBuilder.add(
+                IntPoint.newExactQuery("fileIndex", filter.getFileID()),
+                BooleanClause.Occur.MUST
+            );
+        }
 
         return queryBuilder;
     }
@@ -146,8 +157,63 @@ public class Search implements Closeable {
         return new ArrayList<>(logFiles.values());
     }
 
+    public List<byte[]> searchForLogLevelsInFiles() throws IOException {
+        ArrayList<byte[]> files = new ArrayList<>();
+        Filter.FilterBuilder filterBuilder;
+        Query query;
+        GroupingSearch groupingSearch;
+        TopGroups topGroups;
+        byte[] levelsPerFile;
+        int counter;
+
+        files.ensureCapacity(FileIDManager.getInstance().values.getKeySet().size());
+
+        //go through all files
+        for(short fileID : FileIDManager.getInstance().values.getKeySet()) {
+            filterBuilder = Filter
+                .builder()
+                .fileID(fileID);
+
+            //add Filter for all log levels
+            for(String s : Search.allLogLevels) {
+                filterBuilder.addLogLevel(LogLevelIDManager.getInstance().get(s));
+            }
+
+            query = parseFilter(filterBuilder.build()).build();
+            groupingSearch = new GroupingSearch("logLevel");
+
+            //sets how the returned groups are sorted
+            //the default criteria is "RELEVANCE" which is why Field_doc (the index order) is faster
+            groupingSearch.setGroupSort(new Sort(SortField.FIELD_DOC));
+
+            //only return one result for each group:
+            groupingSearch.setGroupDocsLimit(1);
+
+            //perform group search
+            topGroups = null;
+            try {
+                topGroups = groupingSearch.search(searcher, query, 0, Search.allLogLevels.length);
+            } catch (IOException ioe) {
+                ioe.printStackTrace();
+            } finally {
+                assert topGroups != null;
+            }
+
+            counter = 0;
+            levelsPerFile = new byte[topGroups.groups.length];
+            for(GroupDocs gdoc : topGroups.groups)
+            {
+                levelsPerFile[counter++] = ((BytesRef) gdoc.groupValue).bytes[0];
+            }
+
+            files.add(fileID, levelsPerFile);
+        }
+
+        return files;
+    }
+
     /**
-     * Searches the whole lucine index for matching SearchEntries
+     * Searches the log files with the given filter for matches and then returns information about its parent log file and all the matches as ids in that log file
      * @param filter specifies what entries should be matched
      * @return all the matching file entries
      * @throws IOException if the log files cant be accessed
@@ -164,22 +230,14 @@ public class Search implements Closeable {
     }
 
     /**
-     * Searches for matching LogEntries in a given file
-     * @param filter other filter data that every log entry needs to match
-     * @param fileID the ID of the file to be searched
-     * @return the ID of all the matched log entries
+     * Searches for LogEntry IDs which match the given filter
+     * @param filter data that every log entry needs to match
+     * @return the IDs of all the matched log entries
      * @throws IOException
      */
-    public List<Long> searchInFile(Filter filter, short fileID) throws IOException
+    public List<Long> searchForLogEntryIDs(Filter filter) throws IOException
     {
-        BooleanQuery.Builder queryBuilder = parseFilter(filter);
-
-        queryBuilder.add(
-            IntPoint.newExactQuery("fileIndex", fileID),
-            BooleanClause.Occur.MUST
-        );
-
-        Query query = queryBuilder.build();
+        Query query = parseFilter(filter).build();
 
         ScoreDoc[] hits = searcher.search(query, Integer.MAX_VALUE).scoreDocs;
 
@@ -267,7 +325,7 @@ public class Search implements Closeable {
         Timer timer = new Timer();
         Timer.Time time = timer.timeExecutionSpeed(() -> {
             try {
-                List<Long> searchEntrys = search.searchInFile(f, FileIDManager.getInstance().get("DesktopClient-DE-GS-NB-0028.haribo.dom.log"));
+                List<Long> searchEntrys = search.searchForLogEntryIDs(f);
             } catch (IOException ioe) {
                 throw new RuntimeException(ioe);
             }

@@ -1,6 +1,5 @@
 package com.efficientlogfileanalysis.data.search;
 
-import com.efficientlogfileanalysis.data.LogEntry;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -8,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Contains information about a single logFile in a search result
+ * Contains information about a log file and the ids of its contents
  */
 @Data
 @AllArgsConstructor

@@ -70,6 +70,7 @@ public class LuceneIndexManager {
         //Read all the log entries from all the files into a list
         LogFile[] logFiles = LogReader.readAllLogFiles(Settings.getInstance().getLogFilePath());
         FileIDManager mgr = FileIDManager.getInstance();
+        LogLevelIDManager llidm = LogLevelIDManager.getInstance();
 
         for(LogFile logfile : logFiles) {
 
@@ -88,9 +89,14 @@ public class LuceneIndexManager {
                 document.add(new IntPoint("fileIndex", mgr.get(logfile.filename)));
 
                 //add the file index as a sortedField so that lucene can group by it
-                document.add(new SortedDocValuesField("fileIndex",
+                document.add(new SortedDocValuesField(
+                    "fileIndex",
                     new BytesRef(ByteConverter.shortToByte(mgr.get(logfile.filename))))
                 );
+                document.add(new SortedDocValuesField(
+                    "logLevel",
+                    new BytesRef(new byte[]{LogLevelIDManager.getInstance().get(logEntry.getLogLevel()).byteValue()})
+                ));
 
                 indexWriter.addDocument(document);
             }

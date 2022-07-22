@@ -141,11 +141,13 @@ public class SearchResource {
         Filter filter = parseFilterData(filterData);
         short fileID = FileIDManager.getInstance().get(fileName);
 
+        filter.setFileID(fileID);
+
         try
         {
             Search search = new Search();
 
-            List<Long> entryIDs = search.searchInFile(filter, fileID);
+            List<Long> entryIDs = search.searchForLogEntryIDs(filter);
 
             LogReader logReader = new LogReader();
             String logPath = Settings.getInstance().getLogFilePath();
