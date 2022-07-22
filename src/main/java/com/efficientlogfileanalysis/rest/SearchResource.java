@@ -4,11 +4,7 @@ import com.efficientlogfileanalysis.data.LogEntry;
 import com.efficientlogfileanalysis.data.Settings;
 import com.efficientlogfileanalysis.data.search.Filter;
 import com.efficientlogfileanalysis.data.search.SearchEntry;
-import com.efficientlogfileanalysis.log.FileIDManager;
-import com.efficientlogfileanalysis.log.LogLevelIDManager;
-import com.efficientlogfileanalysis.log.LogDateManager;
-import com.efficientlogfileanalysis.log.LogReader;
-import com.efficientlogfileanalysis.log.Search;
+import com.efficientlogfileanalysis.log.*;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Response;
 import lombok.AllArgsConstructor;
@@ -29,7 +25,7 @@ public class SearchResource {
     {
         private long beginDate;
         private long endDate;
-        private List<Byte> logLevels;
+        private List<String> logLevels;
         private String module;
         private String className;
         private String exception;
@@ -43,7 +39,7 @@ public class SearchResource {
                 .beginDate(filterData.beginDate)
                 .endDate(filterData.endDate);
 
-        filterData.logLevels.forEach(filterBuilder::addLogLevel);
+        filterData.logLevels.stream().map(LogLevelIDManager.getInstance()::get).forEach(filterBuilder::addLogLevel);
 
         if(filterData.module != null)
         {
@@ -94,9 +90,9 @@ public class SearchResource {
         private long firstDate = 0;
         private long lastDate = Long.MAX_VALUE;
         private String filename = null;
-        private List<Byte> logLevels = new ArrayList<>();
+        private List<String> logLevels = new ArrayList<>();
 
-        public void addLogLevel(byte logLevel) {
+        public void addLogLevel(String logLevel) {
             logLevels.add(logLevel);
         }
     }
@@ -118,10 +114,14 @@ public class SearchResource {
             for(short fileID : fileIDs)
             {
                 FileData fileData = new FileData();
-                
+
                 fileData.setFirstDate(LogDateManager.getInstance().get(fileID).beginDate);
                 fileData.setLastDate(LogDateManager.getInstance().get(fileID).endDate);
-                fileData.addLogLevel(LogLevelIDManager.getInstance().get("INFO"));
+
+                for(byte logLevelID : LogLevelIndexManager.getInstance().get(fileID)){
+                    fileData.addLogLevel(LogLevelIDManager.getInstance().get(logLevelID));
+                }
+
                 fileData.setFilename(FileIDManager.getInstance().get(fileID));
 
                 affectedFiles.add(fileData);
