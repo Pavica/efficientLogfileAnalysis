@@ -99,7 +99,12 @@ public class Timer {
 
         for(int i = 0;i < times; ++i) {
             startTime = getCurrentTime();
-            func.run();
+            try {
+                func.run();
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.exit(-6);
+            }
             pauseTime = getCurrentTime() - startTime;
 
             time.totalTime += pauseTime;
