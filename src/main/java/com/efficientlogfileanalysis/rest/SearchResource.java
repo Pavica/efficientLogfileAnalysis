@@ -5,6 +5,7 @@ import com.efficientlogfileanalysis.data.Settings;
 import com.efficientlogfileanalysis.data.search.Filter;
 import com.efficientlogfileanalysis.data.search.SearchEntry;
 import com.efficientlogfileanalysis.log.FileIDManager;
+import com.efficientlogfileanalysis.log.LogLevelIDManager;
 import com.efficientlogfileanalysis.log.LogDateManager;
 import com.efficientlogfileanalysis.log.LogReader;
 import com.efficientlogfileanalysis.log.Search;
@@ -28,7 +29,7 @@ public class SearchResource {
     {
         private long beginDate;
         private long endDate;
-        private List<String> logLevels;
+        private List<Byte> logLevels;
         private String module;
         private String className;
         private String exception;
@@ -93,9 +94,9 @@ public class SearchResource {
         private long firstDate = 0;
         private long lastDate = Long.MAX_VALUE;
         private String filename = null;
-        private List<String> logLevels = new ArrayList<>();
+        private List<Byte> logLevels = new ArrayList<>();
 
-        public void addLogLevel(String logLevel) {
+        public void addLogLevel(byte logLevel) {
             logLevels.add(logLevel);
         }
     }
@@ -117,9 +118,10 @@ public class SearchResource {
             for(short fileID : fileIDs)
             {
                 FileData fileData = new FileData();
+                
                 fileData.setFirstDate(LogDateManager.getInstance().get(fileID).beginDate);
                 fileData.setLastDate(LogDateManager.getInstance().get(fileID).endDate);
-                fileData.addLogLevel("INFO");
+                fileData.addLogLevel(LogLevelIDManager.getInstance().get("INFO"));
                 fileData.setFilename(FileIDManager.getInstance().get(fileID));
 
                 affectedFiles.add(fileData);
@@ -141,11 +143,13 @@ public class SearchResource {
         Filter filter = parseFilterData(filterData);
         short fileID = FileIDManager.getInstance().get(fileName);
 
+        filter.setFileID(fileID);
+
         try
         {
             Search search = new Search();
 
-            List<Long> entryIDs = search.searchInFile(filter, fileID);
+            List<Long> entryIDs = search.searchForLogEntryIDs(filter);
 
             LogReader logReader = new LogReader();
             String logPath = Settings.getInstance().getLogFilePath();

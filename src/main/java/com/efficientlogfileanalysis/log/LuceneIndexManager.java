@@ -70,6 +70,7 @@ public class LuceneIndexManager {
         //Read all the log entries from all the files into a list
         LogFile[] logFiles = LogReader.readAllLogFiles(Settings.getInstance().getLogFilePath());
         FileIDManager mgr = FileIDManager.getInstance();
+        LogLevelIDManager llidm = LogLevelIDManager.getInstance();
 
         for(LogFile logfile : logFiles) {
 
@@ -86,7 +87,7 @@ public class LuceneIndexManager {
 
                 document.add(new LongPoint("date", logEntry.getTime()));
                 document.add(new StoredField("logEntryID", logEntry.getEntryID()));
-                document.add(new StringField("logLevel", logEntry.getLogLevel(), Field.Store.YES));
+                document.add(new LongPoint("logLevel", LogLevelIDManager.getInstance().get(logEntry.getLogLevel())));
                 document.add(new TextField("message", logEntry.getMessage(), Field.Store.YES));
                 document.add(new StringField("classname", logEntry.getClassName(), Field.Store.YES));
                 document.add(new StringField("module", logEntry.getModule(), Field.Store.YES));
@@ -96,9 +97,14 @@ public class LuceneIndexManager {
                 document.add(new IntPoint("fileIndex", mgr.get(logfile.filename)));
 
                 //add the file index as a sortedField so that lucene can group by it
-                document.add(new SortedDocValuesField("fileIndex",
+                document.add(new SortedDocValuesField(
+                    "fileIndex",
                     new BytesRef(ByteConverter.shortToByte(mgr.get(logfile.filename))))
                 );
+                document.add(new SortedDocValuesField(
+                    "logLevel",
+                    new BytesRef(new byte[]{LogLevelIDManager.getInstance().get(logEntry.getLogLevel()).byteValue()})
+                ));
 
                 indexWriter.addDocument(document);
             }

@@ -15,10 +15,11 @@ import java.util.List;
 public class Filter {
     private long beginDate;
     private long endDate;
-    private List<String> logLevels;
+    private List<Byte> logLevels;
     private String module;
     private String className;
     private String exception;
+    private short fileID;
 
     public static class FilterBuilder
     {
@@ -30,25 +31,13 @@ public class Filter {
             module      =   null;
             className   =   null;
             exception   =   null;
+            fileID      =   -1;
         }
 
-        public FilterBuilder addLogLevel(String logLevel)
+        public FilterBuilder addLogLevel(byte logLevel)
         {
             logLevels.add(logLevel);
             return this;
         }
-    }
-
-    public static void main(String[] args) {
-        Filter filter = Filter
-                .builder()
-                .addLogLevel("miauser")
-                .addLogLevel("miauser 2")
-                .build();
-
-        List list = Filter.builder().logLevels;
-        list.forEach(System.out::println);
-
-        System.out.println(filter);
     }
 }
