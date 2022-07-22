@@ -1,3 +1,23 @@
+/**
+ * author: Luka
+ * version: 1.0
+ * last changed: 21.07.2022
+ */
+
+
+/** variable used to set the filters for a search */
+let filter;
+
+/**
+ * Function used to create a filterData object
+ * @param startDate specified begin date for the search
+ * @param endDate specified end date for the search
+ * @param logLevel specified log levels for the search
+ * @param module specified module for the search
+ * @param className specified class for hte search
+ * @param exception specified exception for the search
+ * @returns {{exception: null, beginDate, endDate, module: null, logLevels: *[], className: null}} a filterData object
+ */
 function createFilterData(startDate, endDate, logLevel = [], module = null, className = null, exception = null)
 {
     return {
@@ -10,6 +30,11 @@ function createFilterData(startDate, endDate, logLevel = [], module = null, clas
     };
 }
 
+/**
+ * Function used to fetch all files affected by the search
+ * @param filterData specified filterData object, based on search input
+ * @returns {Promise<any>} an array of log file elements
+ */
 async function searchForFiles(filterData)
 {
     let response = await fetch("api/search/files", {
@@ -28,6 +53,12 @@ async function searchForFiles(filterData)
     return await response.json();
 }
 
+/**
+ * Function used to fetch all log entries in a specified file
+ * @param filterData specified filterData object based on search input
+ * @param filename specified filename of file
+ * @returns {Promise<any>} an array of log entry elements based on filterData
+ */
 async function searchInFile(filterData, filename)
 {
     let response = await fetch(`api/search/file/${filename}`, {
@@ -46,6 +77,11 @@ async function searchInFile(filterData, filename)
     return await response.json();
 }
 
+/***
+ * OLD function for searching for log entries
+ * @param filterData specified filterData object based on search input
+ * @returns {Promise<any>} an array of files with every entry element based on filterData
+ */
 async function search(filterData)
 {
     let response = await fetch("api/search/filter", {
@@ -64,6 +100,12 @@ async function search(filterData)
     return await response.json();
 }
 
+/**
+ * Functioon used to load one log Entry based on filename and logEntryID
+ * @param filename specified log file name
+ * @param logEntryID specified log entry id
+ * @returns {Promise<any>} a log entry object
+ */
 async function loadLogEntry(filename, logEntryID)
 {
     let response = await fetch(`api/logFiles/${filename}/${logEntryID}`);
@@ -74,6 +116,12 @@ async function loadLogEntry(filename, logEntryID)
     return await response.json();
 }
 
+/**
+ * OLD function used to get all log entries in a file
+ * @param filename specified filename
+ * @param logEntryIDs specified log entry ids
+ * @returns {Promise<any>} an array of log entries of a file
+ */
 async function loadLogEntries(filename, logEntryIDs){
     let response = await fetch("api/logFiles/" + filename + "/specificEntries", {
         method: "POST",
@@ -89,7 +137,11 @@ async function loadLogEntries(filename, logEntryIDs){
     return await response.json();
 }
 
-
+/**
+ * Function used to get all the data from the inputs and put the input in a filterData object.
+ * Once the data has been set it begins the search.
+ * @returns {Promise<void>}
+ */
 async function readyForSearch(){
     let startDate = trueStartDate.getTime();
     let endDate = trueEndDate.getTime();
@@ -98,7 +150,6 @@ async function readyForSearch(){
 
     $('.logLevelCheckbox').each(function() {
        if($(this).prop("checked")){
-           console.log($(this).val());
            logLevel.push($(this).val());
        }
     });
@@ -107,12 +158,26 @@ async function readyForSearch(){
     let className =  $('#classDataList').val();
     let exceptionName =  $('#exceptionDataList').val();
 
-    setSpinnerVisible(true);
-    info = await search(startDate, endDate, logLevel);
-    setSpinnerVisible(false);
-    createLogFileElements();
+
+    filter = createFilterData(startDate, endDate, logLevel);
+    await startSearch();
 }
 
+/**
+ * function used to start the search and add the results into the gui
+ *
+ */
+async function startSearch(){
+    setSpinnerVisible(true);
+    let data = await searchForFiles(filter);
+    setSpinnerVisible(false);
+    createLogFileElements(data);
+}
+
+/**
+ * function used to set the search spinner if the search is in progress
+ * @param isSpinnerVisible specified boolean used to set if the search is in progress or not
+ */
 function setSpinnerVisible(isSpinnerVisible){
     let button = $('#searchButton')[0];
     if(isSpinnerVisible){
@@ -126,26 +191,26 @@ function setSpinnerVisible(isSpinnerVisible){
     }
 }
 
-let levelColor = {
-    "INFO": "#36c590",
-    "DEBUG": "#5188ca",
-    "WARN": "#fbf571",
-    "ERROR": "#ff7168",
-    "TRACE": "#ffa566",
-    "FATAL": "#c978b8"
-};
-
+/**
+ * Function used to format a date based on format: YYYY:MM:DD HH:mm:ss
+ * @param date specified date object
+ * @returns {string} a string of the date object in the specified format YYYY:MM:DD HH:mm:ss
+ */
 function formatDate2(date){
     return "" +
-        date.getUTCFullYear() + "." +
-        ("0" + (date.getUTCMonth()+1)).slice(-2) + "." +
-        ("0" + date.getUTCDate()).slice(-2) + " " +
-        ("0" + date.getUTCHours()).slice(-2) + ":" +
-        ("0" + date.getUTCMinutes()).slice(-2) + ":" +
-        ("0" + date.getUTCSeconds()).slice(-2);
+        date.getFullYear() + "." +
+        ("0" + (date.getMonth()+1)).slice(-2) + "." +
+        ("0" + date.getDate()).slice(-2) + " " +
+        ("0" + date.getHours()).slice(-2) + ":" +
+        ("0" + date.getMinutes()).slice(-2) + ":" +
+        ("0" + date.getSeconds()).slice(-2);
 }
 
-
+/**
+ * Function used to format a date based on format: YYYY:MM:DD HH:mm:ss
+ * @param date specified date object
+ * @returns {string} a string of the date object in the specified format DD:MM:YYYY HH:mm:ss
+ */
 function formatDate(date){
     return "" +
         ("0" + date.getUTCDate()).slice(-2) + "." +
@@ -156,13 +221,26 @@ function formatDate(date){
         ("0" + date.getUTCSeconds()).slice(-2);
 }
 
-let info;
-function createLogFileElements(){
+/** variable used to tell which color belongs to which logLevel  */
+let levelColor = {
+    "INFO": "#36c590",
+    "DEBUG": "#5188ca",
+    "WARN": "#fbf571",
+    "ERROR": "#ff7168",
+    "TRACE": "#ffa566",
+    "FATAL": "#c978b8"
+}
+
+/**
+ * Function used to create log entry elements in the GUI
+ * @param data specified file data
+ */
+function createLogFileElements(data){
     let container = document.getElementById("logFileElementHolder");
     let text ="";
-    info.forEach(file =>{
+    data.forEach(file =>{
         text +=`
-    <a data-bs-toggle="modal" data-bs-target="#logModal" onclick="displayFileLogEntries('${file.filename}')">
+    <a data-bs-toggle="modal" data-bs-target="#logModal" onclick="displayFileLogEntriesFast('${file.filename}')">
         <div class="row mt-2">
             <div class="col-md-3 justify-content-center text-center log-date log-center border rounded-3">
                 <p class="my-3">${formatDate(new Date(file.firstDate))} - ${formatDate(new Date(file.lastDate))}</p>
@@ -182,6 +260,9 @@ function createLogFileElements(){
     container.innerHTML = text;
 }
 
+/**
+ * Functions used to add selected style to a tr tag
+ */
 function addTrStyleSelected(){
     $("#logEntryTable tr").click(function() {
         $(this).parent().children().removeClass("selected");
@@ -189,14 +270,51 @@ function addTrStyleSelected(){
     });
 }
 
-async function displayFileLogEntries(filename){
-    $('#logEntryTable').DataTable().destroy()
-    ;
-    let file = findFile(filename);
-    let data = await loadLogEntries(file.filename, file.logEntryIDs);
-    console.log(data);
 
-    document.getElementById("logFileTitle").innerText = "Log file name: " + file.filename;
+
+/**
+ * Function used to display log entries of a specified file quickly by doing multiple fetches
+ * @param filename specified filename
+ */
+async function displayFileLogEntriesFast(filename){
+    $('#logEntryTable').DataTable().clear();
+    $('#logEntryTable').DataTable().destroy();
+
+    document.getElementById("floatingTextarea").innerText = "";
+    document.getElementById("logFileTitle").innerText = "Log file name: " + filename;
+
+    let table = $('#logEntryTable').DataTable({
+        scrollY: '250px',
+        scrollCollapse: true,
+        paging: true,
+        pageLength: 5,
+        lengthMenu: [5, 10, 20, 50, 100],
+    });
+    let data = await searchInFile(filter, filename);
+    let num = 0;
+    data.forEach(logEntry =>{
+        table.row.add([formatDate2(new Date(logEntry.time)),logEntry.logLevel,logEntry.module,logEntry.className]).node().id = 'logEntry'+num;
+        $('#logEntry'+num).click(async function(){
+            document.getElementById("floatingTextarea").innerText = (await loadLogEntry(filename, logEntry.entryID)).message;
+        });
+        num++;
+    });
+    table.draw(false);
+    $('#logModal'). on('shown.bs.modal', function (e) {
+        $($.fn.dataTable.tables(true)).DataTable().columns.adjust();
+    })
+}
+
+/**
+ * Function used to display the log file entries by doing one fetch
+ * @param filename specified filename
+ */
+async function displayFileLogEntries(filename){
+    document.getElementById("floatingTextarea").innerText = "";
+    $('#logEntryTable').DataTable().destroy();
+    let data = await searchInFile(filter, filename);
+
+    document.getElementById("logFileTitle").innerText = "Log file name: " + filename;
 
     let container = document.getElementById("logEntryHolder");
     let text = "";
@@ -217,27 +335,28 @@ async function displayFileLogEntries(filename){
    num = 0;
     data.forEach( logEntry => {
         let id = "logEntry"+num;
-        $('#'+id).click(function(){
-            document.getElementById("floatingTextarea").innerText = logEntry.message;
+        $('#'+id).click(async function(){
+            document.getElementById("floatingTextarea").innerText = (await loadLogEntry(filename, logEntry.entryID)).message;
         });
         num++;
     });
     addTrStyleSelected();
-    $('#logEntryTable').DataTable();
+
+    $('#logEntryTable').DataTable({
+            scrollY: '250px',
+            scrollCollapse: true,
+            paging: true,
+            pageLength: 5,
+            lengthMenu: [5, 10, 20, 50, 100],
+    });
+
+    $('#logModal'). on('shown.bs.modal', function (e) {
+        $($.fn.dataTable.tables(true)).DataTable().columns.adjust();
+    })
 
     //TODO: Add red if its a NullPointerException
     /* document.querySelectorAll(".table > tbody > tr").forEach();*/
 
     //TODO: Add yellow if they are searched for (only if fetch nearby is active)
     /* document.querySelectorAll(".table > tbody > tr").forEach();*/
-}
-
-function findFile(filename){
-    let data;
-    info.forEach( file =>{
-        if(file.filename.toString() === filename.toString()){
-            data = file;
-        }
-    })
-    return data;
 }
