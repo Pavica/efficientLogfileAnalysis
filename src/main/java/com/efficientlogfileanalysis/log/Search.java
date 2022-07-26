@@ -230,6 +230,18 @@ public class Search implements Closeable {
         return getResultsFromSearch(hits);
     }
 
+    private List<Long> getEntryIDsFromResult(ScoreDoc[] hits) throws IOException {
+        List<Long> logEntries = new ArrayList<>();
+        for(ScoreDoc hit : hits)
+        {
+            Document document = searcher.doc(hit.doc);
+            long entryID = document.getField("logEntryID").numericValue().longValue();
+
+            logEntries.add(entryID);
+        }
+        return logEntries;
+    }
+
     /**
      * Searches for LogEntry IDs which match the given filter
      * @param filter data that every log entry needs to match
@@ -242,16 +254,7 @@ public class Search implements Closeable {
 
         ScoreDoc[] hits = searcher.search(query, Integer.MAX_VALUE).scoreDocs;
 
-        List<Long> logEntries = new ArrayList<>();
-        for(ScoreDoc hit : hits)
-        {
-            Document document = searcher.doc(hit.doc);
-            long entryID = document.getField("logEntryID").numericValue().longValue();
-
-            logEntries.add(entryID);
-        }
-
-        return logEntries;
+        return getEntryIDsFromResult(hits);
     }
 
     public Tuple<List<Long>, ScoreDoc> searchForLogEntryIDsWithPagination(Filter filter, int maxEntryAmount, ScoreDoc offset) throws IOException
@@ -268,16 +271,9 @@ public class Search implements Closeable {
             hits = searcher.searchAfter(offset, query, maxEntryAmount).scoreDocs;
         }
 
-        List<Long> logEntries = new ArrayList<>();
-        for(ScoreDoc hit : hits)
-        {
-            Document document = searcher.doc(hit.doc);
-            long entryID = document.getField("logEntryID").numericValue().longValue();
+        List<Long> logEntries = getEntryIDsFromResult(hits);
 
-            logEntries.add(entryID);
-        }
-
-        ScoreDoc lastHit = hits[hits.length-1];
+        ScoreDoc lastHit = hits.length == 0 ? null : hits[hits.length-1];
 
         return new Tuple<>(logEntries, lastHit);
     }
