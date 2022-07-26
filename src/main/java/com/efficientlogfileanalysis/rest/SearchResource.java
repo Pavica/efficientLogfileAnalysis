@@ -209,20 +209,24 @@ public class SearchResource {
         @PathParam("amount") int amount
     )
     {
-        Filter filter = parseFilterData(pageRequestData.filterData);
+        //Get LastSearchEntry Data
         LuceneSearchEntry lastSearchData = pageRequestData.lastSearchEntry;
+        ScoreDoc lastSearchEntry = lastSearchData == null ? null : new ScoreDoc(lastSearchData.docNumber, lastSearchData.docScore);
 
+        //Get the ID of the requested file
+        Filter filter = parseFilterData(pageRequestData.filterData);
         short fileID = FileIDManager.getInstance().get(fileName);
 
         filter.setFileID(fileID);
 
-        try
+        try (Search search = new Search())
         {
-            Search search = new Search();
-
-            ScoreDoc lastSearchEntry = lastSearchData == null ? null : new ScoreDoc(lastSearchData.docNumber, lastSearchData.docScore);
-
             Tuple<List<Long>, ScoreDoc> result = search.searchForLogEntryIDsWithPagination(filter, amount, lastSearchEntry);
+
+            if(result.value1.isEmpty())
+            {
+                return Response.status(Response.Status.NO_CONTENT).build();
+            }
 
             ResultPageResponseData responseData = new ResultPageResponseData();
             responseData.setLastSearchEntry(new LuceneSearchEntry(result.value2.doc, result.value2.score));
