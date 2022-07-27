@@ -2,8 +2,9 @@ package com.efficientlogfileanalysis.rest;
 
 import com.efficientlogfileanalysis.data.LogEntry;
 import com.efficientlogfileanalysis.data.Settings;
-import com.efficientlogfileanalysis.log.FileIDManager;
 import com.efficientlogfileanalysis.log.LogReader;
+import com.efficientlogfileanalysis.log.Manager;
+
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Response;
 
@@ -18,7 +19,8 @@ public class LogFileResource {
     @Produces("application/json")
     public Response getAllLogfiles()
     {
-        return Response.ok(FileIDManager.getInstance().getLogFileData()).build();
+        //return Response.ok(FileIDManager.getInstance().getLogFileData()).build();
+        return Response.ok(Manager.getInstance().getFileIDManager().getLogFileData()).build();
     }
 
     @GET
@@ -27,9 +29,9 @@ public class LogFileResource {
     public Response getLogEntry(
         @PathParam("logFileName") String logFileName,
         @PathParam("id") long entryID
-    )
-    {
-        short fileID = FileIDManager.getInstance().get(logFileName);
+    ) {
+        //short fileID = FileIDManager.getInstance().get(logFileName);
+        short fileID = Manager.getInstance().getFileID(logFileName);
 
         try( LogReader logReader = new LogReader())
         {
@@ -54,9 +56,9 @@ public class LogFileResource {
     public Response getLogEntries(
         @PathParam("logFileName") String logFileName,
         List<Long> requestedIDs
-    )
-    {
-        short fileID = FileIDManager.getInstance().get(logFileName);
+    ) {
+        //short fileID = FileIDManager.getInstance().get(logFileName);
+        short fileID = Manager.getInstance().getFileID(logFileName);
 
         try( LogReader logReader = new LogReader())
         {
@@ -80,6 +82,4 @@ public class LogFileResource {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
         }
     }
-
-
 }

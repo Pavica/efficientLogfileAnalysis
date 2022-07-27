@@ -10,23 +10,11 @@ import java.io.RandomAccessFile;
  */
 public class LogLevelIDManager extends IndexManager<Byte, String> {
     
-    private static LogLevelIDManager instance;
-    
-    private LogLevelIDManager() {
+    public LogLevelIDManager() {
         super(
             IndexManager.I_TypeConverter.BYTE_TYPE_CONVERTER,
             IndexManager.I_TypeConverter.STRING_TYPE_CONVERTER
         );
-
-        //createIndex();
-    }
-
-    public static synchronized LogLevelIDManager getInstance() {
-        if(instance == null) {
-            instance = new LogLevelIDManager();
-        }
-        
-        return instance;
     }
     
     protected void createIndex() {
@@ -41,14 +29,15 @@ public class LogLevelIDManager extends IndexManager<Byte, String> {
         return values.getValue(key);
     }
 
-    public Byte get(String value) {
-        return values.getKey(value);
+    public byte get(String value) {
+        Byte temp = values.getKey(value);
+        return temp == null ? 0 : Byte.valueOf(temp);
     }
 
     public static void main(String[] args) {
         try {
 
-            File d = new File("d");
+            File d = new File(Manager.PATH_TO_INDEX + "/" + "log_level_id_manager");
             d.createNewFile();
             RandomAccessFile file = new RandomAccessFile(d, "rw");
             

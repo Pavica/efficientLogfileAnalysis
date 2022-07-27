@@ -15,18 +15,7 @@ import java.io.RandomAccessFile;
  */
 public class LogDateManager extends IndexManager<Short, LogDateManager.TimeRange>{
 
-    private static final String FILE_NAME = "LogDateIndex";
-
-    private static LogDateManager instance;
-
-    public static LogDateManager getInstance() {
-        if(instance == null)
-        {
-            instance = new LogDateManager();
-        }
-
-        return instance;
-    }
+    private static final String FILE_NAME = "log_date_index";
 
     /**
      * Data class representing a range of time
@@ -78,7 +67,7 @@ public class LogDateManager extends IndexManager<Short, LogDateManager.TimeRange
 
         try
         {
-            File file = new File(FILE_NAME);
+            File file = new File(Manager.PATH_TO_INDEX + "/" + FILE_NAME);
 
             if(file.exists())
             {
@@ -94,7 +83,7 @@ public class LogDateManager extends IndexManager<Short, LogDateManager.TimeRange
      */
     public void writeIndex() throws IOException
     {
-        RandomAccessFile file = new RandomAccessFile(FILE_NAME, "rw");
+        RandomAccessFile file = new RandomAccessFile(Manager.PATH_TO_INDEX + "/" + FILE_NAME, "rw");
         super.writeIndex(file);
     }
 
@@ -104,13 +93,19 @@ public class LogDateManager extends IndexManager<Short, LogDateManager.TimeRange
      * @return the time range or (if no data for the specified file is found) the whole unix time frame
      */
     public TimeRange get(short key){
-        if(!values.containsKey(key))
-        {
+        if(!values.containsKey(key)) {
             return new TimeRange();
         }
 
         return values.getValue(key);
     }
+
+    /**
+     * Returns an array with the file indices of the files that have a date in between the specified TimeRange
+     * @param value The time range that gets checked
+     * @return the files that have that time range inside them
+     */
+    public short[] get(TimeRange value) {return null;}
 
     /**
      * Sets the beginning date for the given file
@@ -151,16 +146,16 @@ public class LogDateManager extends IndexManager<Short, LogDateManager.TimeRange
 
     @SneakyThrows
     public static void main(String[] args) {
-        LogDateManager logDateManager = LogDateManager.getInstance();
+        LogDateManager ldm = new LogDateManager();
 
-        System.out.println(logDateManager.get((short) 0));
+        System.out.println(ldm.get((short) 0));
 
 //        logDateManager.setDateRange((short)0, 50, 100);
 //        logDateManager.setDateRange((short)1, 200, 300);
 //        logDateManager.setDateRange((short)2, 500, 550);
 //        logDateManager.setDateRange((short)3, 1000, 2000);
 //
-//        logDateManager.writeIndex(new RandomAccessFile(FILE_NAME, "rw"));
+//        logDateManager.writeIndex(new RandomAccessFile(Manager.PATH_TO_INDEX + "/" + FILE_NAME, "rw"));
 
     }
 }
