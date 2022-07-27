@@ -310,7 +310,8 @@ public class LogReader implements Closeable {
 
         Timer timer = new Timer();
 
-        short fileID = FileIDManager.getInstance().get("DesktopClient-My-User-PC.mshome.net.log");
+        //short fileID = FileIDManager.getInstance().get("DesktopClient-My-User-PC.mshome.net.log");
+        short fileID = Manager.getInstance().getFileID("DesktopClient-My-User-PC.mshome.net.log");
         String path = Settings.getInstance().getLogFilePath();
 
         Timer.Time time = timer.timeExecutionSpeed(() -> {

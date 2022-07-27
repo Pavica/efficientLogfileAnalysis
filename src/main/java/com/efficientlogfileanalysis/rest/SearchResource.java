@@ -221,7 +221,8 @@ public class SearchResource {
 
         //Get the ID of the requested file
         Filter filter = parseFilterData(pageRequestData.filterData);
-        short fileID = FileIDManager.getInstance().get(fileName);
+        //short fileID = FileIDManager.getInstance().get(fileName);
+        short fileID = Manager.getInstance().getFileID(fileName);
 
         filter.setFileID(fileID);
 
