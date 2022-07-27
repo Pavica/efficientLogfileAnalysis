@@ -2,6 +2,7 @@ package com.efficientlogfileanalysis.log;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 
 public class Manager {
     /**
@@ -15,12 +16,16 @@ public class Manager {
     private LogDateManager ldm;
     private LogLevelIDManager llidm;
     private LogLevelIndexManager llim;
+    private ModuleIDManager midm;
+    private ClassIDManager cidm;
 
     private Manager(){
         fidm = new FileIDManager();
         ldm = new LogDateManager();
         llidm = new LogLevelIDManager();
         llim = new LogLevelIndexManager();
+        midm = new ModuleIDManager();
+        cidm = new ClassIDManager();
     }
 
     public static synchronized Manager getInstance() {
@@ -36,8 +41,9 @@ public class Manager {
         fidm.createIndex();
         ldm.createIndex();
         llidm.createIndex();
-        //muss hinter llidm sein
         llim.createIndex();
+        midm.createIndex();
+        cidm.createIndex();
     }
 
     public short getFileID(String fileName) {
@@ -45,7 +51,6 @@ public class Manager {
     }
 
     public String getFileName(short fileID) {
-        //TODO: does ./index work on windows?
         return fidm.get(fileID);
     }
     
@@ -79,6 +84,38 @@ public class Manager {
 
     public List<FileIDManager.FileData> getFileIDLogFileData() {
         return fidm.getLogFileData();
+    }
+
+    public int moduleNameaddIfAbsent(String moduleName) {
+        return midm.addIfAbsent(moduleName);
+    }
+
+    public Set<String> getModuleNames()  {
+        return midm.getModuleNames();
+    }
+
+    public String getModuleName(Integer moduleID) {
+        return midm.get(moduleID);
+    }
+
+    public Integer getModuleID(String moduleName) {
+        return midm.get(moduleName);
+    }
+
+    public int classNameaddIfAbsent(String className) {
+        return cidm.addIfAbsent(className);
+    }
+
+    public Set<String> getClassNames()  {
+        return cidm.getClassNames();
+    }
+    
+    public String getClassName(Integer moduleID) {
+        return cidm.get(moduleID);
+    }
+
+    public Integer getClassID(String moduleName) {
+        return cidm.get(moduleName);
     }
 
     public static void main(String[] args) {

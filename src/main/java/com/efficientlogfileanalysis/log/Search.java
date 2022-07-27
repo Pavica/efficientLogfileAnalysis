@@ -105,7 +105,8 @@ public class Search implements Closeable {
         //Apply module filter
         if(filter.getModule() != null)
         {
-            int moduleID = ModuleIDManager.getInstance().get(filter.getModule());
+            //int moduleID = ModuleIDManager.getInstance().get(filter.getModule());
+            int moduleID = Manager.getInstance().getModuleID(filter.getModule());
             queryBuilder.add(
                 IntPoint.newExactQuery("module", moduleID),
                 BooleanClause.Occur.MUST
@@ -115,7 +116,8 @@ public class Search implements Closeable {
         //Apply className filter
         if(filter.getClassName() != null)
         {
-            int classNameID = ClassIDManager.getInstance().get(filter.getClassName());
+            //int classNameID = ClassIDManager.getInstance().get(filter.getClassName());
+            int classNameID = Manager.getInstance().getClassID(filter.getClassName());
             queryBuilder.add(
                 IntPoint.newExactQuery("classname", classNameID),
                 BooleanClause.Occur.MUST

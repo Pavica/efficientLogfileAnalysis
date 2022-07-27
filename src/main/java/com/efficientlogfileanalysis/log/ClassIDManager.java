@@ -11,23 +11,11 @@ public class ClassIDManager extends IndexManager<Integer, String>{
 
     private static final String FILE_NAME = "ClassIDIndex";
 
-    private static ClassIDManager instance;
-
-    public static synchronized ClassIDManager getInstance()
-    {
-        if(instance == null)
-        {
-            instance = new ClassIDManager();
-        }
-
-        return instance;
-    }
-
     @Override
     protected void createIndex() {
         super.createIndex();
 
-        File file = new File(FILE_NAME);
+        File file = new File(Manager.PATH_TO_INDEX + "/" + FILE_NAME);
         if(file.exists())
         {
             try
@@ -41,7 +29,7 @@ public class ClassIDManager extends IndexManager<Integer, String>{
         }
     }
 
-    private ClassIDManager()
+    public ClassIDManager()
     {
         super(
             I_TypeConverter.INTEGER_TYPE_CONVERTER,
@@ -112,7 +100,6 @@ public class ClassIDManager extends IndexManager<Integer, String>{
 
     @SneakyThrows
     public static void main(String[] args) {
-        ClassIDManager.getInstance().readIndex();
-        System.out.println(ClassIDManager.getInstance());
+        //System.out.println(ClassIDManager.getInstance());
     }
 }
