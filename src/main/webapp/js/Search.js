@@ -141,7 +141,7 @@ async function loadLogEntry(filename, logEntryID)
 }
 
 /**
- * OLD function used to get all log entries in a file
+ * OLD function used to get multiple log entries in a file
  * @param filename specified filename
  * @param logEntryIDs specified log entry ids
  * @returns {Promise<any>} an array of log entries of a file
@@ -264,7 +264,7 @@ function createLogFileElements(data){
     let text ="";
     data.forEach(file =>{
         text +=`
-    <a data-bs-toggle="modal" data-bs-target="#logModal" onclick="displayFileLogEntriesFast('${file.filename}')">
+    <a data-bs-toggle="modal" data-bs-target="#logModal" onclick="displayFileLogEntries('${file.filename}')">
         <div class="row mt-2">
             <div class="col-md-3 justify-content-center text-center log-date log-center border rounded-3">
                 <p class="my-3">${formatDate(new Date(file.firstDate))} - ${formatDate(new Date(file.lastDate))}</p>
@@ -300,6 +300,50 @@ function sliceIntoChunks(arr, chunkSize) {
  * Function used to display log entries of a specified file quickly by doing multiple fetches
  * @param filename specified filename
  */
+async function displayFileLogEntries(filename){
+    $('#logEntryTable').DataTable().clear();
+    $('#logEntryTable').DataTable().destroy();
+
+    document.getElementById("floatingTextarea").innerText = "";
+    document.getElementById("logFileTitle").innerText = "Log file name: " + filename;
+
+    let table = $('#logEntryTable').DataTable({
+        scrollY: '250px',
+        scrollCollapse: true,
+        paging: true,
+        pageLength: 5,
+        lengthMenu: [5, 10, 20, 50, 100],
+        select: {
+            style: 'single'
+        },
+    });
+
+    $('#logModal').on('shown.bs.modal', function (e) {
+        $($.fn.dataTable.tables(true)).DataTable().columns.adjust();
+    });
+
+    let lastSearchEntry = null;
+    let data = null;
+    let num = 0;
+
+    table.off('select.dt');
+    table.on( 'select.dt', async function () {
+       let id = $('.selected')[0].id;
+        document.getElementById("floatingTextarea").innerText = (await loadLogEntry(filename, id)).message;
+    });
+
+    while((data = await searchInFileAmount(filter, filename, lastSearchEntry, 1000)) != null){
+        lastSearchEntry = {"docNumber":data.lastSearchEntry.docNumber, "docScore":data.lastSearchEntry.docScore};
+        let currentData = data.logEntries;
+
+        for(let i=0; i<currentData.length; i++){
+            table.row.add([formatDate2(new Date(currentData[i].time)),currentData[i].logLevel,currentData[i].module,currentData[i].className]).node().id = currentData[i].entryID;
+            num++;
+        }
+        table.draw(false);
+    }
+}
+
 async function displayFileLogEntriesFast(filename){
     $('#logEntryTable').DataTable().clear();
     $('#logEntryTable').DataTable().destroy();
@@ -315,88 +359,61 @@ async function displayFileLogEntriesFast(filename){
         lengthMenu: [5, 10, 20, 50, 100],
     });
 
-    $('#logModal'). on('shown.bs.modal', function (e) {
+    $('#logModal'). on('shown.bs.modal', function () {
         $($.fn.dataTable.tables(true)).DataTable().columns.adjust();
     });
+
     let data = await searchInFile(filter, filename);
     let partedData = sliceIntoChunks(data, 1000);
 
     let num = 0;
     for(let j=0; j<partedData.length; j++){
-        let help = num;
         let currentData = partedData[j];
         for(let i=0; i<currentData.length; i++){
             table.row.add([formatDate2(new Date(currentData[i].time)),currentData[i].logLevel,currentData[i].module,currentData[i].className]).node().id = 'logEntry'+num;
-            num++;
-        }
-
-        num= help;
-        await new Promise(s => setTimeout(s, 1));
-        table.draw(false);
-
-        for(let i=0; i<currentData.length; i++){
+           /* $('table tbody').off('click', '#logEntry' + num);
             $('table tbody').on('click', '#logEntry' + num, async function() {
                 $(this).parent().children().removeClass("selected");
                 $(this).addClass("selected");
                 document.getElementById("floatingTextarea").innerText = (await loadLogEntry(filename, currentData[i].entryID)).message;
-            });
+            });*/
             num++;
         }
+        await new Promise(s => setTimeout(s, 1));
+        table.draw(false);
     }
 }
 
-/**
- * Function used to display the log file entries by doing one fetch
- * @param filename specified filename
- */
-async function displayFileLogEntries(filename){
-    document.getElementById("floatingTextarea").innerText = "";
+async function displayFileLogEntriesSlow(filename){
+    $('#logEntryTable').DataTable().clear();
     $('#logEntryTable').DataTable().destroy();
-    let data = await searchInFile(filter, filename);
 
+    document.getElementById("floatingTextarea").innerText = "";
     document.getElementById("logFileTitle").innerText = "Log file name: " + filename;
 
-    let container = document.getElementById("logEntryHolder");
-    let text = "";
-
+    let table = $('#logEntryTable').DataTable({
+        scrollY: '250px',
+        scrollCollapse: true,
+        paging: true,
+        pageLength: 5,
+        lengthMenu: [5, 10, 20, 50, 100],
+    });
+    let data = await searchInFile(filter, filename);
     let num = 0;
-    data.forEach( logEntry => {
-        text +=
-        `<tr id="logEntry${num}">
-            <td>${formatDate2(new Date(logEntry.time))}</td>
-            <td>${logEntry.logLevel}</td>
-            <td>${logEntry.module}</td>
-            <td>${logEntry.className}</td>
-        </tr>`;
-        num++;
-    });
-   container.innerHTML = text;
-
-   num = 0;
-    data.forEach( logEntry => {
-        let id = "logEntry"+num;
-        $('#'+id).click(async function(){
+    data.forEach(logEntry =>{
+        table.row.add([formatDate2(new Date(logEntry.time)),logEntry.logLevel,logEntry.module,logEntry.className]).node().id = 'logEntry'+num;
+        /*$('table tbody').off('click', '#logEntry' + num);
+        $('table tbody').on('click', '#logEntry' + num, async function() {
+            $(this).parent().children().removeClass("selected");
+            $(this).addClass("selected");
             document.getElementById("floatingTextarea").innerText = (await loadLogEntry(filename, logEntry.entryID)).message;
-        });
+        });*/
         num++;
     });
-    addTrStyleSelected();
 
-    $('#logEntryTable').DataTable({
-            scrollY: '250px',
-            scrollCollapse: true,
-            paging: true,
-            pageLength: 5,
-            lengthMenu: [5, 10, 20, 50, 100],
-    });
+    table.draw();
 
     $('#logModal'). on('shown.bs.modal', function (e) {
         $($.fn.dataTable.tables(true)).DataTable().columns.adjust();
     })
-
-    //TODO: Add red if its a NullPointerException
-    /* document.querySelectorAll(".table > tbody > tr").forEach();*/
-
-    //TODO: Add yellow if they are searched for (only if fetch nearby is active)
-    /* document.querySelectorAll(".table > tbody > tr").forEach();*/
 }

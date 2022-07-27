@@ -73,7 +73,7 @@ function reloadStatisticsCookie(){
     });
     statisticsValues = statisticsValues.substring(0,statisticsValues.length-1);
     //currently set to 3 days
-    setCookie("statistics", statisticsValues, 20);
+    setCookie("statistics", statisticsValues, 3652);
 }
 
 /**
@@ -91,7 +91,7 @@ function setColorCookie(){
 function reloadColorCookie(){
     let style =document.documentElement.style;
     let cookieValues = style.getPropertyValue('--main-color') + "|" + style.getPropertyValue('--main-text-color');
-    setCookie("color", cookieValues, 20);
+    setCookie("color", cookieValues, 3652);
 }
 
 /**
@@ -102,12 +102,12 @@ function loadCookies(){
         setStatisticsCookie();
         reloadAllActiveStatistics();
     }else{
-        setCookie("statistics", "false|false|false|false", 20);
+        setCookie("statistics", "false|false|false|false", 3652);
     }
 
     if(checkCookie("color")){
         setColorCookie();
     }else{
-        setCookie("color", "#fff200|#ffffff", 20);
+        setCookie("color", "#fff200|#ffffff", 3652);
     }
 }

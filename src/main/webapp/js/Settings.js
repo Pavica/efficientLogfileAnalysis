@@ -54,7 +54,7 @@ async function loadPathIntoField(){
 /** const used to describe the base color of the gui */
 const baseColor ="#fff200";
 /** const used to describe the base text color of the gui elements*/
-const baseTextColor ="#ffffff";
+const baseTextColor ="#000000";
 
 /**
  * Function used to save the color to the specified style variable
