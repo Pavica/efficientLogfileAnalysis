@@ -306,4 +306,17 @@ public class IndexManager<K, V>{
     public void putKey(V value, K key){
         values.putKey(value, key);
     }
+
+
+    @Override
+    public String toString() {
+        StringBuilder output = new StringBuilder("");
+
+        for(K key : values.getKeySet())
+        {
+            output.append(String.format(" %12s\t|\t%s \n", key, values.getValue(key)));
+        }
+
+        return output.toString();
+    }
 }
