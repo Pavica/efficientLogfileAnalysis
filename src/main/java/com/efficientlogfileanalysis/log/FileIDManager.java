@@ -17,22 +17,11 @@ import com.efficientlogfileanalysis.data.Settings;
  */
 public class FileIDManager extends IndexManager<Short, String> {
 
-    private static FileIDManager instance;
-
-    public static synchronized FileIDManager getInstance() {
-        if(instance == null) {
-            instance = new FileIDManager();
-        }
-        return instance;
-    }
-
-    private FileIDManager() {
+    public FileIDManager() {
         super(
             IndexManager.I_TypeConverter.SHORT_TYPE_CONVERTER,
             IndexManager.I_TypeConverter.STRING_TYPE_CONVERTER
         );
-        
-        createIndex();
     }
 
     public void createIndex() {
@@ -85,15 +74,17 @@ public class FileIDManager extends IndexManager<Short, String> {
     }
 
     public static void main(String[] args) {
-        File f = new File("d");
+        File f = new File(Manager.PATH_TO_INDEX + "/" + "file_ids");
         try {
             f.createNewFile();
             try (RandomAccessFile file = new RandomAccessFile(f, "rw")) {
 
                 //FileIDManager.getInstance().getLogFileData().forEach(System.out::println);
                 //FileIDManager.getInstance().writeIndex(file);
-                FileIDManager.getInstance().readIndex(file);
-                FileIDManager.getInstance().getLogFileData().forEach(System.out::println);
+                FileIDManager fidm = new FileIDManager();
+
+                fidm.readIndex(file);
+                fidm.getLogFileData().forEach(System.out::println);
             
             } catch (IOException e) {
                 e.printStackTrace();

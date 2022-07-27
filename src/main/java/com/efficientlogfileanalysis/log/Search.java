@@ -59,7 +59,7 @@ public class Search implements Closeable {
     public Search() throws IOException
     {
         //Open the Index
-        Directory indexDirectory = FSDirectory.open(Paths.get(LuceneIndexManager.PATH_TO_INDEX));
+        Directory indexDirectory = FSDirectory.open(Paths.get(Manager.PATH_TO_INDEX));
         directoryReader = DirectoryReader.open(indexDirectory);
         searcher = new IndexSearcher(directoryReader);
     }
@@ -98,8 +98,13 @@ public class Search implements Closeable {
             //Apply all logLevel filters
             //TODO improve that
 
-            for(Byte notIncluded : Arrays.stream(allLogLevels).map(LogLevelIDManager.getInstance()::get).filter(s -> !filter.getLogLevels().contains(s)).collect(Collectors.toList()))
-            {
+            for(
+                Byte notIncluded : Arrays.stream(allLogLevels)
+                    //.map(LogLevelIDManager.getInstance()::get)
+                    .map(Manager.getInstance()::getLogLevelID)
+                    .filter(s -> !filter.getLogLevels().contains(s))
+                    .collect(Collectors.toList())
+            ) {
                 queryBuilder.add(
                         LongPoint.newExactQuery("logLevel", notIncluded),
                         BooleanClause.Occur.MUST_NOT
@@ -110,7 +115,8 @@ public class Search implements Closeable {
         //Apply module filter
         if(filter.getModule() != null)
         {
-            int moduleID = ModuleIDManager.getInstance().get(filter.getModule());
+            //int moduleID = ModuleIDManager.getInstance().get(filter.getModule());
+            int moduleID = Manager.getInstance().getModuleID(filter.getModule());
             queryBuilder.add(
                 IntPoint.newExactQuery("module", moduleID),
                 BooleanClause.Occur.MUST
@@ -120,7 +126,8 @@ public class Search implements Closeable {
         //Apply className filter
         if(filter.getClassName() != null)
         {
-            int classNameID = ClassIDManager.getInstance().get(filter.getClassName());
+            //int classNameID = ClassIDManager.getInstance().get(filter.getClassName());
+            int classNameID = Manager.getInstance().getClassID(filter.getClassName());
             queryBuilder.add(
                 IntPoint.newExactQuery("classname", classNameID),
                 BooleanClause.Occur.MUST
@@ -200,14 +207,15 @@ public class Search implements Closeable {
         {
             Document document = searcher.doc(hit.doc);
 
-            short fileIndex = document.getField("fileIndex").numericValue().shortValue();
+            short fileID = document.getField("fileIndex").numericValue().shortValue();
             long entryIndex = document.getField("logEntryID").numericValue().longValue();
 
-            long logEntryTime = logReader.readDateOfEntry(path, fileIndex, entryIndex);
-            String logLevel = logReader.readLogLevelOfEntry(path, fileIndex, entryIndex);
+            long logEntryTime = logReader.readDateOfEntry(path, fileID, entryIndex);
+            String logLevel = logReader.readLogLevelOfEntry(path, fileID, entryIndex);
 
-            logFiles.putIfAbsent(fileIndex, new SearchEntry(FileIDManager.getInstance().get(fileIndex)));
-            logFiles.get(fileIndex).addLogEntry(entryIndex, logLevel, logEntryTime);
+            //logFiles.putIfAbsent(fileIndex, new SearchEntry(FileIDManager.getInstance().get(fileID)));
+            logFiles.putIfAbsent(fileID, new SearchEntry(Manager.getInstance().getFileName(fileID)));
+            logFiles.get(fileID).addLogEntry(entryIndex, logLevel, logEntryTime);
         }
 
         logReader.close();
@@ -224,17 +232,20 @@ public class Search implements Closeable {
         byte[] levelsPerFile;
         int counter;
 
-        files.ensureCapacity(FileIDManager.getInstance().values.getKeySet().size());
+        //files.ensureCapacity(FileIDManager.getInstance().values.getKeySet().size());
+        files.ensureCapacity(Manager.getInstance().getFileIDManager().values.getKeySet().size());
 
         //go through all files
-        for(short fileID : FileIDManager.getInstance().values.getKeySet()) {
+        //for(short fileID : FileIDManager.getInstance().values.getKeySet()) {
+        for(short fileID : Manager.getInstance().getFileIDManager().values.getKeySet()) {
             filterBuilder = Filter
                 .builder()
                 .fileID(fileID);
 
             //add Filter for all log levels
             for(String s : Search.allLogLevels) {
-                filterBuilder.addLogLevel(LogLevelIDManager.getInstance().get(s));
+                //filterBuilder.addLogLevel(LogLevelIDManager.getInstance().get(s));
+                filterBuilder.addLogLevel(Manager.getInstance().getLogLevelID(s));
             }
 
             query = parseFilter(filterBuilder.build()).build();
@@ -389,15 +400,15 @@ public class Search implements Closeable {
 
         //System.out.println(Long.MAX_VALUE);
 
+        Manager mgr = Manager.getInstance();
         Search search = new Search();
         Filter f = Filter
                 .builder()
-//                .fileID((short) 0)
+                .fileID((short) 0)
                 .message("20 millisekonds runing JMSh")
                 .build();
 
         //search.searchForFiles(f).stream().map(FileIDManager.getInstance()::get).forEach(System.out::println);
-
 
 //        long fileID = FileIDManager.getInstance().get("DesktopClient-DE-GS-NB-0028.haribo.dom.log");
 //        System.out.println(fileID);

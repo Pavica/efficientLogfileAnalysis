@@ -42,7 +42,9 @@ public class SearchResource {
                 .beginDate(filterData.beginDate)
                 .endDate(filterData.endDate);
 
-        filterData.logLevels.stream().map(LogLevelIDManager.getInstance()::get).forEach(filterBuilder::addLogLevel);
+        //filterData.logLevels.stream().map(LogLevelIDManager.getInstance()::get).forEach(filterBuilder::addLogLevel);
+        filterData.logLevels.stream().map(Manager.getInstance()::getLogLevelID).forEach(filterBuilder::addLogLevel);
+        
 
         if(filterData.module != null)
         {
@@ -117,19 +119,23 @@ public class SearchResource {
 
             List<Short> fileIDs = search.searchForFiles(filter);
             List<FileData> affectedFiles = new ArrayList<>(fileIDs.size());
+            Manager mgr = Manager.getInstance();
 
             for(short fileID : fileIDs)
             {
                 FileData fileData = new FileData();
 
-                fileData.setFirstDate(LogDateManager.getInstance().get(fileID).beginDate);
-                fileData.setLastDate(LogDateManager.getInstance().get(fileID).endDate);
+                fileData.setFirstDate(mgr.getLogFileDateRange(fileID).beginDate);
+                fileData.setLastDate(mgr.getLogFileDateRange(fileID).endDate);
 
-                for(byte logLevelID : LogLevelIndexManager.getInstance().get(fileID)){
-                    fileData.addLogLevel(LogLevelIDManager.getInstance().get(logLevelID));
+                //for(byte logLevelID : LogLevelIndexManager.getInstance().get(fileID)) {
+                for(byte logLevelID : mgr.getLogLevel(fileID)) {
+                    //fileData.addLogLevel(LogLevelIDManager.getInstance().get(logLevelID));
+                    fileData.addLogLevel(mgr.getLogLevelName(logLevelID));
                 }
 
-                fileData.setFilename(FileIDManager.getInstance().get(fileID));
+                //fileData.setFilename(FileIDManager.getInstance().get(fileID));
+                fileData.setFilename(mgr.getFileName(fileID));
 
                 affectedFiles.add(fileData);
             }
@@ -148,7 +154,7 @@ public class SearchResource {
     public Response search(FilterData filterData, @PathParam("fileName") String fileName)
     {
         Filter filter = parseFilterData(filterData);
-        short fileID = FileIDManager.getInstance().get(fileName);
+        short fileID = Manager.getInstance().getFileID(fileName);
 
         filter.setFileID(fileID);
 
@@ -220,7 +226,8 @@ public class SearchResource {
 
         //Get the ID of the requested file
         Filter filter = parseFilterData(pageRequestData.filterData);
-        short fileID = FileIDManager.getInstance().get(fileName);
+        //short fileID = FileIDManager.getInstance().get(fileName);
+        short fileID = Manager.getInstance().getFileID(fileName);
 
         filter.setFileID(fileID);
 
