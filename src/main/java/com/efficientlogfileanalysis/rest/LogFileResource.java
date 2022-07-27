@@ -2,14 +2,24 @@ package com.efficientlogfileanalysis.rest;
 
 import com.efficientlogfileanalysis.data.LogEntry;
 import com.efficientlogfileanalysis.data.Settings;
+import com.efficientlogfileanalysis.log.ClassIDManager;
 import com.efficientlogfileanalysis.log.FileIDManager;
 import com.efficientlogfileanalysis.log.LogReader;
+import com.efficientlogfileanalysis.log.ModuleIDManager;
+import com.fasterxml.jackson.core.JsonEncoding;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.StreamingOutput;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Path("/logFiles")
 public class LogFileResource {
@@ -81,5 +91,21 @@ public class LogFileResource {
         }
     }
 
+    @GET
+    @Path("classNames")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getClassNames()
+    {
+        Set<String> classNames = ClassIDManager.getInstance().getClassNames();
+        return Response.ok(classNames).type(MediaType.APPLICATION_JSON).build();
+    }
 
+
+    @GET
+    @Path("modules")
+    public Response getAllModules()
+    {
+        Set<String> classNames = ModuleIDManager.getInstance().getModuleNames();
+        return Response.ok(classNames).build();
+    }
 }

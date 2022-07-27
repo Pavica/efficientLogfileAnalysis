@@ -100,18 +100,20 @@ public class Search implements Closeable {
         //Apply module filter
         if(filter.getModule() != null)
         {
+            int moduleID = ModuleIDManager.getInstance().get(filter.getModule());
             queryBuilder.add(
-                    new TermQuery(new Term("module", filter.getModule())),
-                    BooleanClause.Occur.MUST
+                IntPoint.newExactQuery("module", moduleID),
+                BooleanClause.Occur.MUST
             );
         }
 
         //Apply className filter
         if(filter.getClassName() != null)
         {
+            int classNameID = ClassIDManager.getInstance().get(filter.getClassName());
             queryBuilder.add(
-                    new TermQuery(new Term("classname", filter.getClassName())),
-                    BooleanClause.Occur.MUST
+                IntPoint.newExactQuery("classname", classNameID),
+                BooleanClause.Occur.MUST
             );
         }
 
