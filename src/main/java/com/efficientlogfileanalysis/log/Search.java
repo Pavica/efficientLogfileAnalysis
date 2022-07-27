@@ -1,6 +1,7 @@
 package com.efficientlogfileanalysis.log;
 
 import com.efficientlogfileanalysis.data.Settings;
+import com.efficientlogfileanalysis.data.Tuple;
 import com.efficientlogfileanalysis.data.search.Filter;
 import com.efficientlogfileanalysis.data.search.SearchEntry;
 
@@ -104,18 +105,20 @@ public class Search implements Closeable {
         //Apply module filter
         if(filter.getModule() != null)
         {
+            int moduleID = ModuleIDManager.getInstance().get(filter.getModule());
             queryBuilder.add(
-                    new TermQuery(new Term("module", filter.getModule())),
-                    BooleanClause.Occur.MUST
+                IntPoint.newExactQuery("module", moduleID),
+                BooleanClause.Occur.MUST
             );
         }
 
         //Apply className filter
         if(filter.getClassName() != null)
         {
+            int classNameID = ClassIDManager.getInstance().get(filter.getClassName());
             queryBuilder.add(
-                    new TermQuery(new Term("classname", filter.getClassName())),
-                    BooleanClause.Occur.MUST
+                IntPoint.newExactQuery("classname", classNameID),
+                BooleanClause.Occur.MUST
             );
         }
 
@@ -238,6 +241,18 @@ public class Search implements Closeable {
         return getResultsFromSearch(hits);
     }
 
+    private List<Long> getEntryIDsFromResult(ScoreDoc[] hits) throws IOException {
+        List<Long> logEntries = new ArrayList<>();
+        for(ScoreDoc hit : hits)
+        {
+            Document document = searcher.doc(hit.doc);
+            long entryID = document.getField("logEntryID").numericValue().longValue();
+
+            logEntries.add(entryID);
+        }
+        return logEntries;
+    }
+
     /**
      * Searches for LogEntry IDs which match the given filter
      * @param filter data that every log entry needs to match
@@ -250,16 +265,28 @@ public class Search implements Closeable {
 
         ScoreDoc[] hits = searcher.search(query, Integer.MAX_VALUE).scoreDocs;
 
-        List<Long> logEntries = new ArrayList<>();
-        for(ScoreDoc hit : hits)
-        {
-            Document document = searcher.doc(hit.doc);
-            long entryID = document.getField("logEntryID").numericValue().longValue();
+        return getEntryIDsFromResult(hits);
+    }
 
-            logEntries.add(entryID);
+    public Tuple<List<Long>, ScoreDoc> searchForLogEntryIDsWithPagination(Filter filter, int maxEntryAmount, ScoreDoc offset) throws IOException
+    {
+        Query query = parseFilter(filter).build();
+
+        ScoreDoc[] hits;
+        if(offset == null)
+        {
+            hits = searcher.search(query, maxEntryAmount).scoreDocs;
+        }
+        else
+        {
+            hits = searcher.searchAfter(offset, query, maxEntryAmount).scoreDocs;
         }
 
-        return logEntries;
+        List<Long> logEntries = getEntryIDsFromResult(hits);
+
+        ScoreDoc lastHit = hits.length == 0 ? null : hits[hits.length-1];
+
+        return new Tuple<>(logEntries, lastHit);
     }
 
     /**

@@ -3,19 +3,15 @@ package com.efficientlogfileanalysis.log;
 import com.efficientlogfileanalysis.data.LogEntry;
 import com.efficientlogfileanalysis.data.LogFile;
 import com.efficientlogfileanalysis.data.Settings;
-import com.efficientlogfileanalysis.data.search.Filter;
 import com.efficientlogfileanalysis.test.Timer;
 import lombok.SneakyThrows;
 
 import java.io.*;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * A class with methods for reading informations out of logfiles.
@@ -23,9 +19,7 @@ import java.util.stream.Collectors;
  */
 public class LogReader implements Closeable {
 
-    //TODO recompiling the regex should speed up indexing time
-    private static final String REGEX_BEGINNING_OF_LOG_ENTRY = "^\\d{2} \\w{3} \\d{4}.*";
-    private static final Matcher REGEX_MATCHER_BEGINNING_OF_LOG_ENTRY = Pattern.compile(REGEX_BEGINNING_OF_LOG_ENTRY).matcher("");
+    private static final String REGEX_START_OF_LOG_ENTRY = "^\\d{2} \\w{3} \\d{4}.*";
 
     /**
      * Reads all the files in a directory into a Logfile array.
@@ -35,6 +29,8 @@ public class LogReader implements Closeable {
     @SneakyThrows
     public static LogFile[] readAllLogFiles(String path)
     {
+        Matcher startOfLogEntry = Pattern.compile(REGEX_START_OF_LOG_ENTRY).matcher("");
+
         File[] logFolderFileList = new File(path).listFiles();
         LogFile[] logFiles = new LogFile[logFolderFileList.length];
         short currentFileIndex = 0;
@@ -49,8 +45,7 @@ public class LogReader implements Closeable {
 
             while ((currentLine = br.readLine()) != null) {
 
-                if (line.equals("") || !REGEX_MATCHER_BEGINNING_OF_LOG_ENTRY.reset(currentLine).matches()) {
-//                if (line.equals("") || !currentLine.matches(REGEX_BEGINNING_OF_LOG_ENTRY)) {
+                if (line.equals("") || !startOfLogEntry.reset(currentLine).matches()) {
                     line += currentLine + "\n";
                     continue;
                 }
@@ -74,10 +69,13 @@ public class LogReader implements Closeable {
         return logFiles;
     }
 
+    private  Matcher startOfLogEntry;
+
     private HashMap<Short, RandomAccessFile> openFiles;
 
     public LogReader()
     {
+        startOfLogEntry = Pattern.compile(REGEX_START_OF_LOG_ENTRY).matcher("");
         openFiles = new HashMap<>();
     }
 
@@ -153,7 +151,7 @@ public class LogReader implements Closeable {
         //while there is no date at the beginning of the line
         while(
             (tempLine = file.readLine()) != null &&
-            !REGEX_MATCHER_BEGINNING_OF_LOG_ENTRY.reset(tempLine).matches()
+            !startOfLogEntry.reset(tempLine).matches()
         )
         {
             line += tempLine;
@@ -306,26 +304,26 @@ public class LogReader implements Closeable {
 //
 //        result.forEach(System.out::println);
 
-//        LogReader reader = new LogReader();
-//
-//        System.out.println(reader.readLogEntryWithoutMessage(Settings.getInstance().getLogFilePath(), (short) 0, 142_566l));
-//
-//        Timer timer = new Timer();
-//
-//        short fileID = FileIDManager.getInstance().get("DesktopClient-My-User-PC.mshome.net.log");
-//        String path = Settings.getInstance().getLogFilePath();
-//
-//        Timer.Time time = timer.timeExecutionSpeed(() -> {
-//            try
-//            {
-//                reader.getLogEntry(path, fileID, 0l);
-//            }
-//            catch (IOException e) {
-//                throw new RuntimeException(e);
-//            }
-//        }, 100_000);
-//
-//        System.out.println(time);
+        LogReader reader = new LogReader();
+
+        System.out.println(reader.readLogEntryWithoutMessage(Settings.getInstance().getLogFilePath(), (short) 0, 142_566l));
+
+        Timer timer = new Timer();
+
+        short fileID = FileIDManager.getInstance().get("DesktopClient-My-User-PC.mshome.net.log");
+        String path = Settings.getInstance().getLogFilePath();
+
+        Timer.Time time = timer.timeExecutionSpeed(() -> {
+            try
+            {
+                reader.getLogEntry(path, fileID, 0l);
+            }
+            catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }, 100_000);
+
+        System.out.println(time);
 
 
 //        ArrayList<LogEntry> sno = new ArrayList<>();

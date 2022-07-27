@@ -76,12 +76,18 @@ public class LuceneIndexManager {
             for(LogEntry logEntry : logfile.getEntries()) {
                 Document document = new Document();
 
+                //add the classname to the classname index
+                int classID = ClassIDManager.getInstance().addIfAbsent(logEntry.getClassName());
+
+                //add the module to the module index
+                int moduleID = ModuleIDManager.getInstance().addIfAbsent(logEntry.getModule());
+
                 document.add(new LongPoint("date", logEntry.getTime()));
                 document.add(new StoredField("logEntryID", logEntry.getEntryID()));
                 document.add(new LongPoint("logLevel", mgr.getLogLevelID(logEntry.getLogLevel())));
                 document.add(new TextField("message", logEntry.getMessage(), Field.Store.YES));
-                document.add(new StringField("classname", logEntry.getClassName(), Field.Store.YES));
-                document.add(new StringField("module", logEntry.getModule(), Field.Store.YES));
+                document.add(new IntPoint("classname", classID));
+                document.add(new IntPoint("module", moduleID));
                 document.add(new StoredField("fileIndex", mgr.getFileID(logfile.filename)));
 
                 //add the fileIndex as a IntPoint so that lucene can search for entries in a specific file
