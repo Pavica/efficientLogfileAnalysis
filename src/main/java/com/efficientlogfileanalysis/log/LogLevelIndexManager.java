@@ -10,23 +10,11 @@ import java.util.List;
  */
 public class LogLevelIndexManager extends IndexManager<Short, String> {
 
-    private static LogLevelIndexManager instance;
-
-    private LogLevelIndexManager() {
+    public LogLevelIndexManager() {
         super(
             IndexManager.I_TypeConverter.SHORT_TYPE_CONVERTER,
             IndexManager.I_TypeConverter.STRING_TYPE_CONVERTER
         );
-
-        createIndex();
-    }
-
-    public static synchronized LogLevelIndexManager getInstance() {
-        if(instance == null) {
-            instance = new LogLevelIndexManager();
-        }
-
-        return instance;
     }
 
     /**
@@ -53,8 +41,7 @@ public class LogLevelIndexManager extends IndexManager<Short, String> {
     @Override
     protected void print() {
         String output;
-        LogLevelIDManager llidm = LogLevelIDManager.getInstance();
-        FileIDManager fidm = FileIDManager.getInstance();
+        Manager mgr = Manager.getInstance();
 
         //super.print();
         //System.out.println("\n\n");
@@ -64,7 +51,7 @@ public class LogLevelIndexManager extends IndexManager<Short, String> {
             output = "FileID: " + /*fidm.get(*/fileID/*)*/ + " Log levels: ";
             
             for(byte logLevel : values.getValue(fileID).getBytes()) {
-                output += llidm.get(logLevel) + "; ";
+                output += mgr.getLogLevel(logLevel) + "; ";
             }
 
             System.out.println(output);
@@ -96,18 +83,20 @@ public class LogLevelIndexManager extends IndexManager<Short, String> {
     }
 
     public static void main(String[] args) {
-        LogLevelIndexManager.getInstance().print();
+        LogLevelIndexManager llim = new LogLevelIndexManager();
+        llim.print();
+        Manager mgr = Manager.getInstance();
 
         String s = "";
-        for(byte b : LogLevelIndexManager.getInstance().get((short)23)) {
-            s += LogLevelIDManager.getInstance().get(b) + "; ";
+        for(byte b : llim.get((short)23)) {
+            s += mgr.getLogLevel(b) + "; ";
         }
         System.out.println();
         System.out.println();
         System.out.println(s);
 
         s = "";
-        for(short value : LogLevelIndexManager.getInstance().get(LogLevelIDManager.getInstance().get("FATAL"))) {
+        for(short value : llim.get(mgr.getLogLevelID("FATAL"))) {
             s += value + "\n";
         }
         System.out.println();

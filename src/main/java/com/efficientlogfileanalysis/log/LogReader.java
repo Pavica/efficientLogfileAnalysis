@@ -104,7 +104,8 @@ public class LogReader implements Closeable {
         {
             openFiles.put(
                 fileIndex,
-                new RandomAccessFile(path + "/" + FileIDManager.getInstance().get(fileIndex),"r")
+                //new RandomAccessFile(path + "/" + FileIDManager.getInstance().get(fileIndex),"r")
+                new RandomAccessFile(path + "/" + Manager.getInstance().getFileName(fileIndex),"r")
             );
         }
     }

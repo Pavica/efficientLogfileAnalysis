@@ -218,8 +218,7 @@ public class IndexManager<K, V>{
     {
         this.keyConverter = keyConverter;
         this.valueConverter = valueConverter;
-
-        createIndex();
+        values = new BiMap<>();
     }
 
     /**

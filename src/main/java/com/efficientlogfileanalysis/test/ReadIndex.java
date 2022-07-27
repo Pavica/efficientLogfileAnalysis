@@ -2,6 +2,7 @@ package com.efficientlogfileanalysis.test;
 
 import com.efficientlogfileanalysis.log.LogReader;
 import com.efficientlogfileanalysis.log.LuceneIndexManager;
+import com.efficientlogfileanalysis.log.Manager;
 import com.efficientlogfileanalysis.log.FileIDManager;
 import com.efficientlogfileanalysis.data.LogEntry;
 import com.efficientlogfileanalysis.data.Settings;
@@ -39,7 +40,7 @@ public class ReadIndex {
         Timer timer = new Timer();
 
         //Create path object
-        Path indexPath = Paths.get(LuceneIndexManager.PATH_TO_INDEX);
+        Path indexPath = Paths.get(Manager.PATH_TO_INDEX);
 
         //Open the index directory (creates the directory if it doesn't exist)
         IndexSearcher indexSearcher = null;
@@ -75,8 +76,9 @@ public class ReadIndex {
         //print hit amount
         System.out.println(hits.length);
 
-        FileIDManager mgr = FileIDManager.getInstance();
-
+        //FileIDManager mgr = FileIDManager.getInstance();
+        Manager mgr = Manager.getInstance();
+        
         //Iterate through the search results
         try {
             for(ScoreDoc hit : hits) {
@@ -100,7 +102,8 @@ public class ReadIndex {
                 );
                 logReader.close();
 
-                System.out.println(mgr.get(Short.parseShort(value.getField("fileIndex").stringValue())));
+                //System.out.println(mgr.get(Short.parseShort(value.getField("fileIndex").stringValue())));
+                System.out.println(mgr.getFileName(Short.parseShort(value.getField("fileIndex").stringValue())));
                 System.out.println(result + "\n");
             }
 
