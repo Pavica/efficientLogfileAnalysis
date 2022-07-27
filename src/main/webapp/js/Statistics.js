@@ -1,7 +1,7 @@
 /**
  * author: Clark
- * version: 1.0
- * last changed: 14.07.2022
+ * version: 1.1
+ * last changed: 27.07.2022
  */
 
 
@@ -11,8 +11,26 @@ let activeStatistics = [];
 /** contains all currently available statistics */
 let allStatistics = ['barChart', 'pieChart', 'lineChart', 'polarAreaChart'];
 
+/** contains all existing statistics with their checkbox id */
+let statisticsMap = new Map([
+    ['barChart', 'showbarChart'],
+    ['pieChart', 'showpieChart'],
+    ['lineChart', 'showlineChart'],
+    ['polarAreaChart', 'showpolarAreaChart'],
+]);
+
+/** contains all LogLevels and the amount of each */
+statisticsDataMap = new Map([
+    ['INFO', 0],
+    ['DEBUG', 0],
+    ['WARN', 0],
+    ['ERROR', 0],
+    ['TRACE', 0],
+    ['FATAL', 0],
+]);
+
 /**
- * Function used to show the statistics which are clicked in the settings menu
+ * Function used to add statistics to active statistics that have been clicked via checkbox.
  *
  * @param checkbox checkbox that has been clicked
  * @param chartName name of the chart which the checkbox is relating to
@@ -36,8 +54,8 @@ function onShowStatistics(checkbox, chartName, chartValue)
         if(index > -1)
             activeStatistics.splice(index, 1);
     }
-    //what does chartValue do here?
-    showActiveStatistics(activeStatistics, chartValue);
+
+    showActiveStatistics(activeStatistics);
 
     let checkboxesDisabled = [];
 
@@ -75,7 +93,7 @@ function loadBarChart(){
             datasets: [{
                 label: 'Statistik',
                 backgroundColor: '#c978b8',
-                data: [1238, 178, 69, 5, 2, 1],
+                data: [statisticsDataMap.get('INFO'), statisticsDataMap.get('DEBUG'), statisticsDataMap.get('WARN'), statisticsDataMap.get('ERROR'), statisticsDataMap.get('TRACE'), statisticsDataMap.get('FATAL')],
             }]
         },
         options: {
@@ -106,7 +124,7 @@ function loadPieChart(){
                 label: 'food Items',
                 backgroundColor: ["#36c590", "#5188ca", "#fbf571",
                     "#ff7168", "#ffa566", "#c978b8"],
-                data: [1238, 150, 278, 5, 2, 1],
+                data: [statisticsDataMap.get('INFO'), statisticsDataMap.get('DEBUG'), statisticsDataMap.get('WARN'), statisticsDataMap.get('ERROR'), statisticsDataMap.get('TRACE'), statisticsDataMap.get('FATAL')],
             }]
         },options: {
             legend: {
@@ -162,7 +180,7 @@ function loadLineChart(){
             datasets: [{
                 label: 'Statistik',
                 backgroundColor: '#36c590',
-                data: [1238, 178, 69, 5, 2, 1],
+                data: [statisticsDataMap.get('INFO'), statisticsDataMap.get('DEBUG'), statisticsDataMap.get('WARN'), statisticsDataMap.get('ERROR'), statisticsDataMap.get('TRACE'), statisticsDataMap.get('FATAL')],
             }]
         },
         options: {
@@ -190,7 +208,7 @@ function loadPolarAreaChart(){
             datasets: [{
                 label: 'Statistik',
                 backgroundColor: ["#fbf571", "#ff7168", "#ffa566", "#c978b8"],
-                data: [69, 24, 15, 5],
+                data: [statisticsDataMap.get('INFO'), statisticsDataMap.get('DEBUG'), statisticsDataMap.get('WARN'), statisticsDataMap.get('ERROR'), statisticsDataMap.get('TRACE'), statisticsDataMap.get('FATAL')],
             }]
         },
         options: {
@@ -300,29 +318,51 @@ function reloadStatistics(statistic){
     }
 }
 
-let statisticsMap = {
-    "barChart": "showbarChart",
-    "pieChart": "showpieChart",
-    "lineChart": "showlineChart",
-    "polarAreaChart": "showpolarAreaChart"
-};
-
+/**
+ * Function used to check if a specific checkbox is checked
+ *
+ * @param elementId id of the checkbox
+ */
 function checkIfChecked(elementId){
    return document.getElementById(elementId).checked;
 }
 
-//TODO: fix with Clark, his code is bad and needs to change
+/** Function used to reload all currently active statistics */
 function reloadAllActiveStatistics(){
-    if(checkIfChecked(statisticsMap["barChart"])){
-        onShowStatistics(document.getElementById('showbarChart'), 'barChart', 2)
+
+    statisticsMap.forEach((value, key, map) => {
+        if(checkIfChecked(value)){
+            onShowStatistics(document.getElementById(value), key, 2)
+        }
+    })
+    console.log("I'm in")
+}
+
+/** Function used to determine the data for some statistics */
+function getStatisticData(){
+
+    statisticsDataMap = new Map([
+        ['INFO', 0],
+        ['DEBUG', 0],
+        ['WARN', 0],
+        ['ERROR', 0],
+        ['TRACE', 0],
+        ['FATAL', 0],
+    ]);
+
+    let searchFullData = getStatisticsData();
+
+    for(let i = 0 ; i < searchFullData.length ; i++){
+        for(let j = 0 ; j < searchFullData[i].length ; j++){
+            addLogLevelData(searchFullData[i][j].logLevel);
+        }
     }
-    if(checkIfChecked(statisticsMap["pieChart"])){
-        onShowStatistics(document.getElementById('showpieChart'), 'pieChart', 1)
-    }
-    if(checkIfChecked(statisticsMap["lineChart"])){
-        onShowStatistics(document.getElementById('showlineChart'), 'lineChart', 2)
-    }
-    if(checkIfChecked(statisticsMap["polarAreaChart"])){
-        onShowStatistics(document.getElementById('showpolarAreaChart'), 'polarAreaChart', 1)
-    }
+}
+
+/** Function used to set the amount of each loglevel */
+function addLogLevelData(logLevel){
+
+    let value = statisticsDataMap.get(logLevel);
+    value++;
+    statisticsDataMap.set(logLevel, value);
 }

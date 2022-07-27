@@ -1,12 +1,15 @@
 /**
  * author: Luka
  * version: 1.0
- * last changed: 21.07.2022
+ * last changed: 26.07.2022
  */
 
 
 /** variable used to set the filters for a search */
 let filter;
+
+/** variable used to identify all different types of loglevels and the amount of them */
+let statisticsData;
 
 /**
  * Function used to create a filterData object
@@ -187,15 +190,22 @@ async function readyForSearch(){
     await startSearch();
 }
 
-/**
- * function used to start the search and add the results into the gui
- *
- */
+/** function used to start the search and add the results into the gui */
 async function startSearch(){
     setSpinnerVisible(true);
     let data = await searchForFiles(filter);
-    setSpinnerVisible(false);
     createLogFileElements(data);
+
+    let statisticsSearchData  = await search(filter);
+    let searchFullData = [];
+    for(let i= 0; i<statisticsSearchData.length; i++){
+        searchFullData.push(await loadLogEntries(statisticsSearchData[i].filename, statisticsSearchData[i].logEntryIDs));
+    }
+    statisticsData = searchFullData;
+
+    setSpinnerVisible(false);
+    getStatisticData();
+    showActiveStatistics(activeStatistics)
 }
 
 /**
@@ -399,4 +409,8 @@ async function displayFileLogEntries(filename){
 
     //TODO: Add yellow if they are searched for (only if fetch nearby is active)
     /* document.querySelectorAll(".table > tbody > tr").forEach();*/
+}
+
+function getStatisticsData(){
+    return statisticsData;
 }

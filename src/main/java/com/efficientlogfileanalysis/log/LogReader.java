@@ -141,7 +141,7 @@ public class LogReader implements Closeable {
      * @return The log entry that has the id of the variable fileIndex inside the file with the id in logEntryID
      * @throws IOException if the log directory can't be accessed
      */
-    public LogEntry getLogEntry(String path, short fileIndex, long logEntryID) throws IOException {
+    public synchronized LogEntry getLogEntry(String path, short fileIndex, long logEntryID) throws IOException {
         RandomAccessFile file = prepareRandomAccessFile(path, fileIndex, logEntryID);
 
         String line = "";
