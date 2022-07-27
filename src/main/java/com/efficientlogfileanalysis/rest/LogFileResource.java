@@ -6,19 +6,13 @@ import com.efficientlogfileanalysis.log.ClassIDManager;
 import com.efficientlogfileanalysis.log.FileIDManager;
 import com.efficientlogfileanalysis.log.LogReader;
 import com.efficientlogfileanalysis.log.ModuleIDManager;
-import com.fasterxml.jackson.core.JsonEncoding;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.core.StreamingOutput;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 @Path("/logFiles")

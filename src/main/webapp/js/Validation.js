@@ -89,6 +89,11 @@ function compareBothDateInputs(){
 
     isSameDay = stringToDate(startDate).getTime() === stringToDate(endDate).getTime();
 
+    if(startDate.val() == "" || endDate.val() == ""){
+        isProperRange = true;
+        isSameDay = false;
+    }
+
     if(isProperRange){
         addValidity(startDate[0]);
         addValidity(endDate[0]);
@@ -186,6 +191,8 @@ function checkInputValidity(id){
         dateValue = stringToDate(date);
         isDateInRange = dateValue >= date.datepicker('option', 'minDate')
             && dateValue <= date.datepicker('option', 'maxDate')
+    }else if(date.val() == ""){
+        isDateInRange = true;
     }
 
     if(isDateInRange){

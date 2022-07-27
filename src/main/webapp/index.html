@@ -37,6 +37,9 @@
     <link rel="stylesheet" herf="https://cdn.datatables.net/select/1.4.0/css/select.dataTables.min.css">
     <script src="https://cdn.datatables.net/select/1.4.0/js/dataTables.select.min.js"></script>
 
+    <!-- Pagination -->
+    <script scr="https://pagination.js.org/dist/2.1.5/pagination.min.js"></script>
+
     <!-- Index-Script -->
     <script src="js/index.js" defer></script>
     <!-- Settings-Script -->
@@ -208,13 +211,13 @@
                             <h5 class="filter-header">Zeitraum beschränken: </h5>
                             <div class=" mt-3">
                                 <label for="startDate">Start</label>
-                                <input type="text"  class="form-control" id="startDate" oninput="checkInputValidity(this.id)" onchange="checkInputValidity(this.id)" required>
+                                <input type="text"  class="form-control" id="startDate" oninput="checkInputValidity(this.id)" onchange="checkInputValidity(this.id)">
                                 <span id="startDateSelected"></span>
                             </div>
                             <input id="startTime" class="form-control" type="input" pattern="^(1\d|2[0-3]|0?\d)(:(([1-5])\d|0?\d)){0,2}$" oninput="addTime(this.id)"  placeholder="00:00:00" disabled/>
                             <div class=" mt-3">
                                 <label for="startDate">End</label>
-                                <input type="text"  class="form-control" id="endDate" oninput="checkInputValidity(this.id)" onchange="checkInputValidity(this.id)"  required >
+                                <input type="text"  class="form-control" id="endDate" oninput="checkInputValidity(this.id)" onchange="checkInputValidity(this.id)">
                                 <span id="endDateSelected"></span>
                             </div>
                             <input id="endTime" class="form-control" type="input" pattern="^(1\d|2[0-3]|0?\d)(:(([1-5])\d|0?\d)){0,2}$" oninput="addTime(this.id)" placeholder="00:00:00" disabled />
@@ -286,33 +289,21 @@
                                     <label for="modulDataList" class="form-label">Modul:</label>
                                     <input class="form-control" list="datalistOptionsModul" id="modulDataList" oninput="checkIfListInputExists(this.id, this.list.id)" placeholder="Drop down or Search">
                                     <datalist id="datalistOptionsModul">
-                                        <option value="Modul 1">
-                                        <option value="Kein Modul">
-                                        <option value="Vielleicht Modul 2">
-                                        <option value="Modul 2">
-                                        <option value="ludoM 3">
+
                                     </datalist>
                                 </div>
                                 <div>
                                     <label for="classDataList" class="form-label">Klasse:</label>
                                     <input class="form-control" list="datalistOptionsClass" id="classDataList" oninput="checkIfListInputExists(this.id, this.list.id)" placeholder="Drop down or Search">
                                     <datalist id="datalistOptionsClass">
-                                        <option value="Modul 1">
-                                        <option value="Kein Modul">
-                                        <option value="Vielleicht Modul 2">
-                                        <option value="Modul 2">
-                                        <option value="ludoM 3">
+
                                     </datalist>
                                 </div>
                                 <div>
                                     <label for="exceptionDataList" class="form-label">Exception:</label>
                                     <input class="form-control" list="datalistOptionsClass" id="exceptionDataList" oninput="checkIfListInputExists(this.id, this.list.id)" placeholder="Drop down or Search">
                                     <datalist id="datalistOptionsException">
-                                        <option value="Modul 1">
-                                        <option value="Kein Modul">
-                                        <option value="Vielleicht Modul 2">
-                                        <option value="Modul 2">
-                                        <option value="ludoM 3">
+
                                     </datalist>
                                 </div>
                             </div>
@@ -451,6 +442,7 @@
                             <div class="px-2">
                                 <select class="form-select" id="inlineFormSelectPref">
                                     <option selected hidden>Choose...</option>
+                                    <option value="1">0</option>
                                     <option value="1">5</option>
                                     <option value="2">10</option>
                                     <option value="3">15</option>

@@ -187,8 +187,10 @@ async function loadModules()
  * @returns {Promise<void>}
  */
 async function readyForSearch(){
-    let startDate = trueStartDate.getTime();
-    let endDate = trueEndDate.getTime();
+    console.log(trueStartDate);
+    console.log(trueEndDate);
+    let startDate = trueStartDate == null ? null : trueStartDate.getTime();
+    let endDate = trueEndDate == null ? null : trueEndDate.getTime();
 
     let logLevel = [];
 
@@ -198,12 +200,12 @@ async function readyForSearch(){
        }
     });
 
-    let moduleName =  $('#modulDataList').val();
-    let className =  $('#classDataList').val();
-    let exceptionName =  $('#exceptionDataList').val();
+    let moduleName =  $('#modulDataList').val() == "" ? null : $('#modulDataList').val();
+    let className =  $('#classDataList').val() == "" ? null : $('#classDataList').val();
+    let exceptionName =  $('#exceptionDataList').val() == null ? null : $('#exceptionDataList').val();
 
 
-    filter = createFilterData(startDate, endDate, logLevel);
+    filter = createFilterData(startDate, endDate, logLevel, moduleName, className);
     await startSearch();
 }
 
