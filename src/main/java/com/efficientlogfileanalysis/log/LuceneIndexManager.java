@@ -77,10 +77,12 @@ public class LuceneIndexManager {
                 Document document = new Document();
 
                 //add the classname to the classname index
-                int classID = ClassIDManager.getInstance().addIfAbsent(logEntry.getClassName());
+                //int classID = ClassIDManager.getInstance().addIfAbsent(logEntry.getClassName());
+                int classID = Manager.getInstance().classNameaddIfAbsent(logEntry.getClassName());
 
                 //add the module to the module index
-                int moduleID = ModuleIDManager.getInstance().addIfAbsent(logEntry.getModule());
+                //int moduleID = ModuleIDManager.getInstance().addIfAbsent(logEntry.getModule());
+                int moduleID = Manager.getInstance().moduleNameaddIfAbsent(logEntry.getModule());
 
                 document.add(new LongPoint("date", logEntry.getTime()));
                 document.add(new StoredField("logEntryID", logEntry.getEntryID()));

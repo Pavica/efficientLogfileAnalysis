@@ -11,19 +11,7 @@ public class ModuleIDManager extends IndexManager<Integer, String>{
 
     private static final String FILE_NAME = "ModuleIDIndex";
 
-    private static ModuleIDManager instance;
-
-    public static synchronized ModuleIDManager getInstance()
-    {
-        if(instance == null)
-        {
-            instance = new ModuleIDManager();
-        }
-
-        return instance;
-    }
-
-    private ModuleIDManager()
+    public ModuleIDManager()
     {
         super(
             I_TypeConverter.INTEGER_TYPE_CONVERTER,
@@ -96,7 +84,7 @@ public class ModuleIDManager extends IndexManager<Integer, String>{
     protected void createIndex() {
         super.createIndex();
 
-        File file = new File(FILE_NAME);
+        File file = new File(Manager.PATH_TO_INDEX + "/" + FILE_NAME);
         if(file.exists())
         {
             try
@@ -112,7 +100,6 @@ public class ModuleIDManager extends IndexManager<Integer, String>{
 
     @SneakyThrows
     public static void main(String[] args) {
-        ModuleIDManager.getInstance().readIndex();
-        System.out.println(ModuleIDManager.getInstance());
+        //System.out.println(ModuleIDManager.getInstance());
     }
 }
