@@ -31,6 +31,7 @@ public class SearchResource {
         private String module;
         private String className;
         private String exception;
+        private String message;
     }
 
     private Filter parseFilterData(FilterData filterData)
@@ -60,6 +61,10 @@ public class SearchResource {
             filterBuilder.exception(filterData.exception);
         }
 
+        if(filterData.message != null && !filterData.message.isEmpty())
+        {
+            filterBuilder.message(filterData.message);
+        }
 
         return filterBuilder.build();
     }

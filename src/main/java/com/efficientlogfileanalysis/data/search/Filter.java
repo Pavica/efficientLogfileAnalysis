@@ -20,6 +20,7 @@ public class Filter {
     private String className;
     private String exception;
     private short fileID;
+    private String message;
 
     public static class FilterBuilder
     {
@@ -32,6 +33,7 @@ public class Filter {
             className   =   null;
             exception   =   null;
             fileID      =   -1;
+            message     =   null;
         }
 
         public FilterBuilder addLogLevel(byte logLevel)
