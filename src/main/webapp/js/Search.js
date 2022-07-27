@@ -161,6 +161,26 @@ async function loadLogEntries(filename, logEntryIDs){
     return await response.json();
 }
 
+async function loadClassNames()
+{
+    let response = await fetch("api/logFiles/classNames");
+    if(!response.ok){
+        alert("Server Error: " + response.status);
+        return;
+    }
+    return await response.json();
+}
+
+async function loadModules()
+{
+    let response = await fetch("api/logFiles/modules");
+    if(!response.ok){
+        alert("Server Error: " + response.status);
+        return;
+    }
+    return await response.json();
+}
+
 /**
  * Function used to get all the data from the inputs and put the input in a filterData object.
  * Once the data has been set it begins the search.
