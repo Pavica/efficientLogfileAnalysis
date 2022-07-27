@@ -7,11 +7,18 @@ import com.efficientlogfileanalysis.data.search.SearchEntry;
 
 import com.efficientlogfileanalysis.test.Timer;
 import com.efficientlogfileanalysis.util.ByteConverter;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.queryparser.xml.builders.BooleanQueryBuilder;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.GroupingSearch;
@@ -19,6 +26,7 @@ import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.QueryBuilder;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -73,6 +81,8 @@ public class Search implements Closeable {
      */
     private BooleanQuery.Builder parseFilter(Filter filter)
     {
+        Analyzer analyzer = new StandardAnalyzer();
+
         BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
 
         //Add the time range
@@ -124,6 +134,51 @@ public class Search implements Closeable {
                 IntPoint.newExactQuery("fileIndex", filter.getFileID()),
                 BooleanClause.Occur.MUST
             );
+        }
+
+        if(filter.getMessage() != null)
+        {
+            //Approach 1: search for sentence with sloppiness (word order can differ)
+            //QueryBuilder builder = new QueryBuilder(analyzer);
+            //Query messageQuery = builder.createPhraseQuery("message", filter.getMessage(), 1917);
+
+            //Approach 2: FuzzyQuery spelling can differ
+            //Term term = new Term("message", filter.getMessage());
+            //FuzzyQuery messageQuery = new FuzzyQuery(term);
+
+            try
+            {
+                BooleanQuery.Builder messageQueryBuilder = new BooleanQuery.Builder();
+
+                //split the message into terms (every word)
+                TokenStream tokenStream = analyzer.tokenStream("message", filter.getMessage());
+                CharTermAttribute charTermAttribute = tokenStream.addAttribute(CharTermAttribute.class);
+
+                //read all terms
+                tokenStream.reset();
+                while (tokenStream.incrementToken())
+                {
+                    String token = charTermAttribute.toString();
+                    Term term = new Term("message", token);
+
+                    //add the terms as separate fuzzyQueries
+                    messageQueryBuilder.add(
+                        new FuzzyQuery(term),
+                        BooleanClause.Occur.MUST
+                    );
+                }
+
+                //add the message query
+                queryBuilder.add(
+                    messageQueryBuilder.build(),
+                    BooleanClause.Occur.MUST
+                );
+            }
+            catch(IOException ioe)
+            {
+                ioe.printStackTrace();
+                System.err.println("Message filter konnte nicht angewand werden!");
+            }
         }
 
         return queryBuilder;
@@ -337,28 +392,26 @@ public class Search implements Closeable {
         Search search = new Search();
         Filter f = Filter
                 .builder()
-                .beginDate(0l)
-                .endDate(1658282400000l)
-                .addLogLevel(LogLevelIDManager.getInstance().get("FATAL"))
-                .addLogLevel(LogLevelIDManager.getInstance().get("ERROR"))
+//                .fileID((short) 0)
+                .message("20 millisekonds runing JMSh")
                 .build();
 
         //search.searchForFiles(f).stream().map(FileIDManager.getInstance()::get).forEach(System.out::println);
 
 
-        long fileID = FileIDManager.getInstance().get("DesktopClient-DE-GS-NB-0028.haribo.dom.log");
-        System.out.println(fileID);
-        
-        Timer timer = new Timer();
-        Timer.Time time = timer.timeExecutionSpeed(() -> {
-            try {
-                List<Long> searchEntrys = search.searchForLogEntryIDs(f);
-            } catch (IOException ioe) {
-                throw new RuntimeException(ioe);
-            }
-        }, 1_000);
-        
-        System.out.println(time);
+//        long fileID = FileIDManager.getInstance().get("DesktopClient-DE-GS-NB-0028.haribo.dom.log");
+//        System.out.println(fileID);
+//
+//        Timer timer = new Timer();
+//        Timer.Time time = timer.timeExecutionSpeed(() -> {
+//            try {
+//                List<Long> searchEntrys = search.searchForLogEntryIDs(f);
+//            } catch (IOException ioe) {
+//                throw new RuntimeException(ioe);
+//            }
+//        }, 1_000);
+//
+//        System.out.println(time);
 
         /*
         try(LogReader reader = new LogReader())
