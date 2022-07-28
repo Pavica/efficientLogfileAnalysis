@@ -121,7 +121,7 @@ public class Timer {
     }
 
     public String toString() {
-        return "Start Time: " + startTime;
+        return "Execution time: " + (getCurrentTime() - startTime) + "ms";
     }
 
     public static void main(String[] args) throws InterruptedException {
