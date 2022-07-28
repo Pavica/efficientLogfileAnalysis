@@ -4,6 +4,29 @@
  * last changed: 21.07.2022
  */
 
+let controller = new AbortController()
+let mySignal = controller.signal;
+
+function abortFetching() {
+    controller.abort()
+}
+
+function resetFetching(){
+    controller = new AbortController();
+    mySignal = controller.signal;
+}
+
+function abortFetchOnModalExit(){
+    $("#logModal").on("hidden.bs.modal", function () {
+        abortFetching();
+    });
+}
+
+function resizeColumnsOnModalEnter(){
+    $('#logModal').on('shown.bs.modal', function (e) {
+        $($.fn.dataTable.tables(true)).DataTable().columns.adjust();
+    });
+}
 
 /** variable used to set the filters for a search */
 let filter;
@@ -61,8 +84,10 @@ async function searchForFiles(filterData)
  */
 async function searchInFile(filterData, filename)
 {
+    resetFetching();
     let response = await fetch(`api/search/file/${filename}`, {
         method : "POST",
+        signal : mySignal,
         body : JSON.stringify(filterData),
         headers : {
             "content-type" : "application/json"
@@ -79,6 +104,7 @@ async function searchInFile(filterData, filename)
 
 async function searchInFileAmount(filterData, filename, lastSearchEntry, entryAmount)
 {
+    resetFetching();
     let request = {
         "lastSearchEntry" : lastSearchEntry,
         "filterData" : filter
@@ -86,17 +112,27 @@ async function searchInFileAmount(filterData, filename, lastSearchEntry, entryAm
 
     let response = await fetch(`api/search/file/${filename}/${entryAmount}`, {
         method : "POST",
+        signal : mySignal,
         body : JSON.stringify(request),
         headers : {
             "content-type" : "application/json"
         }
+        //TODO: shorty fix, not work
+    }).catch((error) => {
+        console.log('Fetch aborted');
     });
+
 
     if(!response.ok)
     {
         alert("Not okay :(");
         return;
     }
+
+    if(response.status == 204){
+        return;
+    }
+
     return await response.json();
 }
 
@@ -187,8 +223,6 @@ async function loadModules()
  * @returns {Promise<void>}
  */
 async function readyForSearch(){
-    console.log(trueStartDate);
-    console.log(trueEndDate);
     let startDate = trueStartDate == null ? null : trueStartDate.getTime();
     let endDate = trueEndDate == null ? null : trueEndDate.getTime();
 
@@ -214,9 +248,9 @@ async function readyForSearch(){
  *
  */
 async function startSearch(){
-    setSpinnerVisible(true);
+    setSpinnerVisible(true, "searchButton");
     let data = await searchForFiles(filter);
-    setSpinnerVisible(false);
+    setSpinnerVisible(false, "searchButton");
     createLogFileElements(data);
 }
 
@@ -224,8 +258,8 @@ async function startSearch(){
  * function used to set the search spinner if the search is in progress
  * @param isSpinnerVisible specified boolean used to set if the search is in progress or not
  */
-function setSpinnerVisible(isSpinnerVisible){
-    let button = $('#searchButton')[0];
+function setSpinnerVisible(isSpinnerVisible, id){
+    let button = $('#'+id)[0];
     if(isSpinnerVisible){
         button.innerHTML =
             `Suchen
@@ -282,10 +316,10 @@ let levelColor = {
  * @param data specified file data
  */
 function createLogFileElements(data){
-    let container = document.getElementById("logFileElementHolder");
+    let elementsArray = [];
     let text ="";
     data.forEach(file =>{
-        text +=`
+        text =`
     <a data-bs-toggle="modal" data-bs-target="#logModal" onclick="displayFileLogEntries('${file.filename}')">
         <div class="row mt-2">
             <div class="col-md-3 justify-content-center text-center log-date log-center border rounded-3">
@@ -302,20 +336,11 @@ function createLogFileElements(data){
             </div>
         </div>
     </a>`;
-    })
-    container.innerHTML = text;
-}
+        elementsArray.push(text);
+    });
 
-/**
- * Functions used to slice up an array
- */
-function sliceIntoChunks(arr, chunkSize) {
-    const res = [];
-    for (let i = 0; i < arr.length; i += chunkSize) {
-        const chunk = arr.slice(i, i + chunkSize);
-        res.push(chunk);
-    }
-    return res;
+    fillElementArray(elementsArray);
+    changePage(1);
 }
 
 /**
@@ -329,8 +354,9 @@ async function displayFileLogEntries(filename){
     document.getElementById("floatingTextarea").innerText = "";
     document.getElementById("logFileTitle").innerText = "Log file name: " + filename;
 
+    //TODO: potentially add deferRender to make it even faster (very hard with ids)
     let table = $('#logEntryTable').DataTable({
-        scrollY: '250px',
+        scrollY: true,
         scrollCollapse: true,
         paging: true,
         pageLength: 5,
@@ -338,10 +364,6 @@ async function displayFileLogEntries(filename){
         select: {
             style: 'single'
         },
-    });
-
-    $('#logModal').on('shown.bs.modal', function (e) {
-        $($.fn.dataTable.tables(true)).DataTable().columns.adjust();
     });
 
     let lastSearchEntry = null;
@@ -364,78 +386,4 @@ async function displayFileLogEntries(filename){
         }
         table.draw(false);
     }
-}
-
-async function displayFileLogEntriesFast(filename){
-    $('#logEntryTable').DataTable().clear();
-    $('#logEntryTable').DataTable().destroy();
-
-    document.getElementById("floatingTextarea").innerText = "";
-    document.getElementById("logFileTitle").innerText = "Log file name: " + filename;
-
-    let table = $('#logEntryTable').DataTable({
-        scrollY: '250px',
-        scrollCollapse: true,
-        paging: true,
-        pageLength: 5,
-        lengthMenu: [5, 10, 20, 50, 100],
-    });
-
-    $('#logModal'). on('shown.bs.modal', function () {
-        $($.fn.dataTable.tables(true)).DataTable().columns.adjust();
-    });
-
-    let data = await searchInFile(filter, filename);
-    let partedData = sliceIntoChunks(data, 1000);
-
-    let num = 0;
-    for(let j=0; j<partedData.length; j++){
-        let currentData = partedData[j];
-        for(let i=0; i<currentData.length; i++){
-            table.row.add([formatDate2(new Date(currentData[i].time)),currentData[i].logLevel,currentData[i].module,currentData[i].className]).node().id = 'logEntry'+num;
-           /* $('table tbody').off('click', '#logEntry' + num);
-            $('table tbody').on('click', '#logEntry' + num, async function() {
-                $(this).parent().children().removeClass("selected");
-                $(this).addClass("selected");
-                document.getElementById("floatingTextarea").innerText = (await loadLogEntry(filename, currentData[i].entryID)).message;
-            });*/
-            num++;
-        }
-        await new Promise(s => setTimeout(s, 1));
-        table.draw(false);
-    }
-}
-
-async function displayFileLogEntriesSlow(filename){
-    $('#logEntryTable').DataTable().clear();
-    $('#logEntryTable').DataTable().destroy();
-
-    document.getElementById("floatingTextarea").innerText = "";
-    document.getElementById("logFileTitle").innerText = "Log file name: " + filename;
-
-    let table = $('#logEntryTable').DataTable({
-        scrollY: '250px',
-        scrollCollapse: true,
-        paging: true,
-        pageLength: 5,
-        lengthMenu: [5, 10, 20, 50, 100],
-    });
-    let data = await searchInFile(filter, filename);
-    let num = 0;
-    data.forEach(logEntry =>{
-        table.row.add([formatDate2(new Date(logEntry.time)),logEntry.logLevel,logEntry.module,logEntry.className]).node().id = 'logEntry'+num;
-        /*$('table tbody').off('click', '#logEntry' + num);
-        $('table tbody').on('click', '#logEntry' + num, async function() {
-            $(this).parent().children().removeClass("selected");
-            $(this).addClass("selected");
-            document.getElementById("floatingTextarea").innerText = (await loadLogEntry(filename, logEntry.entryID)).message;
-        });*/
-        num++;
-    });
-
-    table.draw();
-
-    $('#logModal'). on('shown.bs.modal', function (e) {
-        $($.fn.dataTable.tables(true)).DataTable().columns.adjust();
-    })
 }

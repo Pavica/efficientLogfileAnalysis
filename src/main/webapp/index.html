@@ -37,9 +37,9 @@
     <link rel="stylesheet" herf="https://cdn.datatables.net/select/1.4.0/css/select.dataTables.min.css">
     <script src="https://cdn.datatables.net/select/1.4.0/js/dataTables.select.min.js"></script>
 
-    <!-- Pagination -->
-    <script scr="https://pagination.js.org/dist/2.1.5/pagination.min.js"></script>
 
+    <!-- Pagination-Script -->
+    <script src="js/SimplePagination.js" defer></script>
     <!-- Index-Script -->
     <script src="js/index.js" defer></script>
     <!-- Settings-Script -->
@@ -94,6 +94,12 @@
 
         .log-table{
             border-collapse: separate;
+        }
+
+        .dataTables_scrollBody{
+            height: 15rem;
+            resize: vertical;
+            overflow: auto;
         }
 
         .button-style{
@@ -383,6 +389,15 @@
         <div class="column" id="logFileElementHolder">
 
         </div>
+        <ul class="pagination justify-content-center visually-hidden mt-2" id="paginator">
+            <li class="page-item">
+                <a class="page-link" id="btnPrev" onclick="prevPage()">Previous</a>
+            </li>
+            <li class="page-item active"><a class="page-link"><span id="page"></span></a></li>
+            <li class="page-item">
+                <a class="page-link" id="btnNext" onclick="nextPage()" >Next</a>
+            </li>
+        </ul>
     </div>
 </div>
 <!-- Logfile results -->

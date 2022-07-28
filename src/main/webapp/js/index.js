@@ -8,12 +8,19 @@
  * Function used to load all the data, that needs to be added when the page is loaded
  */
 function loadDocument(){
+    //Settings
     loadCookies();
     loadPathIntoField();
     setInputColors(document.documentElement.style.getPropertyValue('--main-color'),
         document.documentElement.style.getPropertyValue('--main-text-color'));
+
+    //Inputs
     initializeDatePickers();
     fillDataLists();
+
+    //Modal
+    abortFetchOnModalExit();
+    resizeColumnsOnModalEnter();
 }
 
 /**
