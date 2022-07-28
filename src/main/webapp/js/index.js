@@ -8,11 +8,19 @@
  * Function used to load all the data, that needs to be added when the page is loaded
  */
 function loadDocument(){
+    //Settings
     loadCookies();
     loadPathIntoField();
     setInputColors(document.documentElement.style.getPropertyValue('--main-color'),
         document.documentElement.style.getPropertyValue('--main-text-color'));
+
+    //Inputs
     initializeDatePickers();
+    fillDataLists();
+
+    //Modal
+    abortFetchOnModalExit();
+    resizeColumnsOnModalEnter();
 }
 
 /**
@@ -30,4 +38,13 @@ function initializeDatePickers(){
         setMinMaxDate("endDate");
 }
 
-
+async function fillDataLists(){
+    let modules = await loadModules();
+    $.each(modules, function(i, item) {
+        $("#datalistOptionsModul").append($("<option>").attr('value', item));
+    });
+    let classes = await loadClassNames();
+    $.each(classes, function(i, item) {
+        $("#datalistOptionsClass").append($("<option>").attr('value', item));
+    });
+}

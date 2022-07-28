@@ -27,8 +27,8 @@ public class SearchResource {
     @AllArgsConstructor
     public static class FilterData
     {
-        private long beginDate;
-        private long endDate;
+        private Long beginDate;
+        private Long endDate;
         private List<String> logLevels;
         private String module;
         private String className;
@@ -40,9 +40,15 @@ public class SearchResource {
     {
         Filter.FilterBuilder filterBuilder = Filter.builder();
 
-        filterBuilder
-                .beginDate(filterData.beginDate)
-                .endDate(filterData.endDate);
+        if(filterData.beginDate != null)
+        {
+            filterBuilder.beginDate(filterData.beginDate);
+        }
+
+        if(filterData.endDate != null)
+        {
+            filterBuilder.endDate(filterData.endDate);
+        }
 
         //filterData.logLevels.stream().map(LogLevelIDManager.getInstance()::get).forEach(filterBuilder::addLogLevel);
         filterData.logLevels.stream().map(IndexManager.getInstance()::getLogLevelID).forEach(filterBuilder::addLogLevel);
