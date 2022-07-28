@@ -5,20 +5,16 @@ import com.efficientlogfileanalysis.data.Tuple;
 import com.efficientlogfileanalysis.data.search.Filter;
 import com.efficientlogfileanalysis.data.search.SearchEntry;
 
-import com.efficientlogfileanalysis.test.Timer;
 import com.efficientlogfileanalysis.util.ByteConverter;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.queryparser.xml.builders.BooleanQueryBuilder;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.GroupingSearch;
@@ -26,9 +22,9 @@ import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.QueryBuilder;
 
 import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -59,7 +55,7 @@ public class Search implements Closeable {
     public Search() throws IOException
     {
         //Open the Index
-        Directory indexDirectory = FSDirectory.open(Paths.get(Manager.PATH_TO_INDEX));
+        Directory indexDirectory = FSDirectory.open(Paths.get(IndexManager.PATH_TO_INDEX + File.separator + "lucene"));
         directoryReader = DirectoryReader.open(indexDirectory);
         searcher = new IndexSearcher(directoryReader);
     }
@@ -101,7 +97,7 @@ public class Search implements Closeable {
             for(
                 Byte notIncluded : Arrays.stream(allLogLevels)
                     //.map(LogLevelIDManager.getInstance()::get)
-                    .map(Manager.getInstance()::getLogLevelID)
+                    .map(IndexManager.getInstance()::getLogLevelID)
                     .filter(s -> !filter.getLogLevels().contains(s))
                     .collect(Collectors.toList())
             ) {
@@ -116,7 +112,7 @@ public class Search implements Closeable {
         if(filter.getModule() != null)
         {
             //int moduleID = ModuleIDManager.getInstance().get(filter.getModule());
-            int moduleID = Manager.getInstance().getModuleID(filter.getModule());
+            int moduleID = IndexManager.getInstance().getModuleID(filter.getModule());
             queryBuilder.add(
                 IntPoint.newExactQuery("module", moduleID),
                 BooleanClause.Occur.MUST
@@ -127,7 +123,7 @@ public class Search implements Closeable {
         if(filter.getClassName() != null)
         {
             //int classNameID = ClassIDManager.getInstance().get(filter.getClassName());
-            int classNameID = Manager.getInstance().getClassID(filter.getClassName());
+            int classNameID = IndexManager.getInstance().getClassID(filter.getClassName());
             queryBuilder.add(
                 IntPoint.newExactQuery("classname", classNameID),
                 BooleanClause.Occur.MUST
@@ -214,7 +210,7 @@ public class Search implements Closeable {
             String logLevel = logReader.readLogLevelOfEntry(path, fileID, entryIndex);
 
             //logFiles.putIfAbsent(fileIndex, new SearchEntry(FileIDManager.getInstance().get(fileID)));
-            logFiles.putIfAbsent(fileID, new SearchEntry(Manager.getInstance().getFileName(fileID)));
+            logFiles.putIfAbsent(fileID, new SearchEntry(IndexManager.getInstance().getFileName(fileID)));
             logFiles.get(fileID).addLogEntry(entryIndex, logLevel, logEntryTime);
         }
 
@@ -223,21 +219,20 @@ public class Search implements Closeable {
         return new ArrayList<>(logFiles.values());
     }
 
-    public List<byte[]> searchForLogLevelsInFiles() throws IOException {
-        ArrayList<byte[]> files = new ArrayList<>();
+    public List<List<Byte>> searchForLogLevelsInFiles() throws IOException {
+        ArrayList<List<Byte>> files = new ArrayList<>();
         Filter.FilterBuilder filterBuilder;
         Query query;
         GroupingSearch groupingSearch;
         TopGroups topGroups;
-        byte[] levelsPerFile;
-        int counter;
+        List<Byte> levelsPerFile;
 
         //files.ensureCapacity(FileIDManager.getInstance().values.getKeySet().size());
-        files.ensureCapacity(Manager.getInstance().getFileIDManager().values.getKeySet().size());
+        files.ensureCapacity(IndexManager.getInstance().getFileIDs().size());
 
         //go through all files
         //for(short fileID : FileIDManager.getInstance().values.getKeySet()) {
-        for(short fileID : Manager.getInstance().getFileIDManager().values.getKeySet()) {
+        for(short fileID : IndexManager.getInstance().getFileIDs()) {
             filterBuilder = Filter
                 .builder()
                 .fileID(fileID);
@@ -245,7 +240,7 @@ public class Search implements Closeable {
             //add Filter for all log levels
             for(String s : Search.allLogLevels) {
                 //filterBuilder.addLogLevel(LogLevelIDManager.getInstance().get(s));
-                filterBuilder.addLogLevel(Manager.getInstance().getLogLevelID(s));
+                filterBuilder.addLogLevel(IndexManager.getInstance().getLogLevelID(s));
             }
 
             query = parseFilter(filterBuilder.build()).build();
@@ -268,11 +263,10 @@ public class Search implements Closeable {
                 assert topGroups != null;
             }
 
-            counter = 0;
-            levelsPerFile = new byte[topGroups.groups.length];
+            levelsPerFile = new ArrayList<>(topGroups.groups.length);
             for(GroupDocs gdoc : topGroups.groups)
             {
-                levelsPerFile[counter++] = ((BytesRef) gdoc.groupValue).bytes[0];
+                levelsPerFile.add(((BytesRef) gdoc.groupValue).bytes[0]);
             }
 
             files.add(fileID, levelsPerFile);
@@ -400,7 +394,7 @@ public class Search implements Closeable {
 
         //System.out.println(Long.MAX_VALUE);
 
-        Manager mgr = Manager.getInstance();
+        IndexManager mgr = IndexManager.getInstance();
         Search search = new Search();
         Filter f = Filter
                 .builder()

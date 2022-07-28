@@ -104,8 +104,7 @@ public class LogReader implements Closeable {
         {
             openFiles.put(
                 fileIndex,
-                //new RandomAccessFile(path + "/" + FileIDManager.getInstance().get(fileIndex),"r")
-                new RandomAccessFile(path + "/" + Manager.getInstance().getFileName(fileIndex),"r")
+                new RandomAccessFile(path + "/" + IndexManager.getInstance().getFileName(fileIndex),"r")
             );
         }
     }
@@ -311,7 +310,7 @@ public class LogReader implements Closeable {
         Timer timer = new Timer();
 
         //short fileID = FileIDManager.getInstance().get("DesktopClient-My-User-PC.mshome.net.log");
-        short fileID = Manager.getInstance().getFileID("DesktopClient-My-User-PC.mshome.net.log");
+        short fileID = IndexManager.getInstance().getFileID("DesktopClient-My-User-PC.mshome.net.log");
         String path = Settings.getInstance().getLogFilePath();
 
         Timer.Time time = timer.timeExecutionSpeed(() -> {
