@@ -9,7 +9,7 @@
 let activeStatistics = [];
 
 /** contains all currently available statistics */
-let allStatistics = ['barChart', 'pieChart', 'lineChart', 'polarAreaChart'];
+let allStatistics = ['barChart', 'pieChart', 'lineChart', 'polarAreaChart', 'multiLineChart'];
 
 /** contains all existing statistics with their checkbox id */
 let statisticsMap = new Map([
@@ -17,16 +17,44 @@ let statisticsMap = new Map([
     ['pieChart', 'showpieChart'],
     ['lineChart', 'showlineChart'],
     ['polarAreaChart', 'showpolarAreaChart'],
+    ['multiLineChart', 'showmultiLineChart'],
 ]);
 
 /** contains all LogLevels and the amount of each */
-statisticsDataMap = new Map([
+let statisticsDataMap = new Map([
     ['INFO', 0],
     ['DEBUG', 0],
     ['WARN', 0],
     ['ERROR', 0],
     ['TRACE', 0],
     ['FATAL', 0],
+]);
+
+/** contains all LogLevels and the amount of each for the multiLineChart*/
+let multiStatisticsDataMap = new Map([
+    ['INFO', [0,0,0,0,0,0,0,0,0,0,0,0]],
+    ['DEBUG', [0,0,0,0,0,0,0,0,0,0,0,0]],
+    ['WARN', [0,0,0,0,0,0,0,0,0,0,0,0]],
+    ['ERROR', [0,0,0,0,0,0,0,0,0,0,0,0]],
+    ['TRACE', [0,0,0,0,0,0,0,0,0,0,0,0]],
+    ['FATAL', [0,0,0,0,0,0,0,0,0,0,0,0]],
+]);
+
+/** contains the timestamps below the multiLineChart */
+let timestampsMap = new Map([
+    [1, ""],
+    [2, ""],
+    [3, ""],
+    [4, ""],
+    [5, ""],
+    [6, ""],
+    [7, ""],
+    [8, ""],
+    [9, ""],
+    [10, ""],
+    [11, ""],
+    [12, ""],
+
 ]);
 
 /**
@@ -88,11 +116,12 @@ function loadBarChart(){
     const barChart = new Chart(barChartContext, {
         type: 'bar',
         data: {
-            labels: ["Info", "Debug", "Warn", "Error",
-                "Trace", "FATAL"],
+            labels: ["INFO", "DEBUG", "WARN", "ERROR",
+                "TRACE", "FATAL"],
             datasets: [{
                 label: 'Statistik',
-                backgroundColor: '#c978b8',
+                backgroundColor: ["#36c590", "#5188ca", "#fbf571",
+                    "#ff7168", "#ffa566", "#c978b8"],
                 data: [statisticsDataMap.get('INFO'), statisticsDataMap.get('DEBUG'), statisticsDataMap.get('WARN'), statisticsDataMap.get('ERROR'), statisticsDataMap.get('TRACE'), statisticsDataMap.get('FATAL')],
             }]
         },
@@ -121,12 +150,13 @@ function loadPieChart(){
             labels: ["INFO", "DEBUG", "WARN", "ERROR",
                 "TRACE", "FATAL"],
             datasets: [{
-                label: 'food Items',
+                label: 'd',
                 backgroundColor: ["#36c590", "#5188ca", "#fbf571",
                     "#ff7168", "#ffa566", "#c978b8"],
                 data: [statisticsDataMap.get('INFO'), statisticsDataMap.get('DEBUG'), statisticsDataMap.get('WARN'), statisticsDataMap.get('ERROR'), statisticsDataMap.get('TRACE'), statisticsDataMap.get('FATAL')],
             }]
-        },options: {
+        },
+        options: {
             legend: {
                 position: 'right',
                 labels: {
@@ -166,7 +196,6 @@ function loadPieChart(){
     });
 }
 
-
 /**
  * Function used to create and load the line chart into the corresponding canvas.
  */
@@ -175,8 +204,8 @@ function loadLineChart(){
     const lineChart = new Chart(lineChartContext, {
         type: 'line',
         data: {
-            labels: ["Info", "Debug", "Warn", "Error",
-                "Trace", "FATAL"],
+            labels: ["INFO", "DEBUG", "WARN", "ERROR",
+                "TRACE", "FATAL"],
             datasets: [{
                 label: 'Statistik',
                 backgroundColor: '#36c590',
@@ -208,7 +237,7 @@ function loadPolarAreaChart(){
             datasets: [{
                 label: 'Statistik',
                 backgroundColor: ["#fbf571", "#ff7168", "#ffa566", "#c978b8"],
-                data: [statisticsDataMap.get('INFO'), statisticsDataMap.get('DEBUG'), statisticsDataMap.get('WARN'), statisticsDataMap.get('ERROR'), statisticsDataMap.get('TRACE'), statisticsDataMap.get('FATAL')],
+                data: [statisticsDataMap.get('WARN'), statisticsDataMap.get('ERROR'), statisticsDataMap.get('TRACE'), statisticsDataMap.get('FATAL')],
             }]
         },
         options: {
@@ -222,6 +251,78 @@ function loadPolarAreaChart(){
                     display: true,
                     text: 'Warnings and above'
                 }
+            }
+        },
+    });
+}
+
+function loadMultiLineChart(){
+
+    const multiLineChartContext = document.getElementById("multiLineChart").getContext('2d');
+    const multiLineChart = new Chart(multiLineChartContext, {
+        type: 'line',
+        data: {
+            labels: [timestampsMap.get("1") + "", timestampsMap.get("2") + "", timestampsMap.get("3") + "", timestampsMap.get("4") + "",
+                    timestampsMap.get("5") + "", timestampsMap.get("6") + "", timestampsMap.get("7") + "", timestampsMap.get("8") + "",
+                    timestampsMap.get("9") + "", timestampsMap.get("10") + "", timestampsMap.get("11") + "", timestampsMap.get("12") + ""],
+            datasets: [
+                {
+                    label: 'INFO',
+                    data: [multiStatisticsDataMap.get('INFO')[0], multiStatisticsDataMap.get('INFO')[1], multiStatisticsDataMap.get('INFO')[2], multiStatisticsDataMap.get('INFO')[3],
+                        multiStatisticsDataMap.get('INFO')[4], multiStatisticsDataMap.get('INFO')[5], multiStatisticsDataMap.get('INFO')[6], multiStatisticsDataMap.get('INFO')[7],
+                        multiStatisticsDataMap.get('INFO')[8], multiStatisticsDataMap.get('INFO')[9], multiStatisticsDataMap.get('INFO')[10], multiStatisticsDataMap.get('INFO')[11]],
+                    borderColor: "#36c590",
+                    backgroundColor: "#36c590",
+                },
+                {
+                    label: 'DEBUG',
+                    data: [multiStatisticsDataMap.get('DEBUG')[0], multiStatisticsDataMap.get('DEBUG')[1], multiStatisticsDataMap.get('DEBUG')[2], multiStatisticsDataMap.get('DEBUG')[3],
+                        multiStatisticsDataMap.get('DEBUG')[4], multiStatisticsDataMap.get('DEBUG')[5], multiStatisticsDataMap.get('DEBUG')[6], multiStatisticsDataMap.get('DEBUG')[7],
+                        multiStatisticsDataMap.get('DEBUG')[8], multiStatisticsDataMap.get('DEBUG')[9], multiStatisticsDataMap.get('DEBUG')[10], multiStatisticsDataMap.get('DEBUG')[11]],
+                    borderColor: "#5188ca",
+                    backgroundColor: "#5188ca",
+                },
+                {
+                    label: 'WARN',
+                    data: [multiStatisticsDataMap.get('WARN')[0], multiStatisticsDataMap.get('WARN')[1], multiStatisticsDataMap.get('WARN')[2], multiStatisticsDataMap.get('WARN')[3],
+                        multiStatisticsDataMap.get('WARN')[4], multiStatisticsDataMap.get('WARN')[5], multiStatisticsDataMap.get('WARN')[6], multiStatisticsDataMap.get('WARN')[7],
+                        multiStatisticsDataMap.get('WARN')[8], multiStatisticsDataMap.get('WARN')[9], multiStatisticsDataMap.get('WARN')[10], multiStatisticsDataMap.get('WARN')[11]],
+                    borderColor: "#fbf571",
+                    backgroundColor: "#fbf571",
+                },
+                {
+                    label: 'ERROR',
+                    data: [multiStatisticsDataMap.get('ERROR')[0], multiStatisticsDataMap.get('ERROR')[1], multiStatisticsDataMap.get('ERROR')[2], multiStatisticsDataMap.get('ERROR')[3],
+                        multiStatisticsDataMap.get('ERROR')[4], multiStatisticsDataMap.get('ERROR')[5], multiStatisticsDataMap.get('ERROR')[6], multiStatisticsDataMap.get('ERROR')[7],
+                        multiStatisticsDataMap.get('ERROR')[8], multiStatisticsDataMap.get('ERROR')[9], multiStatisticsDataMap.get('ERROR')[10], multiStatisticsDataMap.get('ERROR')[11]],
+                    borderColor: "#ff7168",
+                    backgroundColor: "#ff7168",
+                },
+                {
+                    label: 'TRACE',
+                    data: [multiStatisticsDataMap.get('TRACE')[0], multiStatisticsDataMap.get('TRACE')[1], multiStatisticsDataMap.get('TRACE')[2], multiStatisticsDataMap.get('TRACE')[3],
+                        multiStatisticsDataMap.get('TRACE')[4], multiStatisticsDataMap.get('TRACE')[5], multiStatisticsDataMap.get('TRACE')[6], multiStatisticsDataMap.get('TRACE')[7],
+                        multiStatisticsDataMap.get('TRACE')[8], multiStatisticsDataMap.get('TRACE')[9], multiStatisticsDataMap.get('TRACE')[10], multiStatisticsDataMap.get('TRACE')[11]],
+                    borderColor: "#ffa566",
+                    backgroundColor: "#ffa566",
+                },
+                {
+                    label: 'FATAL',
+                    data: [multiStatisticsDataMap.get('FATAL')[0], multiStatisticsDataMap.get('FATAL')[1], multiStatisticsDataMap.get('FATAL')[2], multiStatisticsDataMap.get('FATAL')[3],
+                        multiStatisticsDataMap.get('FATAL')[4], multiStatisticsDataMap.get('FATAL')[5], multiStatisticsDataMap.get('FATAL')[6], multiStatisticsDataMap.get('FATAL')[7],
+                        multiStatisticsDataMap.get('FATAL')[8], multiStatisticsDataMap.get('FATAL')[9], multiStatisticsDataMap.get('FATAL')[10], multiStatisticsDataMap.get('FATAL')[11]],
+                    borderColor: "#c978b8",
+                    backgroundColor: "#c978b8",
+                },
+            ]
+        },
+        options: {
+            maintainAspectRatio: false,
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
             }
         },
     });
@@ -313,8 +414,10 @@ function reloadStatistics(statistic){
         loadPieChart();
     }else if(statistic == 'lineChart'){
         loadLineChart();
-    } else if(statistic == 'polarAreaChart'){
+    }else if(statistic == 'polarAreaChart'){
         loadPolarAreaChart();
+    }else if(statistic == 'multiLineChart'){
+        loadMultiLineChart();
     }
 }
 
@@ -335,34 +438,22 @@ function reloadAllActiveStatistics(){
             onShowStatistics(document.getElementById(value), key, 2)
         }
     })
-    console.log("I'm in")
 }
 
-/** Function used to determine the data for some statistics */
-function getStatisticData(){
 
-    statisticsDataMap = new Map([
-        ['INFO', 0],
-        ['DEBUG', 0],
-        ['WARN', 0],
-        ['ERROR', 0],
-        ['TRACE', 0],
-        ['FATAL', 0],
-    ]);
+/**
+ * Function used to fill the statistics with its data
+ *
+ * @param map1 normal statistics map
+ * @param map2 multistatistics map
+ */
+function getStatisticData(map1, map2, map3){
 
-    let searchFullData = getStatisticsData();
+    statisticsDataMap = new Map(Object.entries(map1));
+    multiStatisticsDataMap = new Map(Object.entries(map2));
+    timestampsMap = new Map(Object.entries(map3));
 
-    for(let i = 0 ; i < searchFullData.length ; i++){
-        for(let j = 0 ; j < searchFullData[i].length ; j++){
-            addLogLevelData(searchFullData[i][j].logLevel);
-        }
-    }
-}
+    console.log(timestampsMap)
+    console.log(timestampsMap.get("1"))
 
-/** Function used to set the amount of each loglevel */
-function addLogLevelData(logLevel){
-
-    let value = statisticsDataMap.get(logLevel);
-    value++;
-    statisticsDataMap.set(logLevel, value);
 }

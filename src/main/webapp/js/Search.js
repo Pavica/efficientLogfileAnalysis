@@ -9,7 +9,7 @@
 let filter;
 
 /** variable used to identify all different types of loglevels and the amount of them */
-let statisticsData;
+let statisticsData = [];
 
 /**
  * Function used to create a filterData object
@@ -23,6 +23,7 @@ let statisticsData;
  */
 function createFilterData(startDate, endDate, logLevel = [], module = null, className = null, exception = null)
 {
+
     return {
         beginDate : startDate,
         endDate : endDate,
@@ -111,7 +112,15 @@ async function searchInFileAmount(filterData, filename, lastSearchEntry, entryAm
  */
 async function search(filterData)
 {
-    let response = await fetch("api/search/filter", {
+    /*let response = await fetch(`api/search/filter`, {
+        method : "POST",
+        body : JSON.stringify(filterData),
+        headers : {
+            "content-type" : "application/json"
+        }
+    });*/
+
+    let response = await fetch("api/statistic/sorted", {
         method : "POST",
         body : JSON.stringify(filterData),
         headers : {
@@ -196,15 +205,13 @@ async function startSearch(){
     let data = await searchForFiles(filter);
     createLogFileElements(data);
 
-    let statisticsSearchData  = await search(filter);
-    let searchFullData = [];
-    for(let i= 0; i<statisticsSearchData.length; i++){
-        searchFullData.push(await loadLogEntries(statisticsSearchData[i].filename, statisticsSearchData[i].logEntryIDs));
-    }
-    statisticsData = searchFullData;
+    statisticsData  = await search(filter);
+    console.log(statisticsData)
 
     setSpinnerVisible(false);
-    getStatisticData();
+
+    getStatisticData(statisticsData[0], statisticsData[1], statisticsData[2]);
+
     showActiveStatistics(activeStatistics)
 }
 

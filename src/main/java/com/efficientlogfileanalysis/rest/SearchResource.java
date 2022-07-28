@@ -6,8 +6,10 @@ import com.efficientlogfileanalysis.data.Tuple;
 import com.efficientlogfileanalysis.data.search.Filter;
 import com.efficientlogfileanalysis.data.search.SearchEntry;
 import com.efficientlogfileanalysis.log.*;
+import jakarta.enterprise.inject.Default;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.StreamingOutput;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -33,7 +35,7 @@ public class SearchResource {
         private String exception;
     }
 
-    private Filter parseFilterData(FilterData filterData)
+    public static Filter parseFilterData(FilterData filterData)
     {
         Filter.FilterBuilder filterBuilder = Filter.builder();
 
@@ -72,8 +74,11 @@ public class SearchResource {
 
         try
         {
+            List<SearchEntry> result;
+
             Search search = new Search();
-            List<SearchEntry> result = search.search(filter);
+
+            result = search.search(filter);
 
             return Response.ok(result).build();
         }
