@@ -264,11 +264,11 @@ public class IndexManager {
     @SneakyThrows
     public static void main(String[] args)
     {
-        IndexManager mgr = new IndexManager();
-        //mgr.createIndices();
-        //mgr.saveIndices();
-        mgr.readIndices();
-        System.out.println(mgr.classIDManager);
+        IndexManager mgr = IndexManager.getInstance();
+        mgr.createIndices();
+        mgr.saveIndices();
+//        mgr.readIndices();
+        System.out.println(mgr.moduleIDManager);
     }
 
 
