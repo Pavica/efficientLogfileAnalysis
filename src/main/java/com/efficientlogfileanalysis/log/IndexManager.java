@@ -100,6 +100,17 @@ public class IndexManager {
         logLevelIndexManager.writeIndex(path + "logLevel_index_manager");
         logDateManager.writeIndex(path + "log_date_manager");
     }
+    public void readIndices() throws IOException
+    {
+        String path = "index" + File.separator;
+        fileIDManager.readIndex(path + "file_id_manager");
+        moduleIDManager.readIndex(path + "module_id_manager");
+        classIDManager.readIndex(path + "class_id_manager");
+        logLevelIDManager.readIndex(path + "log_level_id_manager");
+        logLevelIndexManager.readIndex(path + "logLevel_index_manager");
+        logDateManager.readIndex(path + "log_date_manager");
+    }
+
 
     /**
      * Creates the Lucene index, the logDate index, the module index, the file index and the class index.
@@ -254,8 +265,10 @@ public class IndexManager {
     public static void main(String[] args)
     {
         IndexManager mgr = new IndexManager();
-        mgr.createIndices();
-        mgr.saveIndices();
+        //mgr.createIndices();
+        //mgr.saveIndices();
+        mgr.readIndices();
+        System.out.println(mgr.classIDManager);
     }
 
 

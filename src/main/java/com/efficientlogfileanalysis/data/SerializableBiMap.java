@@ -29,6 +29,19 @@ public class SerializableBiMap<K, V> extends BiMap<K, V> {
     }
 
     /**
+     * Reads the Index to a file with the specified name<br>
+     * The same as <code>readIndex(new RandomAccessFile(fileName, "r"))</code> with the additional benefit of actually closing the file
+     * @param fileName the name of the file
+     * @throws IOException if the file can't be read
+     */
+    public void readIndex(String fileName) throws IOException
+    {
+        RandomAccessFile raf = new RandomAccessFile(fileName, "r");
+        readIndex(raf);
+        raf.close();
+    }
+
+    /**
      * Reads the index from a file and puts it into the values HashMap.
      * @param file A RandomAccessFile containing an index
      * @throws IOException
