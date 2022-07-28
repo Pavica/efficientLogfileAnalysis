@@ -98,4 +98,21 @@ public class BiMap<K, V> {
     {
         return map2.keySet();
     }
+
+    /**
+     * Adds the element, if the specified element is not already contained in the map
+     * @param key the key which should be added
+     * @param value the other key which should be added
+     * @return true when the new key value pair is inserted into the map otherwise false
+     */
+    public boolean addIfAbsent(K key, V value) {
+        if(map1.containsKey(key) || map2.containsKey(value)) {
+            return false;
+        }
+
+        map1.put(key,value);
+        map2.put(value,key);
+
+        return true;
+    }
 }

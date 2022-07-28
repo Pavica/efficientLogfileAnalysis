@@ -1,321 +1,262 @@
 package com.efficientlogfileanalysis.log;
 
-import com.efficientlogfileanalysis.data.BiMap;
-import com.efficientlogfileanalysis.data.Tuple;
-
+import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.util.ArrayList;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
+import java.util.Set;
 
-/**
- * Class that creates an Index based on a key and value pair.<br>
- * The Index can be saved and read from a file.
- * @param <K> The type of the key
- * @param <V> The type of the value
- * @author Andreas Kurz
- */
-public class IndexManager<K, V>{
+import com.efficientlogfileanalysis.data.*;
+import com.efficientlogfileanalysis.test.Timer;
+import com.efficientlogfileanalysis.util.ByteConverter;
+import lombok.SneakyThrows;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.document.*;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.BytesRef;
 
+public class IndexManager {
     /**
-     * Interface that serializes the given type<br>
-     * Some usual type converters are predefined
-     * @param <T> the type to be serialized
+     * The directory where the index gets created.
      */
-    public interface I_TypeConverter<T>{
+    public static final String PATH_TO_INDEX = "index";
 
-        /**
-         * Function that gets called when reading from a file.
-         * @param file The file to read from
-         * @return A Tuple object that where the Integer objects is the amount of read bytes and T is the returned value
-         * @throws IOException
-         */
-        Tuple<Integer, T> read(RandomAccessFile file) throws IOException;
-        /**
-         * Function that gets called when writing a value to a file.
-         * @param file The file to write to
-         * @param value The value that is being written to the file 
-         * @return The amount of written bytes
-         * @throws IOException
-         */
-        int write(RandomAccessFile file, T value) throws IOException;
+    private static IndexManager instance;
 
-        static<T> I_TypeConverter<List<T>> listConverter(I_TypeConverter<T> typeConverter){
-            return new ListTypeConverter(typeConverter);
-        };
+    //id manager
+    private SerializableBiMap<Short, String> fileIDManager;
+    private SerializableBiMap<Integer, String> moduleIDManager;
+    private SerializableBiMap<Integer, String> classIDManager;
+    private SerializableBiMap<Byte, String> logLevelIDManager;
 
-        class ListTypeConverter<T> implements I_TypeConverter<List<T>>
-        {
-            private I_TypeConverter<T> typeConverter;
+    //additional managers for informations that have nothing to do with Lucene
+    private SerializableBiMap<Short, List<Byte>> logLevelIndexManager;
+    private SerializableBiMap<Short, TimeRange> logDateManager;
 
-            public ListTypeConverter(I_TypeConverter<T> typeConverter)
-            {
-                this.typeConverter = typeConverter;
-            }
+    private IndexManager(){
+        fileIDManager           =   new SerializableBiMap<>(I_TypeConverter.SHORT_TYPE_CONVERTER, I_TypeConverter.STRING_TYPE_CONVERTER);
+        moduleIDManager         =   new SerializableBiMap<>(I_TypeConverter.INTEGER_TYPE_CONVERTER, I_TypeConverter.STRING_TYPE_CONVERTER);
+        classIDManager          =   new SerializableBiMap<>(I_TypeConverter.INTEGER_TYPE_CONVERTER, I_TypeConverter.STRING_TYPE_CONVERTER);
+        logLevelIDManager       =   new SerializableBiMap<>(I_TypeConverter.BYTE_TYPE_CONVERTER, I_TypeConverter.STRING_TYPE_CONVERTER);
 
-            @Override
-            public Tuple<Integer, List<T>> read(RandomAccessFile file) throws IOException {
-                int lengthRead = 4;
-                int listLength = file.readInt();
+        logLevelIndexManager    =   new SerializableBiMap<>(I_TypeConverter.SHORT_TYPE_CONVERTER, I_TypeConverter.listConverter(I_TypeConverter.BYTE_TYPE_CONVERTER));
+        logDateManager          =   new SerializableBiMap<>(I_TypeConverter.SHORT_TYPE_CONVERTER, I_TypeConverter.TIME_RANGE_CONVERTER);
+    }
 
-                List<T> list = new ArrayList<>(listLength);
-
-                for(int i = 0; i < listLength; i++)
-                {
-                    Tuple<Integer, T> listEntry = typeConverter.read(file);
-                    lengthRead += listEntry.value1;
-                    list.add(listEntry.value2);
-                }
-
-                return new Tuple(lengthRead, list);
-            }
-
-            @Override
-            public int write(RandomAccessFile file, List<T> value) throws IOException {
-                int lengthWritten = 4;
-
-                file.writeInt(value.size());
-
-                for(T element : value)
-                {
-                    lengthWritten += typeConverter.write(file, element);
-                }
-
-                return lengthWritten;
-            }
+    public static synchronized IndexManager getInstance() {
+        if(instance == null) {
+            instance = new IndexManager();
         }
 
-        /**
-         * Converter for Integer objects.
-         */
-        I_TypeConverter<Integer> INTEGER_TYPE_CONVERTER = new I_TypeConverter<Integer>() {
-            /**
-             * Reads an Integer object from a RandomAccessFile.
-             * @param file A RandomAccessFile that is going to be written to
-             * @return A Tuple object that with the amount of bytes read and an Integer object
-             * @throws IOException 
-             */
-            @Override
-            public Tuple<Integer, Integer> read(RandomAccessFile file) throws IOException {
-                return new Tuple<>(4, file.readInt());
-            }
-            
-            /**
-             * Writes an Integer object into a given RandomAccessFile and returns the amount of bytes that were written.
-             * @param file A RandomAccessFile that is going to be written to
-             * @param value The Integer object that is written to the file
-             * @return The amount of bytes that were written to the file
-             * @throws IOException 
-             */
-            @Override
-            public int write(RandomAccessFile file, Integer value) throws IOException {
-                file.writeInt(value);
-                return 4;
-            }
-        };
-
-        /**
-         * Converter for Short objects.
-         */
-        I_TypeConverter<Short> SHORT_TYPE_CONVERTER = new I_TypeConverter<Short>() {
-            /**
-             * Reads a Short object from a RandomAccessFile.
-             * @param file A RandomAccessFile that is going to be written to
-             * @return A Tuple object that with the amount of bytes read and an Shorts object
-             * @throws IOException 
-             */
-            @Override
-            public Tuple<Integer, Short> read(RandomAccessFile file) throws IOException {
-                return new Tuple<>(2, file.readShort());
-            }
-            
-            /**
-             * Writes a Short object into a given RandomAccessFile and returns the amount of bytes that were written.
-             * @param file A RandomAccessFile that is going to be written to
-             * @param value The Short object that is written to the file
-             * @return The amount of bytes that were written to the file
-             * @throws IOException 
-             */
-            @Override
-            public int write(RandomAccessFile file, Short value) throws IOException {
-                file.writeShort(value);
-                return 2;
-            }
-        };
-
-        /**
-         * Converter for Byte objects.
-         */
-        I_TypeConverter<Byte> BYTE_TYPE_CONVERTER = new I_TypeConverter<Byte>() {
-            /**
-             * Reads a Byte object from a RandomAccessFile.
-             * @param file A RandomAccessFile that is going to be written to
-             * @return A Tuple object that with the amount of bytes read and an Byte object
-             * @throws IOException 
-             */
-            @Override
-            public Tuple<Integer, Byte> read(RandomAccessFile file) throws IOException {
-                return new Tuple<>(1, file.readByte());
-            }
-            
-            /**
-             * Writes a Byte object into a given RandomAccessFile and returns the amount of bytes that were written.
-             * @param file A RandomAccessFile that is going to be written to
-             * @param value The Byte object that is written to the file
-             * @return The amount of bytes that were written to the file
-             * @throws IOException 
-             */
-            @Override
-            public int write(RandomAccessFile file, Byte value) throws IOException {
-                file.writeByte(value);
-                return 1;
-            }
-        };
-
-        /**
-         * Converter for String objects.
-         */
-        I_TypeConverter<String> STRING_TYPE_CONVERTER = new I_TypeConverter<String>() {
-            /**
-             * Reads an Integer object representing the length of the following String object and the String object from a RandomAccessFile.
-             * @param file A RandomAccessFile that is going to be written to
-             * @return A Tuple object that with the amount of bytes read and the String object 
-             * @throws IOException 
-             */
-            @Override
-            public Tuple<Integer, String> read(RandomAccessFile file) throws IOException {
-                int size = file.readInt();
-                byte[] bytes = new byte[size];
-                file.read(bytes);
-                return new Tuple<>(size + 4, new String(bytes));
-            }
-            
-            /**
-             * Writes a String object into a given RandomAccessFile and returns the amount of bytes that were written.
-             * @param file A RandomAccessFile that is going to be written to
-             * @param value The String object that is written to the file
-             * @return The amount of bytes that were written to the file
-             * @throws IOException 
-             */
-            @Override
-            public int write(RandomAccessFile file, String value) throws IOException {
-                byte[] data = value.getBytes();
-                file.writeInt(data.length);
-                file.write(data);
-                return 4 + data.length;
-            }
-        };
+        return instance;
     }
 
-    private I_TypeConverter<K> keyConverter;
-    private I_TypeConverter<V> valueConverter;
+    public void createIndices() throws IOException {
+        Timer t = new Timer();
 
-    protected BiMap<K, V> values;
+        //Check if the logfile directory exists
+        if(!new File(Settings.getInstance().getLogFilePath()).exists()) {
+            System.out.println("Specified log directory " + Settings.getInstance().getLogFilePath() + " does not exist");
+            System.exit(-1);
+        }
 
-    private long indexLength;
+        //create log level ID index
+        for(String s : Search.allLogLevels) {
+            logLevelIDManager.putValue((byte)logLevelIDManager.size(), s);
+        }
 
-    public IndexManager(I_TypeConverter<K> keyConverter, I_TypeConverter<V> valueConverter)
+        createLuceneIndex();
+
+        //create logLevel index
+        try (Search search = new Search()) {
+
+            //create log level index
+            List<List<Byte>> files = search.searchForLogLevelsInFiles();
+            for(short i = 0;i < files.size(); ++i) {
+                logLevelIndexManager.putValue(i, files.get(i));
+            }
+        }
+        catch (IOException ioe) {
+            ioe.printStackTrace();
+            System.exit(-1);
+        }
+
+        System.out.println(t);
+    }
+
+    public void saveIndices() throws IOException
     {
-        this.keyConverter = keyConverter;
-        this.valueConverter = valueConverter;
-        values = new BiMap<>();
+        String path = "index" + File.separator;
+        fileIDManager.writeIndex(path + "file_id_manager");
+        moduleIDManager.writeIndex(path + "module_id_manager");
+        classIDManager.writeIndex(path + "class_id_manager");
+        logLevelIDManager.writeIndex(path + "log_level_id_manager");
+        logLevelIndexManager.writeIndex(path + "logLevel_index_manager");
+        logDateManager.writeIndex(path + "log_date_manager");
     }
 
     /**
-     * Method that gets called when the index should get created.
-     */
-    protected void createIndex() {
-        values = new BiMap<>();
-    }
-
-    /**
-     * Reads the index from a file and puts it into the values HashMap.
-     * @param file A RandomAccessFile containing an index
+     * Creates the Lucene index, the logDate index, the module index, the file index and the class index.
      * @throws IOException
      */
-    protected void readIndex(RandomAccessFile file) throws IOException
+    private void createLuceneIndex() throws IOException
     {
-        if(file.getFilePointer() + 8 >= file.length()){
-            return;
-        }
+        //Create path object
+        Path indexPath = Paths.get(IndexManager.PATH_TO_INDEX + "/" + "lucene");
 
-        long indexSize = indexLength = file.readLong();
-        while(indexSize > 0)
+        //Delete previous directory
+        if(indexPath.toFile().exists())
         {
-            Tuple<Integer, K> key = keyConverter.read(file);
-            Tuple<Integer, V> value = valueConverter.read(file);
-
-            indexSize -= key.value1;
-            indexSize -= value.value1;
-
-            values.putValue(key.value2, value.value2);
+            Files.walk(indexPath).map(Path::toFile).forEach(File::delete);
         }
+
+        //Open the index directory (creates the directory if it doesn't exist)
+        Directory indexDirectory = FSDirectory.open(indexPath);
+
+        //Create Analyzer object
+        //The analyzer removes useless tokens ( words like a, an is etc.)
+        Analyzer analyzer = new StandardAnalyzer();
+
+        //The IndexWriter is used to create an Index
+        IndexWriterConfig indexWriterConfig = new IndexWriterConfig(analyzer);
+        //Specify the Index to be written to and the config
+        IndexWriter indexWriter = new IndexWriter(indexDirectory, indexWriterConfig);
+
+        //Read all the log entries from all the files into a list
+        LogFile[] logFiles = LogReader.readAllLogFiles(Settings.getInstance().getLogFilePath());
+
+        for(LogFile logfile : logFiles)
+        {
+            //add the file id to the index
+            fileIDManager.addIfAbsent((short)fileIDManager.size(), logfile.filename);
+            short fileID = fileIDManager.getKey(logfile.filename);
+
+            //save the begin and end date of each file
+            logDateManager.putValue(
+                fileID,
+                new TimeRange(
+                    logfile.getEntries().get(0).getTime(),
+                    logfile.getEntries().get(logfile.getEntries().size()-1).getTime()
+                )
+            );
+
+            for(LogEntry logEntry : logfile.getEntries()) {
+                Document document = new Document();
+
+                //add the classname to the classname index
+                classIDManager.addIfAbsent(classIDManager.size(), logEntry.getClassName());
+                int classID = classIDManager.getKey(logEntry.getClassName());
+
+                //add the module to the module index
+                moduleIDManager.addIfAbsent(moduleIDManager.size(), logEntry.getModule());
+                int moduleID = moduleIDManager.getKey(logEntry.getModule());
+
+                document.add(new LongPoint("date", logEntry.getTime()));
+                document.add(new StoredField("logEntryID", logEntry.getEntryID()));
+                document.add(new LongPoint("logLevel", logLevelIDManager.getKey(logEntry.getLogLevel())));
+                document.add(new TextField("message", logEntry.getMessage(), Field.Store.NO));
+                document.add(new IntPoint("classname", classID));
+                document.add(new IntPoint("module", moduleID));
+                document.add(new StoredField("fileIndex", fileID));
+
+                //add the fileIndex as a IntPoint so that lucene can search for entries in a specific file
+                document.add(new IntPoint("fileIndex", fileID));
+
+                //add the file index as a sortedField so that lucene can group by it
+                document.add(new SortedDocValuesField(
+                        "fileIndex",
+                        new BytesRef(ByteConverter.shortToByte(fileID)))
+                );
+                document.add(new SortedDocValuesField(
+                        "logLevel",
+                        new BytesRef(new byte[] {
+                            logLevelIDManager.getKey(logEntry.getLogLevel())
+                        })
+                ));
+
+                indexWriter.addDocument(document);
+            }
+
+        }
+
+        indexWriter.close();
     }
 
-    /**
-     * Writes the Index to a RandomAccessFile with a binary format. Serialization is done by the TypeConverter class. 
-     * @param file A RandomAccessFile the index is being written to
-     * @throws IOException
-     */
-    protected void writeIndex(RandomAccessFile file) throws IOException
+    //----- fileIDManager ----//
+    public String getFileName(short fileIndex) {
+        return fileIDManager.getValue(fileIndex);
+    }
+
+    public short getFileID(String fileName) {
+        return fileIDManager.getKey(fileName);
+    }
+
+    public Set<Short> getFileIDs() {
+        return fileIDManager.getKeySet();
+    }
+
+    public BiMap<Short, String> getFileData() {
+        return fileIDManager;
+    }
+    //----- fileIDManager ----//
+
+
+    public TimeRange getLogFileDateRange(short fileID) {
+        return logDateManager.getValue(fileID);
+    }
+
+    //----- LogLevelIndexManager -----//
+    public List<Byte> getLogLevelsOfFile(short fileID) {
+        return logLevelIndexManager.getValue(fileID);
+    }
+    //----- LogLevelIndexManager -----//
+
+
+    //----- LogLevelIDManager -----//
+    public String getLogLevelName(byte logLevelID) {
+        return logLevelIDManager.getValue(logLevelID);
+    }
+
+    public byte getLogLevelID(String s) {
+        return logLevelIDManager.getKey(s);
+    }
+    //----- LogLevelIDManager -----//
+
+
+    //----- ModuleIDManager -----//
+    public int getModuleID(String module) {
+        return moduleIDManager.getKey(module);
+    }
+
+    public Set<String> getModuleNames() {
+        return moduleIDManager.getValueSet();
+    }
+    //----- ModuleIDManager -----//
+
+
+    //----- ClassIDManager -----//
+    public int getClassID(String className) {
+        return classIDManager.getKey(className);
+    }
+
+    public Set<String> getClassNames() {
+        return classIDManager.getValueSet();
+    }
+    //----- ClassIDManager -----//
+
+    @SneakyThrows
+    public static void main(String[] args)
     {
-        long startLocation = file.getFilePointer();
-        long newIndexLength = 0;
-
-        file.seek(startLocation + 8);
-        for(K key : values.getKeySet())
-        {
-            V value = values.getValue(key);
-
-            newIndexLength += keyConverter.write(file, key);
-            newIndexLength += valueConverter.write(file, value);
-        }
-
-        file.seek(startLocation);
-        file.writeLong(newIndexLength);
-
-        if(newIndexLength != indexLength)
-        {
-            indexLength = newIndexLength;
-            System.err.println("Index Length changed!");
-        }
-    }
-
-    /**
-     * Prints the values inside the BiMap
-     */
-    protected void print() {
-        for (K key : values.getKeySet()) {
-            System.out.println("Key: " + key + " Value: " + values.getValue(key));
-        }
-    }
-
-    public int getSize(){
-        return values.size();
-    }
-
-    public boolean hasKey(K key){
-        return values.containsKey(key);
-    }
-
-    public void putValue(K key, V value){
-        values.putValue(key, value);
-    }
-
-    public void putKey(V value, K key){
-        values.putKey(value, key);
+        IndexManager mgr = new IndexManager();
+        mgr.createIndices();
+        mgr.saveIndices();
     }
 
 
-    @Override
-    public String toString() {
-        StringBuilder output = new StringBuilder("");
-
-        for(K key : values.getKeySet())
-        {
-            output.append(String.format(" %12s\t|\t%s \n", key, values.getValue(key)));
-        }
-
-        return output.toString();
-    }
 }

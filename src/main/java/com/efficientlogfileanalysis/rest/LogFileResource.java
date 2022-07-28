@@ -2,21 +2,15 @@ package com.efficientlogfileanalysis.rest;
 
 import com.efficientlogfileanalysis.data.LogEntry;
 import com.efficientlogfileanalysis.data.Settings;
-import com.efficientlogfileanalysis.log.Manager;
-import com.efficientlogfileanalysis.log.ClassIDManager;
-import com.efficientlogfileanalysis.log.FileIDManager;
+import com.efficientlogfileanalysis.log.IndexManager;
 import com.efficientlogfileanalysis.log.LogReader;
-import com.efficientlogfileanalysis.log.ModuleIDManager;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.core.StreamingOutput;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 @Path("/logFiles")
@@ -27,7 +21,7 @@ public class LogFileResource {
     public Response getAllLogfiles()
     {
         //return Response.ok(FileIDManager.getInstance().getLogFileData()).build();
-        return Response.ok(Manager.getInstance().getFileIDManager().getLogFileData()).build();
+        return Response.ok(IndexManager.getInstance().getFileData()).build();
     }
 
     @GET
@@ -38,7 +32,7 @@ public class LogFileResource {
         @PathParam("id") long entryID
     ) {
         //short fileID = FileIDManager.getInstance().get(logFileName);
-        short fileID = Manager.getInstance().getFileID(logFileName);
+        short fileID = IndexManager.getInstance().getFileID(logFileName);
 
         try( LogReader logReader = new LogReader())
         {
@@ -65,7 +59,7 @@ public class LogFileResource {
         List<Long> requestedIDs
     ) {
         //short fileID = FileIDManager.getInstance().get(logFileName);
-        short fileID = Manager.getInstance().getFileID(logFileName);
+        short fileID = IndexManager.getInstance().getFileID(logFileName);
 
         try( LogReader logReader = new LogReader())
         {
@@ -95,7 +89,7 @@ public class LogFileResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response getClassNames() {
         //Set<String> classNames = ClassIDManager.getInstance().getClassNames();
-        Set<String> classNames = Manager.getInstance().getClassNames();
+        Set<String> classNames = IndexManager.getInstance().getClassNames();
         return Response.ok(classNames).type(MediaType.APPLICATION_JSON).build();
     }
 
@@ -104,7 +98,7 @@ public class LogFileResource {
     public Response getAllModules()
     {
         //Set<String> moduleNames = ModuleIDManager.getInstance().getModuleNames();
-        Set<String> moduleNames = Manager.getInstance().getModuleNames();
+        Set<String> moduleNames = IndexManager.getInstance().getModuleNames();
         return Response.ok(moduleNames).build();
     }
 }
