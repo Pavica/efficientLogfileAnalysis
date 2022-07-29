@@ -35,35 +35,38 @@ public class LogReader implements Closeable {
         LogFile[] logFiles = new LogFile[logFolderFileList.length];
         short currentFileIndex = 0;
 
-        for (File file : logFolderFileList) {
-            BufferedReader br = new BufferedReader(new FileReader(file));
-            String line = "";
-            String currentLine;
-            long currentByteCount = -1;
+        for (File file : logFolderFileList)
+        {
+            try(BufferedReader br = new BufferedReader(new FileReader(file)))
+            {
+                String line = "";
+                String currentLine;
+                long currentByteCount = -1;
 
-            logFiles[currentFileIndex] = new LogFile(file.getName());
+                logFiles[currentFileIndex] = new LogFile(file.getName());
 
-            while ((currentLine = br.readLine()) != null) {
+                while ((currentLine = br.readLine()) != null) {
 
-                if (line.equals("") || !startOfLogEntry.reset(currentLine).matches()) {
-                    line += currentLine + "\n";
-                    continue;
+                    if (line.equals("") || !startOfLogEntry.reset(currentLine).matches()) {
+                        line += currentLine + "\n";
+                        continue;
+                    }
+
+                    LogEntry newLogEntry = new LogEntry(line, currentByteCount == -1 ? 0 : currentByteCount);
+
+                    //add a \n for the exact bytecount
+                    line += "\n";
+                    currentByteCount += line.getBytes().length;
+
+                    line = currentLine;
+                    logFiles[currentFileIndex].addEntry(newLogEntry);
+
                 }
 
-                LogEntry newLogEntry = new LogEntry(line, currentByteCount == -1 ? 0 : currentByteCount);
+                logFiles[currentFileIndex].addEntry(new LogEntry(line, currentByteCount == -1 ? 0 : currentByteCount));
 
-                //add a \n for the exact bytecount
-                line += "\n";
-                currentByteCount += line.getBytes().length;
-
-                line = currentLine;
-                logFiles[currentFileIndex].addEntry(newLogEntry);
-
+                ++currentFileIndex;
             }
-
-            logFiles[currentFileIndex].addEntry(new LogEntry(line, currentByteCount == -1 ? 0 : currentByteCount));
-
-            ++currentFileIndex;
         }
 
         return logFiles;
