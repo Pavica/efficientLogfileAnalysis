@@ -1,7 +1,7 @@
 /**
  * author: Luka
  * version: 1.0
- * last changed: 21.07.2022
+ * last changed: 26.07.2022
  */
 
 let controller = new AbortController()
@@ -30,6 +30,9 @@ function resizeColumnsOnModalEnter(){
 
 /** variable used to set the filters for a search */
 let filter;
+
+/** variable used to identify all different types of loglevels and the amount of them */
+let statisticsData = [];
 
 /**
  * Function used to create a filterData object
@@ -120,6 +123,7 @@ async function searchInFileAmount(filterData, filename, lastSearchEntry, entryAm
         }
     })
 
+
     if(!response.ok)
     {
         alert("Not okay :(");
@@ -139,9 +143,10 @@ async function searchInFileAmount(filterData, filename, lastSearchEntry, entryAm
  * @param filterData specified filterData object based on search input
  * @returns {Promise<any>} an array of files with every entry element based on filterData
  */
+//TODO should probably be renamed to "statisticSearch"
 async function search(filterData)
 {
-    let response = await fetch("api/search/filter", {
+    let response = await fetch("api/statistic/sorted", {
         method : "POST",
         body : JSON.stringify(filterData),
         headers : {
@@ -244,13 +249,20 @@ async function readyForSearch(){
 
 /**
  * function used to start the search and add the results into the gui
- *
  */
 async function startSearch(){
     setSpinnerVisible(true, "searchButton");
     let data = await searchForFiles(filter);
-    setSpinnerVisible(false, "searchButton");
+
     createLogFileElements(data);
+
+    statisticsData  = await search(filter);
+    console.log(statisticsData)
+
+    setSpinnerVisible(false, "searchButton");
+
+    getStatisticData(statisticsData[0], statisticsData[1], statisticsData[2]);
+    showActiveStatistics(activeStatistics)
 }
 
 /**
@@ -383,6 +395,7 @@ async function displayFileLogEntries(filename){
             table.row.add([formatDate2(new Date(currentData[i].time)),currentData[i].logLevel,currentData[i].module,currentData[i].className]).node().id = currentData[i].entryID;
             num++;
         }
+
         table.draw(false);
     }
 }

@@ -319,7 +319,7 @@
                 </div>
             </div>
             <div class="text-center justify-content-center">
-                <button onclick="onCollapseFilter(document.getElementById('btnFilter'), document.getElementById('btnFilter').innerText == 'Filter ausklappen')" id="btnFilter" class="btn button-style" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFilter" aria-expanded="false" aria-controls="collapseFilter">Filter ausklappen</button>
+                <button onclick="onCollapseFilter(document.getElementById('btnFilter'), document.getElementById('btnFilter').innerText == 'Filter ausklappen', 'Filter')" id="btnFilter" class="btn button-style" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFilter" aria-expanded="false" aria-controls="collapseFilter">Filter ausklappen</button>
             </div>
         </div>
     </div>
@@ -361,6 +361,12 @@
                                 Show PolarArea-Chart
                             </label>
                         </li>
+                        <li>
+                            <input class="form-check-input statisticsCheckbox" type="checkbox" value="" id="showmultiLineChart" onclick="onShowStatistics(document.getElementById('showmultiLineChart'), 'multiLineChart', 2)">
+                            <label class="form-check-label" for="showmultiLineChart">
+                                Show MultiLine-Chart
+                            </label>
+                        </li>
                     </ul>
                 </div>
                 <!-- Statistics Dropdown Button -->
@@ -378,7 +384,7 @@
         </div>
     </div>
     <div class="text-center justify-content-center">
-        <button onclick="onCollapseFilter(document.getElementById('btnStatistics'), document.getElementById('btnStatistics').innerText == 'Statistiken ausklappen')" id="btnStatistics" class="btn button-style" type="button" data-bs-toggle="collapse" data-bs-target="#collapseStatistics" aria-expanded="false" aria-controls="collapseStatistics">Statistiken ausklappen</button>
+        <button onclick="onCollapseFilter(document.getElementById('btnStatistics'), document.getElementById('btnStatistics').innerText == 'Statistiken ausklappen', 'Statistiken')" id="btnStatistics" class="btn button-style" type="button" data-bs-toggle="collapse" data-bs-target="#collapseStatistics" aria-expanded="false" aria-controls="collapseStatistics">Statistiken ausklappen</button>
     </div>
 </div>
 <!-- Statistics -->
