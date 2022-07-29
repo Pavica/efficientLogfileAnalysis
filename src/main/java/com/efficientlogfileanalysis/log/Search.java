@@ -6,7 +6,6 @@ import com.efficientlogfileanalysis.data.Tuple;
 import com.efficientlogfileanalysis.data.search.Filter;
 import com.efficientlogfileanalysis.data.search.SearchEntry;
 
-import com.efficientlogfileanalysis.test.Timer;
 import com.efficientlogfileanalysis.util.ByteConverter;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -449,6 +448,8 @@ public class Search implements Closeable {
                 System.out.println(reader.getLogEntry(Settings.getInstance().getLogFilePath(), (short) 0, id));
             }
         }
+
+        search.close();
 
         /*
 

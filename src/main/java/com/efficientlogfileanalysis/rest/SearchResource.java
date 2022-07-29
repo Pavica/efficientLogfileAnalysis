@@ -85,9 +85,8 @@ public class SearchResource {
     {
         Filter filter = parseFilterData(filterData);
 
-        try
+        try (Search search = new Search())
         {
-            Search search = new Search();
             List<SearchEntry> result = search.search(filter);
 
             return Response.ok(result).build();
@@ -121,10 +120,8 @@ public class SearchResource {
     {
         Filter filter = parseFilterData(filterData);
 
-        try
+        try (Search search = new Search())
         {
-            Search search = new Search();
-
             List<Short> fileIDs = search.searchForFiles(filter);
             List<FileData> affectedFiles = new ArrayList<>(fileIDs.size());
             IndexManager mgr = IndexManager.getInstance();
@@ -163,10 +160,8 @@ public class SearchResource {
 
         filter.setFileID(fileID);
 
-        try
+        try (Search search = new Search())
         {
-            Search search = new Search();
-
             List<Long> entryIDs = search.searchForLogEntryIDs(filter);
 
             LogReader logReader = new LogReader();
