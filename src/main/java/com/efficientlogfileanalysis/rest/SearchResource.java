@@ -36,7 +36,7 @@ public class SearchResource {
         private String message;
     }
 
-    private Filter parseFilterData(FilterData filterData)
+    public static Filter parseFilterData(FilterData filterData)
     {
         Filter.FilterBuilder filterBuilder = Filter.builder();
 
@@ -52,7 +52,7 @@ public class SearchResource {
 
         //filterData.logLevels.stream().map(LogLevelIDManager.getInstance()::get).forEach(filterBuilder::addLogLevel);
         filterData.logLevels.stream().map(IndexManager.getInstance()::getLogLevelID).forEach(filterBuilder::addLogLevel);
-        
+
 
         if(filterData.module != null)
         {
@@ -136,13 +136,10 @@ public class SearchResource {
                 fileData.setFirstDate(mgr.getLogFileDateRange(fileID).beginDate);
                 fileData.setLastDate(mgr.getLogFileDateRange(fileID).endDate);
 
-                //for(byte logLevelID : LogLevelIndexManager.getInstance().get(fileID)) {
                 for(byte logLevelID : mgr.getLogLevelsOfFile(fileID)) {
-                    //fileData.addLogLevel(LogLevelIDManager.getInstance().get(logLevelID));
                     fileData.addLogLevel(mgr.getLogLevelName(logLevelID));
                 }
 
-                //fileData.setFilename(FileIDManager.getInstance().get(fileID));
                 fileData.setFilename(mgr.getFileName(fileID));
 
                 affectedFiles.add(fileData);
@@ -234,7 +231,6 @@ public class SearchResource {
 
         //Get the ID of the requested file
         Filter filter = parseFilterData(pageRequestData.filterData);
-        //short fileID = FileIDManager.getInstance().get(fileName);
         short fileID = IndexManager.getInstance().getFileID(fileName);
 
         filter.setFileID(fileID);

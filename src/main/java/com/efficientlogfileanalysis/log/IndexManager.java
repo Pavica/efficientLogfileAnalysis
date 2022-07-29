@@ -168,6 +168,7 @@ public class IndexManager {
                 moduleIDManager.addIfAbsent(moduleIDManager.size(), logEntry.getModule());
                 int moduleID = moduleIDManager.getKey(logEntry.getModule());
 
+                document.add(new NumericDocValuesField("date", logEntry.getTime()));
                 document.add(new LongPoint("date", logEntry.getTime()));
                 document.add(new StoredField("logEntryID", logEntry.getEntryID()));
                 document.add(new LongPoint("logLevel", logLevelIDManager.getKey(logEntry.getLogLevel())));

@@ -1,23 +1,22 @@
-//TODO: pls change pls
-function onCollapseFilter(button, doCollapse)
+/**
+ * author: Clark
+ * version: 1.0
+ * last changed: 26.07.2022
+ */
+
+/**
+ * Function used to change the text of the button that expands and shrinks the area for Filters and Statistics
+ * @param button button that has been clicked
+ * @param doCollapse determines if the text should be "shrink" or "expand"
+ * @param name name of the button that has been clicked
+ */
+function onCollapseFilter(button, doCollapse, name)
 {
     if(doCollapse){
-        if(button.id == 'btnFilter'){
-            button.innerText = "Filter zuklappen";
-            doCollapse == !doCollapse;
-        }else if(button.id == 'btnStatistics'){
-            button.innerText = "Statistiken zuklappen";
-            doCollapse == !doCollapse;
-        }
-
+        button.innerText = name + " zuklappen";
     }else{
-        if(button.id == 'btnFilter'){
-            button.innerText = "Filter ausklappen";
-            doCollapse == !doCollapse;
-        }else if(button.id == 'btnStatistics'){
-            button.innerText = "Statistiken ausklappen";
-            doCollapse == !doCollapse;
-        }
+        button.innerText = name + " ausklappen";
     }
+    doCollapse == !doCollapse;
 }
 

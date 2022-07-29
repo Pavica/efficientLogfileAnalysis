@@ -1,5 +1,6 @@
 package com.efficientlogfileanalysis.log;
 
+import com.efficientlogfileanalysis.data.LogEntry;
 import com.efficientlogfileanalysis.data.Settings;
 import com.efficientlogfileanalysis.data.Tuple;
 import com.efficientlogfileanalysis.data.search.Filter;
@@ -37,6 +38,8 @@ import java.util.stream.Collectors;
 /**
  * Has various methods to search for specific logEntries and files
  * @author Andreas Kurz
+ * version: 1.0
+ * last changed: 28.07.2022
  */
 public class Search implements Closeable {
 
@@ -76,7 +79,7 @@ public class Search implements Closeable {
      * @param filter specifies how the search should be filtered
      * @return a Query Builder based on the filter
      */
-    private BooleanQuery.Builder parseFilter(Filter filter)
+    public static BooleanQuery.Builder parseFilter(Filter filter)
     {
         Analyzer analyzer = new StandardAnalyzer();
 
@@ -302,6 +305,37 @@ public class Search implements Closeable {
 
             logEntries.add(entryID);
         }
+        return logEntries;
+    }
+
+    /**
+     * Searches the log files with the given filter for matches and then returns information about its parent log file and all the matches as ids in that log file but sorted
+     * @param filter specifies what entries should be matched
+     * @return all the matching file entries
+     * @throws IOException if the log files cant be accessed
+     */
+    public List<LogEntry> sortedSearch(Filter filter) throws IOException
+    {
+        Query query = parseFilter(filter).build();
+
+        System.out.println("Lucene start...");
+        ScoreDoc[] hits = searcher.search(query, Integer.MAX_VALUE, new Sort(new SortField("date", SortField.Type.LONG))).scoreDocs;
+        System.out.println("Lucene finished");
+
+        LogReader logReader = new LogReader();
+
+        List<LogEntry> logEntries = new ArrayList<>();
+        for(ScoreDoc hit : hits)
+        {
+            Document document = searcher.doc(hit.doc);
+
+            long entryID = document.getField("logEntryID").numericValue().longValue();
+            short fileID = document.getField("fileIndex").numericValue().shortValue();
+
+            logEntries.add(logReader.readLogEntryWithoutMessage(Settings.getInstance().getLogFilePath(), fileID, entryID));
+        }
+        logReader.close();
+
         return logEntries;
     }
 
