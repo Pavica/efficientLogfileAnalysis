@@ -28,7 +28,14 @@ public class IndexManager {
     public static final String PATH_TO_INDEX = "index";
 
     private static IndexManager instance;
+    /**
+     * Is true when the index is currently being build.
+     */
     private static Boolean isCurrentlyIndexing;
+    /**
+     * Is true when the index was build in the past
+     */
+    private static boolean indexExists;
 
     //id manager
     private SerializableBiMap<Short, String> fileIDManager;
@@ -65,12 +72,14 @@ public class IndexManager {
      * @return true when the index was created successfully and false if not 
      * @throws IOException When the files cant be created or written to
      */
-    public boolean createIndices() throws IOException {
+    public void createIndices() throws IOException {
         //disallow the creation of the index
         synchronized(isCurrentlyIndexing) {
             if(isCurrentlyIndexing) {
                 Thread.currentThread().interrupt();
-                return false;
+                System.out.println("index interrupted");
+                indexExists = false;
+                return;
             }
 
             isCurrentlyIndexing = true;
@@ -92,7 +101,8 @@ public class IndexManager {
         //stop indexing if interrupted
         if(Thread.currentThread().isInterrupted()) {
             allowCreationOfIndex();
-            return false;
+            indexExists = false;
+            return;
         }
 
         createLuceneIndex();
@@ -100,7 +110,8 @@ public class IndexManager {
         //stop indexing if interrupted
         if(Thread.currentThread().isInterrupted()) {
             allowCreationOfIndex();
-            return false;
+            indexExists = false;
+            return;
         }
 
         //create logLevel index
@@ -122,7 +133,8 @@ public class IndexManager {
         allowCreationOfIndex();
 
         System.out.println(t);
-        return true;
+        indexExists = true;
+        return;
     }
 
     public void saveIndices() throws IOException
@@ -246,6 +258,10 @@ public class IndexManager {
         }
     }
 
+    public boolean exists() {
+        return indexExists;
+    }
+
     //----- fileIDManager ----//
     public String getFileName(short fileIndex) {
         return fileIDManager.getValue(fileIndex);
@@ -312,10 +328,38 @@ public class IndexManager {
     public static void main(String[] args)
     {
         IndexManager mgr = IndexManager.getInstance();
-        mgr.createIndices();
-        mgr.saveIndices();
-//        mgr.readIndices();
-        System.out.println(mgr.moduleIDManager);
+        //mgr.createIndices();
+        //mgr.saveIndices();
+        //mgr.readIndices();
+        //System.out.println(mgr.moduleIDManager);
+
+        for(int i = 0;i < 8; ++i) {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        mgr.createIndices();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }).start();
+        }
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                for(int i = 0;i < 2_00; ++i) {
+                    System.out.println(mgr.exists());
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }).start();
     }
 
 

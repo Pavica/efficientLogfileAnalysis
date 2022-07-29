@@ -40,7 +40,9 @@ public class SettingsResource {
                 @Override
                 public void run() {
                     try {
-                        if(!IndexManager.getInstance().createIndices()) {
+                        IndexManager.getInstance().createIndices();
+
+                        if(IndexManager.getInstance().exists()) {
                             System.out.println("Index not created");
                         }
                     } catch (IOException ioe) {
