@@ -5,6 +5,7 @@ import com.efficientlogfileanalysis.data.Tuple;
 import com.efficientlogfileanalysis.data.search.Filter;
 import com.efficientlogfileanalysis.data.search.SearchEntry;
 
+import com.efficientlogfileanalysis.test.Timer;
 import com.efficientlogfileanalysis.util.ByteConverter;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -395,6 +396,8 @@ public class Search implements Closeable {
         //System.out.println(Long.MAX_VALUE);
 
         IndexManager mgr = IndexManager.getInstance();
+        mgr.readIndices();
+
         Search search = new Search();
         Filter f = Filter
                 .builder()
@@ -402,31 +405,18 @@ public class Search implements Closeable {
                 .message("20 millisekonds runing JMSh")
                 .build();
 
-        //search.searchForFiles(f).stream().map(FileIDManager.getInstance()::get).forEach(System.out::println);
+        List<Long> searchEntrys = search.searchForLogEntryIDs(f);
 
-//        long fileID = FileIDManager.getInstance().get("DesktopClient-DE-GS-NB-0028.haribo.dom.log");
-//        System.out.println(fileID);
-//
-//        Timer timer = new Timer();
-//        Timer.Time time = timer.timeExecutionSpeed(() -> {
-//            try {
-//                List<Long> searchEntrys = search.searchForLogEntryIDs(f);
-//            } catch (IOException ioe) {
-//                throw new RuntimeException(ioe);
-//            }
-//        }, 1_000);
-//
-//        System.out.println(time);
-
-        /*
         try(LogReader reader = new LogReader())
         {
             for(long id : searchEntrys)
             {
                 System.out.println(id);
-                System.out.println(reader.getLogEntry(Settings.getInstance().getLogFilePath(), FileIDManager.getInstance().get("DesktopClient-DE-GS-NB-0028.haribo.dom.log"), id));
+                System.out.println(reader.getLogEntry(Settings.getInstance().getLogFilePath(), (short) 0, id));
             }
         }
+
+        /*
 
 
         Timer timer = new Timer();
