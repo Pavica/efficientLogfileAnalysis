@@ -100,12 +100,9 @@ public class StatisticResource {
 
         Filter filter = SearchResource.parseFilterData(filterData);
 
-        try {
-            List<LogEntry> helper;
-
-            Search search = new Search();
-
-            helper = search.sortedSearch(filter);
+        try (Search search = new Search())
+        {
+            List<LogEntry> helper = search.sortedSearch(filter);
 
             for (int i = 0; i < helper.size(); i++) {
 

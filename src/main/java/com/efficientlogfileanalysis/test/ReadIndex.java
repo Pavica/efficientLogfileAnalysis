@@ -91,14 +91,15 @@ public class ReadIndex {
                     Long.parseLong(value.getField("logEntryID").stringValue())
                 );
 
-                LogReader logReader = new LogReader();
-                result.setDateAsLocalDateTime(logReader.getLogEntry(
-                        Settings.getInstance().getLogFilePath(),
-                        Short.parseShort(value.getField("fileIndex").stringValue()),
-                        result.getEntryID()
-                    ).retrieveDateAsLocalDateTime()
-                );
-                logReader.close();
+                try (LogReader logReader = new LogReader())
+                {
+                    result.setDateAsLocalDateTime(logReader.getLogEntry(
+                            Settings.getInstance().getLogFilePath(),
+                            Short.parseShort(value.getField("fileIndex").stringValue()),
+                            result.getEntryID()
+                        ).retrieveDateAsLocalDateTime()
+                    );
+                };
 
                 //System.out.println(mgr.get(Short.parseShort(value.getField("fileIndex").stringValue())));
                 System.out.println(mgr.getFileName(Short.parseShort(value.getField("fileIndex").stringValue())));
