@@ -64,8 +64,10 @@ function createFilterData(startDate, endDate, logLevel = [], module = null, clas
  */
 async function searchForFiles(filterData)
 {
+    resetFetching();
     let response = await fetch("api/search/files", {
         method : "POST",
+        signal : mySignal,
         body : JSON.stringify(filterData),
         headers : {
             "content-type" : "application/json"
@@ -123,7 +125,6 @@ async function searchInFileAmount(filterData, filename, lastSearchEntry, entryAm
         }
     })
 
-
     if(!response.ok)
     {
         alert("Not okay :(");
@@ -139,15 +140,16 @@ async function searchInFileAmount(filterData, filename, lastSearchEntry, entryAm
 
 
 /***
- * OLD function for searching for log entries
+ * function for searching for necessary log entry statistics data
  * @param filterData specified filterData object based on search input
  * @returns {Promise<any>} an array of files with every entry element based on filterData
  */
-//TODO should probably be renamed to "statisticSearch"
-async function search(filterData)
+async function searchStatisticsData(filterData)
 {
+    resetFetching();
     let response = await fetch("api/statistic/sorted", {
         method : "POST",
+        signal : mySignal,
         body : JSON.stringify(filterData),
         headers : {
             "content-type" : "application/json"
@@ -251,15 +253,17 @@ async function readyForSearch(){
  * function used to start the search and add the results into the gui
  */
 async function startSearch(){
+    abortFetching();
     setSpinnerVisible(true, "searchButton");
     let data = await searchForFiles(filter);
-
+    setSpinnerVisible(false, "searchButton");
     createLogFileElements(data);
 
-    statisticsData  = await search(filter);
+    setSpinnerVisible(true, "statisticsDropDown");
+    statisticsData  = await searchStatisticsData(filter);
     console.log(statisticsData)
+    setSpinnerVisible(false, "statisticsDropDown");
 
-    setSpinnerVisible(false, "searchButton");
 
     getStatisticData(statisticsData[0], statisticsData[1], statisticsData[2]);
     showActiveStatistics(activeStatistics);
@@ -270,15 +274,15 @@ async function startSearch(){
  * @param isSpinnerVisible specified boolean used to set if the search is in progress or not
  */
 function setSpinnerVisible(isSpinnerVisible, id){
-    let button = $('#'+id)[0];
+    let button = $('#'+id);
+    button.children("div").remove();
     if(isSpinnerVisible){
-        button.innerHTML =
-            `Suchen
-            <div class="spinner-border spinner-border-sm" role="status">
+        button[0].innerHTML +=
+            `<div class="spinner-border spinner-border-sm" role="status">
                   <span class="visually-hidden">Loading...</span>
             </div>`;
     }else{
-        button.innerHTML = "Suchen";
+        button.children("div").remove();
     }
 }
 
