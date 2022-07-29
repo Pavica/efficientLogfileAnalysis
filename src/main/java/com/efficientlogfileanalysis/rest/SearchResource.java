@@ -164,17 +164,17 @@ public class SearchResource {
         {
             List<Long> entryIDs = search.searchForLogEntryIDs(filter);
 
-            LogReader logReader = new LogReader();
             String logPath = Settings.getInstance().getLogFilePath();
 
             List<LogEntry> result = new ArrayList<>();
 
-            for(long entryID : entryIDs)
+            try (LogReader logReader = new LogReader())
             {
-                result.add(logReader.readLogEntryWithoutMessage(logPath, fileID, entryID));
+                for(long entryID : entryIDs)
+                {
+                    result.add(logReader.readLogEntryWithoutMessage(logPath, fileID, entryID));
+                }
             }
-
-            logReader.close();
 
             return Response.ok(result).build();
         }
@@ -242,16 +242,16 @@ public class SearchResource {
             ResultPageResponseData responseData = new ResultPageResponseData();
             responseData.setLastSearchEntry(new LuceneSearchEntry(result.value2.doc, result.value2.score));
 
-            LogReader logReader = new LogReader();
             String logPath = Settings.getInstance().getLogFilePath();
-
             List<LogEntry> logEntries = new ArrayList<>();
-            for(long entryID : result.value1)
-            {
-                logEntries.add(logReader.readLogEntryWithoutMessage(logPath, fileID, entryID));
-            }
 
-            logReader.close();
+            try (LogReader logReader = new LogReader())
+            {
+                for(long entryID : result.value1)
+                {
+                    logEntries.add(logReader.readLogEntryWithoutMessage(logPath, fileID, entryID));
+                }
+            }
 
             responseData.setLogEntries(logEntries);
 

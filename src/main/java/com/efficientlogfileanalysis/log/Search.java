@@ -199,25 +199,26 @@ public class Search implements Closeable {
     private List<SearchEntry> getResultsFromSearch(ScoreDoc[] hits) throws IOException
     {
         String path = Settings.getInstance().getLogFilePath();
-        LogReader logReader = new LogReader();
 
         HashMap<Short, SearchEntry> logFiles = new HashMap<>();
-        for(ScoreDoc hit : hits)
+
+        try (LogReader logReader = new LogReader())
         {
-            Document document = searcher.doc(hit.doc);
+            for(ScoreDoc hit : hits)
+            {
+                Document document = searcher.doc(hit.doc);
 
-            short fileID = document.getField("fileIndex").numericValue().shortValue();
-            long entryIndex = document.getField("logEntryID").numericValue().longValue();
+                short fileID = document.getField("fileIndex").numericValue().shortValue();
+                long entryIndex = document.getField("logEntryID").numericValue().longValue();
 
-            long logEntryTime = logReader.readDateOfEntry(path, fileID, entryIndex);
-            String logLevel = logReader.readLogLevelOfEntry(path, fileID, entryIndex);
+                long logEntryTime = logReader.readDateOfEntry(path, fileID, entryIndex);
+                String logLevel = logReader.readLogLevelOfEntry(path, fileID, entryIndex);
 
-            //logFiles.putIfAbsent(fileIndex, new SearchEntry(FileIDManager.getInstance().get(fileID)));
-            logFiles.putIfAbsent(fileID, new SearchEntry(IndexManager.getInstance().getFileName(fileID)));
-            logFiles.get(fileID).addLogEntry(entryIndex, logLevel, logEntryTime);
+                //logFiles.putIfAbsent(fileIndex, new SearchEntry(FileIDManager.getInstance().get(fileID)));
+                logFiles.putIfAbsent(fileID, new SearchEntry(IndexManager.getInstance().getFileName(fileID)));
+                logFiles.get(fileID).addLogEntry(entryIndex, logLevel, logEntryTime);
+            }
         }
-
-        logReader.close();
 
         return new ArrayList<>(logFiles.values());
     }
@@ -321,19 +322,19 @@ public class Search implements Closeable {
         ScoreDoc[] hits = searcher.search(query, Integer.MAX_VALUE, new Sort(new SortField("date", SortField.Type.LONG))).scoreDocs;
         System.out.println("Lucene finished");
 
-        LogReader logReader = new LogReader();
-
         List<LogEntry> logEntries = new ArrayList<>();
-        for(ScoreDoc hit : hits)
+        try (LogReader logReader = new LogReader())
         {
-            Document document = searcher.doc(hit.doc);
+            for(ScoreDoc hit : hits)
+            {
+                Document document = searcher.doc(hit.doc);
 
-            long entryID = document.getField("logEntryID").numericValue().longValue();
-            short fileID = document.getField("fileIndex").numericValue().shortValue();
+                long entryID = document.getField("logEntryID").numericValue().longValue();
+                short fileID = document.getField("fileIndex").numericValue().shortValue();
 
-            logEntries.add(logReader.readLogEntryWithoutMessage(Settings.getInstance().getLogFilePath(), fileID, entryID));
+                logEntries.add(logReader.readLogEntryWithoutMessage(Settings.getInstance().getLogFilePath(), fileID, entryID));
+            }
         }
-        logReader.close();
 
         return logEntries;
     }
