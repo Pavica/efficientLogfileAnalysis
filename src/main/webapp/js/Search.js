@@ -41,7 +41,7 @@ let filter;
  * @param exception specified exception for the search
  * @returns {{exception: null, beginDate, endDate, module: null, logLevels: *[], className: null}} a filterData object
  */
-function createFilterData(startDate, endDate, logLevel = [], module = null, className = null, exception = null)
+function createFilterData(startDate, endDate, logLevel = [], module = null, className = null, exception = null, message = null)
 {
     return {
         beginDate : startDate,
@@ -49,7 +49,8 @@ function createFilterData(startDate, endDate, logLevel = [], module = null, clas
         logLevels : logLevel,
         module : module,
         className : className,
-        exception : exception
+        exception : exception,
+        message: message
     };
 }
 
@@ -117,11 +118,7 @@ async function searchInFileAmount(filterData, filename, lastSearchEntry, entryAm
         headers : {
             "content-type" : "application/json"
         }
-        //TODO: shorty fix, not work
-    }).catch((error) => {
-        console.log('Fetch aborted');
-    });
-
+    })
 
     if(!response.ok)
     {
@@ -223,6 +220,8 @@ async function loadModules()
  * @returns {Promise<void>}
  */
 async function readyForSearch(){
+    let logMessage = $('#search').val();
+
     let startDate = trueStartDate == null ? null : trueStartDate.getTime();
     let endDate = trueEndDate == null ? null : trueEndDate.getTime();
 
@@ -239,7 +238,7 @@ async function readyForSearch(){
     let exceptionName =  $('#exceptionDataList').val() == null ? null : $('#exceptionDataList').val();
 
 
-    filter = createFilterData(startDate, endDate, logLevel, moduleName, className);
+    filter = createFilterData(startDate, endDate, logLevel, moduleName, className, exceptionName, logMessage);
     await startSearch();
 }
 

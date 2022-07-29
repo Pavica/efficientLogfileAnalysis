@@ -34,8 +34,11 @@ function changePage(page)
     let table = document.getElementById("logFileElementHolder");
     let currentPage = document.getElementById("page");
 
-    if (page < 1) page = 1;
-    if (page > numPages()) page = numPages();
+    if (page <= 1) {
+        page = 1;
+    } else if (page > numPages()) {
+        page = numPages();
+    }
 
     table.innerHTML = "";
 
