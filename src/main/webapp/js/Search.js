@@ -387,7 +387,7 @@ async function displayFileLogEntries(filename){
         document.getElementById("floatingTextarea").innerText = (await loadLogEntry(filename, id)).message;
     });
 
-    while((data = await searchInFileAmount(filter, filename, lastSearchEntry, 50000)) != null){
+    while((data = await searchInFileAmount(filter, filename, lastSearchEntry, 1000)) != null){
         lastSearchEntry = {"docNumber":data.lastSearchEntry.docNumber, "docScore":data.lastSearchEntry.docScore};
         let currentData = data.logEntries;
 
