@@ -428,8 +428,4 @@ function getStatisticData(map1, map2, map3){
     statisticsDataMap = new Map(Object.entries(map1));
     multiStatisticsDataMap = new Map(Object.entries(map2));
     timestampsMap = new Map(Object.entries(map3));
-
-    console.log(timestampsMap);
-    console.log(timestampsMap.get("1"));
-
 }

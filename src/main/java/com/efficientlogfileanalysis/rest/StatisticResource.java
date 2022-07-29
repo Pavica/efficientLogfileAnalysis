@@ -10,11 +10,9 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Response;
 
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.stream.IntStream;
 
 @Path("/statistic")
 public class StatisticResource {
@@ -38,19 +36,19 @@ public class StatisticResource {
         this.startDate = LocalDateTime.ofInstant(Instant.ofEpochMilli(startDate), ZoneId.systemDefault());
         this.endDate = LocalDateTime.ofInstant(Instant.ofEpochMilli(endDate), ZoneId.systemDefault());
 
-        gapTime = ChronoUnit.MINUTES.between(this.startDate, this.endDate);
+        gapTime = ChronoUnit.MILLIS.between(this.startDate, this.endDate);
 
         gapTime = gapTime / 12;
 
         endOfInterval = this.startDate;
 
-        endOfInterval = endOfInterval.plus(Duration.of(gapTime, ChronoUnit.MINUTES));
+        endOfInterval = endOfInterval.plus(Duration.of(gapTime, ChronoUnit.MILLIS));
 
         for(int j = 0 ; j < 12 ; j++){
 
-            timeStampHelper = LocalDateTime.ofInstant(Instant.ofEpochMilli(Duration.of(startDate, ChronoUnit.MINUTES).getSeconds()/60), ZoneId.systemDefault()).plus(Duration.of(gapTime, ChronoUnit.MINUTES));
+            timeStampHelper = LocalDateTime.ofInstant(Instant.ofEpochMilli(Duration.of(startDate, ChronoUnit.SECONDS).getSeconds()), ZoneId.systemDefault()).plus(Duration.of(gapTime, ChronoUnit.MILLIS));
 
-            timeStampHelper = timeStampHelper.plus(Duration.of(gapTime*j, ChronoUnit.MINUTES));
+            timeStampHelper = timeStampHelper.plus(Duration.of(gapTime*j, ChronoUnit.MILLIS));
 
             String hour = "" + timeStampHelper.getHour();
             if(hour.length() < 2)
@@ -133,20 +131,24 @@ public class StatisticResource {
 
     public void addLogLevelDataDependingOnTime(LogEntry data) {
         LocalDateTime date = LocalDateTime.ofInstant(Instant.ofEpochMilli(data.getTime()), ZoneId.systemDefault());
-        if (date.isBefore(endOfInterval)) {
+        if (counter <= 11) {
+            if (date.isBefore(endOfInterval)) {
+                int[] value = multiStatisticsDataMap.get(data.getLogLevel());
 
-            int[] value = multiStatisticsDataMap.get(data.getLogLevel());
+                value[counter]++;
+                multiStatisticsDataMap.put(data.getLogLevel(), value);
 
-            value[counter]++;
-            multiStatisticsDataMap.put(data.getLogLevel(), value);
+            } else {
+                endOfInterval = endOfInterval.plus(Duration.of(gapTime, ChronoUnit.MILLIS));
 
-        } else {
-            endOfInterval = endOfInterval.plus(Duration.of(gapTime, ChronoUnit.MINUTES));
+                counter++;
+                if (counter <= 11) {
+                    int[] value = multiStatisticsDataMap.get(data.getLogLevel());
+                    value[counter]++;
+                    multiStatisticsDataMap.put(data.getLogLevel(), value);
 
-            counter++;
-            int[] value = multiStatisticsDataMap.get(data.getLogLevel());
-            value[counter]++;
-            multiStatisticsDataMap.put(data.getLogLevel(), value);
+                }
+            }
         }
     }
 }
