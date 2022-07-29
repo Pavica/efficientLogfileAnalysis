@@ -1,6 +1,8 @@
 package com.efficientlogfileanalysis.rest;
 
 import com.efficientlogfileanalysis.data.Settings;
+import com.efficientlogfileanalysis.log.IndexManager;
+
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
@@ -34,6 +36,18 @@ public class SettingsResource {
         {
             Settings settings = Settings.getInstance();
             settings.setLogFilePath(newPath);
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        if(!IndexManager.getInstance().createIndices()) {
+                            System.out.println("Index not created");
+                        }
+                    } catch (IOException ioe) {
+                        ioe.printStackTrace();
+                    }
+                }
+            });
             return Response.ok().build();
         }
         catch (IOException e) {

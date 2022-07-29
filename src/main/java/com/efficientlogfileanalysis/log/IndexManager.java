@@ -28,6 +28,7 @@ public class IndexManager {
     public static final String PATH_TO_INDEX = "index";
 
     private static IndexManager instance;
+    private static Boolean isCurrentlyIndexing;
 
     //id manager
     private SerializableBiMap<Short, String> fileIDManager;
@@ -47,6 +48,8 @@ public class IndexManager {
 
         logLevelIndexManager    =   new SerializableBiMap<>(I_TypeConverter.SHORT_TYPE_CONVERTER, I_TypeConverter.listConverter(I_TypeConverter.BYTE_TYPE_CONVERTER));
         logDateManager          =   new SerializableBiMap<>(I_TypeConverter.SHORT_TYPE_CONVERTER, I_TypeConverter.TIME_RANGE_CONVERTER);
+
+        isCurrentlyIndexing = false;
     }
 
     public static synchronized IndexManager getInstance() {
@@ -57,7 +60,22 @@ public class IndexManager {
         return instance;
     }
 
-    public void createIndices() throws IOException {
+    /**
+     * Builds all of the required indices
+     * @return true when the index was created successfully and false if not 
+     * @throws IOException When the files cant be created or written to
+     */
+    public boolean createIndices() throws IOException {
+        //disallow the creation of the index
+        synchronized(isCurrentlyIndexing) {
+            if(isCurrentlyIndexing) {
+                Thread.currentThread().interrupt();
+                return false;
+            }
+
+            isCurrentlyIndexing = true;
+        }
+         
         Timer t = new Timer();
 
         //Check if the logfile directory exists
@@ -71,23 +89,40 @@ public class IndexManager {
             logLevelIDManager.putValue((byte)logLevelIDManager.size(), s);
         }
 
+        //stop indexing if interrupted
+        if(Thread.currentThread().isInterrupted()) {
+            allowCreationOfIndex();
+            return false;
+        }
+
         createLuceneIndex();
 
-        //create logLevel index
-        try (Search search = new Search()) {
+        //stop indexing if interrupted
+        if(Thread.currentThread().isInterrupted()) {
+            allowCreationOfIndex();
+            return false;
+        }
 
+        //create logLevel index
+        try (Search search = new Search())
+        {
             //create log level index
             List<List<Byte>> files = search.searchForLogLevelsInFiles();
-            for(short i = 0;i < files.size(); ++i) {
+            for(short i = 0;i < files.size(); ++i)
+            {
                 logLevelIndexManager.putValue(i, files.get(i));
             }
         }
-        catch (IOException ioe) {
+        catch (IOException ioe)
+        {
             ioe.printStackTrace();
             System.exit(-1);
         }
 
+        allowCreationOfIndex();
+
         System.out.println(t);
+        return true;
     }
 
     public void saveIndices() throws IOException
@@ -192,11 +227,23 @@ public class IndexManager {
                 ));
 
                 indexWriter.addDocument(document);
+
+                if(Thread.currentThread().isInterrupted()) {
+                    indexWriter.close();
+                    return;
+                }
             }
 
         }
 
         indexWriter.close();
+    }
+
+    private void allowCreationOfIndex() {
+        //the building of the index can start again
+        synchronized(isCurrentlyIndexing) {
+            isCurrentlyIndexing = false;
+        }
     }
 
     //----- fileIDManager ----//
