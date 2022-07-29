@@ -41,21 +41,7 @@ let multiStatisticsDataMap = new Map([
 ]);
 
 /** contains the timestamps below the multiLineChart */
-let timestampsMap = new Map([
-    [1, ""],
-    [2, ""],
-    [3, ""],
-    [4, ""],
-    [5, ""],
-    [6, ""],
-    [7, ""],
-    [8, ""],
-    [9, ""],
-    [10, ""],
-    [11, ""],
-    [12, ""],
-
-]);
+let timestampsMap = new Map();
 
 /**
  * Function used to add statistics to active statistics that have been clicked via checkbox.
@@ -257,60 +243,52 @@ function loadPolarAreaChart(){
 }
 
 function loadMultiLineChart(){
-
     const multiLineChartContext = document.getElementById("multiLineChart").getContext('2d');
+
+    let labels = [];
+    timestampsMap.forEach(timestamp =>
+    {
+        labels.push(timestamp);
+    });
+
     const multiLineChart = new Chart(multiLineChartContext, {
         type: 'line',
         data: {
-            labels: [timestampsMap.get("1") + "", timestampsMap.get("2") + "", timestampsMap.get("3") + "", timestampsMap.get("4") + "",
-                    timestampsMap.get("5") + "", timestampsMap.get("6") + "", timestampsMap.get("7") + "", timestampsMap.get("8") + "",
-                    timestampsMap.get("9") + "", timestampsMap.get("10") + "", timestampsMap.get("11") + "", timestampsMap.get("12") + ""],
+            labels: labels,
             datasets: [
                 {
                     label: 'INFO',
-                    data: [multiStatisticsDataMap.get('INFO')[0], multiStatisticsDataMap.get('INFO')[1], multiStatisticsDataMap.get('INFO')[2], multiStatisticsDataMap.get('INFO')[3],
-                        multiStatisticsDataMap.get('INFO')[4], multiStatisticsDataMap.get('INFO')[5], multiStatisticsDataMap.get('INFO')[6], multiStatisticsDataMap.get('INFO')[7],
-                        multiStatisticsDataMap.get('INFO')[8], multiStatisticsDataMap.get('INFO')[9], multiStatisticsDataMap.get('INFO')[10], multiStatisticsDataMap.get('INFO')[11]],
+                    data: multiStatisticsDataMap.get('INFO'),
                     borderColor: "#36c590",
                     backgroundColor: "#36c590",
                 },
                 {
                     label: 'DEBUG',
-                    data: [multiStatisticsDataMap.get('DEBUG')[0], multiStatisticsDataMap.get('DEBUG')[1], multiStatisticsDataMap.get('DEBUG')[2], multiStatisticsDataMap.get('DEBUG')[3],
-                        multiStatisticsDataMap.get('DEBUG')[4], multiStatisticsDataMap.get('DEBUG')[5], multiStatisticsDataMap.get('DEBUG')[6], multiStatisticsDataMap.get('DEBUG')[7],
-                        multiStatisticsDataMap.get('DEBUG')[8], multiStatisticsDataMap.get('DEBUG')[9], multiStatisticsDataMap.get('DEBUG')[10], multiStatisticsDataMap.get('DEBUG')[11]],
+                    data: multiStatisticsDataMap.get('DEBUG'),
                     borderColor: "#5188ca",
                     backgroundColor: "#5188ca",
                 },
                 {
                     label: 'WARN',
-                    data: [multiStatisticsDataMap.get('WARN')[0], multiStatisticsDataMap.get('WARN')[1], multiStatisticsDataMap.get('WARN')[2], multiStatisticsDataMap.get('WARN')[3],
-                        multiStatisticsDataMap.get('WARN')[4], multiStatisticsDataMap.get('WARN')[5], multiStatisticsDataMap.get('WARN')[6], multiStatisticsDataMap.get('WARN')[7],
-                        multiStatisticsDataMap.get('WARN')[8], multiStatisticsDataMap.get('WARN')[9], multiStatisticsDataMap.get('WARN')[10], multiStatisticsDataMap.get('WARN')[11]],
+                    data:  multiStatisticsDataMap.get('WARN'),
                     borderColor: "#fbf571",
                     backgroundColor: "#fbf571",
                 },
                 {
                     label: 'ERROR',
-                    data: [multiStatisticsDataMap.get('ERROR')[0], multiStatisticsDataMap.get('ERROR')[1], multiStatisticsDataMap.get('ERROR')[2], multiStatisticsDataMap.get('ERROR')[3],
-                        multiStatisticsDataMap.get('ERROR')[4], multiStatisticsDataMap.get('ERROR')[5], multiStatisticsDataMap.get('ERROR')[6], multiStatisticsDataMap.get('ERROR')[7],
-                        multiStatisticsDataMap.get('ERROR')[8], multiStatisticsDataMap.get('ERROR')[9], multiStatisticsDataMap.get('ERROR')[10], multiStatisticsDataMap.get('ERROR')[11]],
+                    data: multiStatisticsDataMap.get('ERROR'),
                     borderColor: "#ff7168",
                     backgroundColor: "#ff7168",
                 },
                 {
                     label: 'TRACE',
-                    data: [multiStatisticsDataMap.get('TRACE')[0], multiStatisticsDataMap.get('TRACE')[1], multiStatisticsDataMap.get('TRACE')[2], multiStatisticsDataMap.get('TRACE')[3],
-                        multiStatisticsDataMap.get('TRACE')[4], multiStatisticsDataMap.get('TRACE')[5], multiStatisticsDataMap.get('TRACE')[6], multiStatisticsDataMap.get('TRACE')[7],
-                        multiStatisticsDataMap.get('TRACE')[8], multiStatisticsDataMap.get('TRACE')[9], multiStatisticsDataMap.get('TRACE')[10], multiStatisticsDataMap.get('TRACE')[11]],
+                    data: multiStatisticsDataMap.get('TRACE'),
                     borderColor: "#ffa566",
                     backgroundColor: "#ffa566",
                 },
                 {
                     label: 'FATAL',
-                    data: [multiStatisticsDataMap.get('FATAL')[0], multiStatisticsDataMap.get('FATAL')[1], multiStatisticsDataMap.get('FATAL')[2], multiStatisticsDataMap.get('FATAL')[3],
-                        multiStatisticsDataMap.get('FATAL')[4], multiStatisticsDataMap.get('FATAL')[5], multiStatisticsDataMap.get('FATAL')[6], multiStatisticsDataMap.get('FATAL')[7],
-                        multiStatisticsDataMap.get('FATAL')[8], multiStatisticsDataMap.get('FATAL')[9], multiStatisticsDataMap.get('FATAL')[10], multiStatisticsDataMap.get('FATAL')[11]],
+                    data: multiStatisticsDataMap.get('FATAL'),
                     borderColor: "#c978b8",
                     backgroundColor: "#c978b8",
                 },
@@ -432,14 +410,12 @@ function checkIfChecked(elementId){
 
 /** Function used to reload all currently active statistics */
 function reloadAllActiveStatistics(){
-
     statisticsMap.forEach((value, key, map) => {
         if(checkIfChecked(value)){
-            onShowStatistics(document.getElementById(value), key, 2)
+            onShowStatistics(document.getElementById(value), key, 2);
         }
     })
 }
-
 
 /**
  * Function used to fill the statistics with its data
@@ -453,7 +429,7 @@ function getStatisticData(map1, map2, map3){
     multiStatisticsDataMap = new Map(Object.entries(map2));
     timestampsMap = new Map(Object.entries(map3));
 
-    console.log(timestampsMap)
-    console.log(timestampsMap.get("1"))
+    console.log(timestampsMap);
+    console.log(timestampsMap.get("1"));
 
 }
