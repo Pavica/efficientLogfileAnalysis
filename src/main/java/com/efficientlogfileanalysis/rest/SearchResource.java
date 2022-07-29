@@ -5,11 +5,11 @@ import com.efficientlogfileanalysis.data.Settings;
 import com.efficientlogfileanalysis.data.Tuple;
 import com.efficientlogfileanalysis.data.search.Filter;
 import com.efficientlogfileanalysis.data.search.SearchEntry;
-import com.efficientlogfileanalysis.log.*;
-import jakarta.enterprise.inject.Default;
+import com.efficientlogfileanalysis.log.LogReader;
+import com.efficientlogfileanalysis.log.IndexManager;
+import com.efficientlogfileanalysis.log.Search;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.core.StreamingOutput;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -27,23 +27,32 @@ public class SearchResource {
     @AllArgsConstructor
     public static class FilterData
     {
-        private long beginDate;
-        private long endDate;
+        private Long beginDate;
+        private Long endDate;
         private List<String> logLevels;
         private String module;
         private String className;
         private String exception;
+        private String message;
     }
 
     public static Filter parseFilterData(FilterData filterData)
     {
         Filter.FilterBuilder filterBuilder = Filter.builder();
 
-        filterBuilder
-                .beginDate(filterData.beginDate)
-                .endDate(filterData.endDate);
+        if(filterData.beginDate != null)
+        {
+            filterBuilder.beginDate(filterData.beginDate);
+        }
 
-        filterData.logLevels.stream().map(LogLevelIDManager.getInstance()::get).forEach(filterBuilder::addLogLevel);
+        if(filterData.endDate != null)
+        {
+            filterBuilder.endDate(filterData.endDate);
+        }
+
+        //filterData.logLevels.stream().map(LogLevelIDManager.getInstance()::get).forEach(filterBuilder::addLogLevel);
+        filterData.logLevels.stream().map(IndexManager.getInstance()::getLogLevelID).forEach(filterBuilder::addLogLevel);
+
 
         if(filterData.module != null)
         {
@@ -60,6 +69,10 @@ public class SearchResource {
             filterBuilder.exception(filterData.exception);
         }
 
+        if(filterData.message != null && !filterData.message.isEmpty())
+        {
+            filterBuilder.message(filterData.message);
+        }
 
         return filterBuilder.build();
     }
@@ -74,11 +87,8 @@ public class SearchResource {
 
         try
         {
-            List<SearchEntry> result;
-
             Search search = new Search();
-
-            result = search.search(filter);
+            List<SearchEntry> result = search.search(filter);
 
             return Response.ok(result).build();
         }
@@ -117,19 +127,20 @@ public class SearchResource {
 
             List<Short> fileIDs = search.searchForFiles(filter);
             List<FileData> affectedFiles = new ArrayList<>(fileIDs.size());
+            IndexManager mgr = IndexManager.getInstance();
 
             for(short fileID : fileIDs)
             {
                 FileData fileData = new FileData();
 
-                fileData.setFirstDate(LogDateManager.getInstance().get(fileID).beginDate);
-                fileData.setLastDate(LogDateManager.getInstance().get(fileID).endDate);
+                fileData.setFirstDate(mgr.getLogFileDateRange(fileID).beginDate);
+                fileData.setLastDate(mgr.getLogFileDateRange(fileID).endDate);
 
-                for(byte logLevelID : LogLevelIndexManager.getInstance().get(fileID)){
-                    fileData.addLogLevel(LogLevelIDManager.getInstance().get(logLevelID));
+                for(byte logLevelID : mgr.getLogLevelsOfFile(fileID)) {
+                    fileData.addLogLevel(mgr.getLogLevelName(logLevelID));
                 }
 
-                fileData.setFilename(FileIDManager.getInstance().get(fileID));
+                fileData.setFilename(mgr.getFileName(fileID));
 
                 affectedFiles.add(fileData);
             }
@@ -148,7 +159,7 @@ public class SearchResource {
     public Response search(FilterData filterData, @PathParam("fileName") String fileName)
     {
         Filter filter = parseFilterData(filterData);
-        short fileID = FileIDManager.getInstance().get(fileName);
+        short fileID = IndexManager.getInstance().getFileID(fileName);
 
         filter.setFileID(fileID);
 
@@ -214,20 +225,24 @@ public class SearchResource {
         @PathParam("amount") int amount
     )
     {
-        Filter filter = parseFilterData(pageRequestData.filterData);
+        //Get LastSearchEntry Data
         LuceneSearchEntry lastSearchData = pageRequestData.lastSearchEntry;
+        ScoreDoc lastSearchEntry = lastSearchData == null ? null : new ScoreDoc(lastSearchData.docNumber, lastSearchData.docScore);
 
-        short fileID = FileIDManager.getInstance().get(fileName);
+        //Get the ID of the requested file
+        Filter filter = parseFilterData(pageRequestData.filterData);
+        short fileID = IndexManager.getInstance().getFileID(fileName);
 
         filter.setFileID(fileID);
 
-        try
+        try (Search search = new Search())
         {
-            Search search = new Search();
-
-            ScoreDoc lastSearchEntry = lastSearchData == null ? null : new ScoreDoc(lastSearchData.docNumber, lastSearchData.docScore);
-
             Tuple<List<Long>, ScoreDoc> result = search.searchForLogEntryIDsWithPagination(filter, amount, lastSearchEntry);
+
+            if(result.value1.isEmpty())
+            {
+                return Response.status(Response.Status.NO_CONTENT).build();
+            }
 
             ResultPageResponseData responseData = new ResultPageResponseData();
             responseData.setLastSearchEntry(new LuceneSearchEntry(result.value2.doc, result.value2.score));
