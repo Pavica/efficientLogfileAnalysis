@@ -193,7 +193,7 @@
         <div class="row d-flex">
             <div class="search-container">
                   <div class="d-flex justify-content-center">
-                      <input type="text" class="search-bar form-control" placeholder="Suche nach Log-Messages..." name="search">
+                      <input type="text" class="search-bar form-control" placeholder="Suche nach Log-Messages..." name="search" id="search">
                       <button type="button" class="btn button-style search-button" id="searchButton">Suchen
                       </button>
                       <input type="hidden" class="onSubmit" onclick="readyForSearch()">
@@ -461,16 +461,16 @@
                             <label for="path" class="form-label">fetch nearby limit:</label>
                         </div>
                             <div class="px-2">
-                                <select class="form-select" id="inlineFormSelectPref">
+                                <select class="form-select" id="fetchNearby" onchange="reloadFetchNearbyCookie()">
                                     <option selected hidden>Choose...</option>
                                     <option value="1">0</option>
-                                    <option value="1">5</option>
-                                    <option value="2">10</option>
-                                    <option value="3">15</option>
-                                    <option value="3">20</option>
-                                    <option value="3">30</option>
-                                    <option value="3">50</option>
-                                    <option value="3">100</option>
+                                    <option value="5">5</option>
+                                    <option value="10">10</option>
+                                    <option value="15">15</option>
+                                    <option value="20">20</option>
+                                    <option value="30">30</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
                                 </select>
                             </div>
                             <div class="p-2">

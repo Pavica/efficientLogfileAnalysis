@@ -72,7 +72,6 @@ function reloadStatisticsCookie(){
         statisticsValues += $(this).prop("checked") + "|";
     });
     statisticsValues = statisticsValues.substring(0,statisticsValues.length-1);
-    //currently set to 3 days
     setCookie("statistics", statisticsValues, 3652);
 }
 
@@ -95,6 +94,22 @@ function reloadColorCookie(){
 }
 
 /**
+ * Function used to set a fetch nearby cookie
+ */
+function setFetchNearbyCookie(){
+    let fetchNearbyCookie = getCookie("fetchNearby");
+    $('#fetchNearby').val(fetchNearbyCookie);
+}
+
+/**
+ * Function used to reload (fill it with new data and reset it) a fetch nearby cookie
+ */
+function reloadFetchNearbyCookie(){
+    setCookie("fetchNearby", $('#fetchNearby').val(), 3652);
+    console.log("updated to " + getCookie("fetchNearby"));
+}
+
+/**
  * Function used to load in all existing cookies
  */
 function loadCookies(){
@@ -109,5 +124,11 @@ function loadCookies(){
         setColorCookie();
     }else{
         setCookie("color", "#fff200|#ffffff", 3652);
+    }
+
+    if(checkCookie("fetchNearby")){
+        setFetchNearbyCookie();
+    }else{
+        setCookie("fetchNearby", "0", 3652);
     }
 }
