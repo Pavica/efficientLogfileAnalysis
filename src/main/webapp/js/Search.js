@@ -262,7 +262,7 @@ async function startSearch(){
     setSpinnerVisible(false, "searchButton");
 
     getStatisticData(statisticsData[0], statisticsData[1], statisticsData[2]);
-    showActiveStatistics(activeStatistics)
+    showActiveStatistics(activeStatistics);
 }
 
 /**
@@ -387,7 +387,7 @@ async function displayFileLogEntries(filename){
         document.getElementById("floatingTextarea").innerText = (await loadLogEntry(filename, id)).message;
     });
 
-    while((data = await searchInFileAmount(filter, filename, lastSearchEntry, 1000)) != null){
+    while((data = await searchInFileAmount(filter, filename, lastSearchEntry, 50000)) != null){
         lastSearchEntry = {"docNumber":data.lastSearchEntry.docNumber, "docScore":data.lastSearchEntry.docScore};
         let currentData = data.logEntries;
 
