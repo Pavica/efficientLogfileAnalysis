@@ -76,6 +76,8 @@ public class IndexManager {
      */
     public void createIndices() throws IOException {
         //disallow the creation of the index
+
+        //TODO Boolean shouldn't be used for synchronization
         synchronized(isCurrentlyIndexing) {
             if(isCurrentlyIndexing) {
                 Thread.currentThread().interrupt();
