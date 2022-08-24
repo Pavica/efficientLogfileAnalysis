@@ -1,5 +1,5 @@
 /**
- * author: Clark
+ * author: Clark Jaindl
  * version: 1.0
  * last changed: 26.07.2022
  */

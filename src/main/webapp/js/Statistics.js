@@ -1,5 +1,5 @@
 /**
- * author: Clark
+ * author: Clark Jaindl
  * version: 1.1
  * last changed: 27.07.2022
  */
@@ -40,8 +40,10 @@ let multiStatisticsDataMap = new Map([
     ['FATAL', [0,0,0,0,0,0,0,0,0,0,0,0]],
 ]);
 
+let logLevels = ['INFO', 'DEBUG', 'WARN', 'ERROR', 'TRACE', 'FATAL'];
+
 /** contains the timestamps below the multiLineChart */
-let timestampsMap = new Map();
+let timestampsList = [];
 
 /**
  * Function used to add statistics to active statistics that have been clicked via checkbox.
@@ -242,14 +244,17 @@ function loadPolarAreaChart(){
     });
 }
 
+/**
+ * Function used to create and load the multiLine chart into the corresponding canvas.
+ */
 function loadMultiLineChart(){
     const multiLineChartContext = document.getElementById("multiLineChart").getContext('2d');
 
     let labels = [];
-    timestampsMap.forEach(timestamp =>
-    {
-        labels.push(timestamp);
-    });
+    for(let i = 0 ; i < timestampsList.length ; i++){
+        labels.push(timestampsList[i]);
+    }
+
 
     const multiLineChart = new Chart(multiLineChartContext, {
         type: 'line',
@@ -422,10 +427,28 @@ function reloadAllActiveStatistics(){
  *
  * @param map1 normal statistics map
  * @param map2 multistatistics map
+ * @param map3 timestamps map
  */
-function getStatisticData(map1, map2, map3){
+function getStatisticData(list1, list2){
 
-    statisticsDataMap = new Map(Object.entries(map1));
-    multiStatisticsDataMap = new Map(Object.entries(map2));
-    timestampsMap = new Map(Object.entries(map3));
+    let statisticsData = list1;
+
+    for(let i = 0; i < logLevels.length; i++){
+        let count = 0;
+        let list = [];
+        for(let k = 0; k < statisticsData.length; k++)
+        {
+            if(statisticsData[k].hasOwnProperty(logLevels[i])){
+                count += statisticsData[k][logLevels[i]];
+                list.push(statisticsData[k][logLevels[i]])
+            }else{
+                list.push(0)
+            }
+        }
+        multiStatisticsDataMap.set(logLevels[i], list)
+        statisticsDataMap.set(logLevels[i], count)
+    }
+
+
+    timestampsList = list2;
 }

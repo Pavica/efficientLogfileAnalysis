@@ -146,7 +146,7 @@ async function searchInFileAmount(filterData, filename, lastSearchEntry, entryAm
 //TODO should probably be renamed to "statisticSearch"
 async function search(filterData)
 {
-    let response = await fetch("api/statistic/sorted", {
+    let response = await fetch("api/statistic/data", {
         method : "POST",
         body : JSON.stringify(filterData),
         headers : {
@@ -261,7 +261,7 @@ async function startSearch(){
 
     setSpinnerVisible(false, "searchButton");
 
-    getStatisticData(statisticsData[0], statisticsData[1], statisticsData[2]);
+    getStatisticData(statisticsData[0], statisticsData[1]);
     showActiveStatistics(activeStatistics);
 }
 
