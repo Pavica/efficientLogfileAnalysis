@@ -154,7 +154,8 @@ public class StatisticResource {
 
         initializeMaps();
 
-        try {
+        try (Search search = new Search())
+        {
             List<LogEntry> helper;
 
             Search search = new Search();

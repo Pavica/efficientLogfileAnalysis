@@ -47,4 +47,8 @@ async function fillDataLists(){
     $.each(classes, function(i, item) {
         $("#datalistOptionsClass").append($("<option>").attr('value', item));
     });
+    let exceptions = await loadExceptions();
+    $.each(exceptions, function(i, item) {
+        $("#datalistOptionsException").append($("<option>").attr('value', item));
+    });
 }

@@ -85,9 +85,8 @@ public class SearchResource {
     {
         Filter filter = parseFilterData(filterData);
 
-        try
+        try (Search search = new Search())
         {
-            Search search = new Search();
             List<SearchEntry> result = search.search(filter);
 
             return Response.ok(result).build();
@@ -121,10 +120,8 @@ public class SearchResource {
     {
         Filter filter = parseFilterData(filterData);
 
-        try
+        try (Search search = new Search())
         {
-            Search search = new Search();
-
             List<Short> fileIDs = search.searchForFiles(filter);
             List<FileData> affectedFiles = new ArrayList<>(fileIDs.size());
             IndexManager mgr = IndexManager.getInstance();
@@ -163,23 +160,21 @@ public class SearchResource {
 
         filter.setFileID(fileID);
 
-        try
+        try (Search search = new Search())
         {
-            Search search = new Search();
-
             List<Long> entryIDs = search.searchForLogEntryIDs(filter);
 
-            LogReader logReader = new LogReader();
             String logPath = Settings.getInstance().getLogFilePath();
 
             List<LogEntry> result = new ArrayList<>();
 
-            for(long entryID : entryIDs)
+            try (LogReader logReader = new LogReader())
             {
-                result.add(logReader.readLogEntryWithoutMessage(logPath, fileID, entryID));
+                for(long entryID : entryIDs)
+                {
+                    result.add(logReader.readLogEntryWithoutMessage(logPath, fileID, entryID));
+                }
             }
-
-            logReader.close();
 
             return Response.ok(result).build();
         }
@@ -247,16 +242,16 @@ public class SearchResource {
             ResultPageResponseData responseData = new ResultPageResponseData();
             responseData.setLastSearchEntry(new LuceneSearchEntry(result.value2.doc, result.value2.score));
 
-            LogReader logReader = new LogReader();
             String logPath = Settings.getInstance().getLogFilePath();
-
             List<LogEntry> logEntries = new ArrayList<>();
-            for(long entryID : result.value1)
-            {
-                logEntries.add(logReader.readLogEntryWithoutMessage(logPath, fileID, entryID));
-            }
 
-            logReader.close();
+            try (LogReader logReader = new LogReader())
+            {
+                for(long entryID : result.value1)
+                {
+                    logEntries.add(logReader.readLogEntryWithoutMessage(logPath, fileID, entryID));
+                }
+            }
 
             responseData.setLogEntries(logEntries);
 
