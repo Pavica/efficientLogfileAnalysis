@@ -5,16 +5,16 @@ import lombok.ToString;
 import java.time.Instant;
 
 /**
- * A class for measuring the performance of code in miliseconds.
- * @author Jan Mandl
- * Last-changed: 11.7.2022
+ * A class for measuring the performance of code in >milliseconds.
+ * @author Jan Mandl, Andreas Kurz
+ * Last-changed: 24.8.2022
  */
 public class Timer {
 
     /**
      * 10^10
      */
-    private static long TEN_TO_THE_POWER_OF_TEN = 10_000_000_000l;
+    private static final long TEN_TO_THE_POWER_OF_TEN = 10_000_000_000L;
 
     /**
      * Data class that stores time statistics.
@@ -37,7 +37,28 @@ public class Timer {
     }
 
     /**
-     * Initally stores the time at which the Timer was started. When the timer gets paused and unpaused the time that has passed between those functions gets added.
+     * A functional interface containing a Function that can be timed
+     */
+    public interface TimerTask{
+        void runTask() throws Exception;
+    }
+
+    /**
+     * Convenience method that times a given Function and prints the result
+     * @param func The Function that is being timed.
+     * @param times The amount of times the function should be executed.
+     * @return A Time Object with statistics of the runTask function.
+     */
+    public static Time timeIt(TimerTask func, int times)
+    {
+        Timer timer = new Timer();
+        Time time = timer.timeExecutionSpeed(func, times);
+        System.out.println(time);
+        return time;
+    }
+
+    /**
+     * Initially stores the time at which the Timer was started. When the timer gets paused and unpaused the time that has passed between those functions gets added.
      */
     private long startTime;
     /**
@@ -51,7 +72,7 @@ public class Timer {
     
     /**
      * Uses Instant.now() to get the current time.
-     * @return The current time in miliseconds
+     * @return The current time in milliseconds
      */
     private long getCurrentTime() {
         return Instant.now().toEpochMilli();
@@ -89,18 +110,18 @@ public class Timer {
     }
 
     /**
-     * Times the execution speed, in miliseconds, of a runnable by running the function for n times. Cant be used to time 2 things simultaniously.
-     * @param func The Runnable that is being timed.
+     * Times the execution speed, in milliseconds, of a Task by running the function for n times. Can't be used to time 2 things simultaneously.
+     * @param func The Task that is being timed.
      * @param times The amount of times the function should be executed.
-     * @return A Time Object with statistics of the ran function.
+     * @return A Time Object with statistics of the runTask function.
      */
-    public Time timeExecutionSpeed(Runnable func, int times) {
+    public Time timeExecutionSpeed(TimerTask func, int times) {
         Time time = new Time();
 
         for(int i = 0;i < times; ++i) {
             startTime = getCurrentTime();
             try {
-                func.run();
+                func.runTask();
             } catch (Exception e) {
                 e.printStackTrace();
                 System.exit(-6);
@@ -127,15 +148,8 @@ public class Timer {
     public static void main(String[] args) throws InterruptedException {
         Timer t3 = new Timer();
         Timer t = new Timer();
-        Time stats = t.timeExecutionSpeed(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    Thread.sleep(1);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
+        Time stats = t.timeExecutionSpeed(() -> {
+            Thread.sleep(1);
         }, 128);
 
         System.out.println(t3.time());
