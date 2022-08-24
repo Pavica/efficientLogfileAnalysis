@@ -147,7 +147,7 @@ async function searchInFileAmount(filterData, filename, lastSearchEntry, entryAm
 async function searchStatisticsData(filterData)
 {
     resetFetching();
-    let response = await fetch("api/statistic/sorted", {
+    let response = await fetch("api/statistic/data", {
         method : "POST",
         signal : mySignal,
         body : JSON.stringify(filterData),
@@ -276,7 +276,7 @@ async function startSearch(){
     setSpinnerVisible(false, "statisticsDropDown");
 
 
-    getStatisticData(statisticsData[0], statisticsData[1], statisticsData[2]);
+    getStatisticData(statisticsData[0], statisticsData[1]);
     showActiveStatistics(activeStatistics);
 }
 

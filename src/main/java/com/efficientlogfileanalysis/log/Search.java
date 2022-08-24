@@ -28,10 +28,8 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -317,6 +315,33 @@ public class Search implements Closeable {
         return logEntries;
     }
 
+    public HashMap<String, Integer> getLogLevelCount(Filter filter) throws IOException {
+
+        Query query = parseFilter(filter).build();
+
+        GroupingSearch groupingSearch = new GroupingSearch("logLevel");
+
+        groupingSearch.setGroupSort(new Sort(SortField.FIELD_DOC));
+
+        TopGroups topGroups = groupingSearch.search(searcher, query, 0, 100000);
+
+        HashMap<String, Integer> logLevelData = new HashMap<>();
+
+        for(GroupDocs groupDoc : topGroups.groups)
+        {
+            System.out.println(groupDoc.groupValue);
+
+            byte logLevelID = ((BytesRef) groupDoc.groupValue).bytes[0];
+            String logLevel = IndexManager.getInstance().getLogLevelName(logLevelID);
+
+            long totalHits = groupDoc.totalHits.value;
+
+            logLevelData.put(logLevel, (int)totalHits);
+        }
+        return logLevelData;
+    }
+
+
     /**
      * Searches the log files with the given filter for matches and then returns information about its parent log file and all the matches as ids in that log file but sorted
      * @param filter specifies what entries should be matched
@@ -445,10 +470,12 @@ public class Search implements Closeable {
         Filter f = Filter
                 .builder()
                 .fileID((short) 0)
-                .message("20 millisekonds runing JMSh")
+                /*.message("20 millisekonds runing JMSh")*/
                 .build();
 
-        List<Long> searchEntrys = search.searchForLogEntryIDs(f);
+        System.out.println(search.getLogLevelCount(f));
+
+        /*List<Long> searchEntrys = search.searchForLogEntryIDs(f);
 
         try(LogReader reader = new LogReader())
         {
@@ -457,7 +484,7 @@ public class Search implements Closeable {
                 System.out.println(id);
                 System.out.println(reader.getLogEntry(Settings.getInstance().getLogFilePath(), (short) 0, id));
             }
-        }
+        }*/
 
         search.close();
 
