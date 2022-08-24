@@ -1,5 +1,7 @@
 package com.efficientlogfileanalysis.data;
 
+import com.efficientlogfileanalysis.log.LogReader;
+import com.efficientlogfileanalysis.test.Timer;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -8,9 +10,8 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.*;
+import java.util.regex.*;
 
 /**
  * Data class representing a single log entry.
@@ -21,7 +22,11 @@ import java.util.regex.Pattern;
 @NoArgsConstructor
 public class LogEntry
 {
-    private static final Pattern REGEX_HAS_EXCEPTION = Pattern.compile("([\\w\\.]*Exception[\\w]*)", Pattern.CASE_INSENSITIVE);
+    //Regex which find an exception name
+    private static final Pattern REGEX_GET_EXCEPTION_NAME = Pattern.compile("(\\w+Exception\\w*)");
+
+    //Regex which returns the exception name including all preceding packages
+    private static final Pattern REGEX_GET_EXCEPTION_FULL = Pattern.compile("((?:[a-zA-Z_]\\w*\\.)*\\w+Exception\\w*)");
 
     public static final DateTimeFormatter DTF = DateTimeFormatter.ofPattern("dd LLL yyyy HH:mm:ss,SSS").withLocale(Locale.ENGLISH);
 
@@ -106,16 +111,23 @@ public class LogEntry
         return LocalDateTime.ofInstant(Instant.ofEpochMilli(time), ZoneId.systemDefault());
     }
 
-    public String getException()
+    /**
+     * Searches the message for a Java Exception
+     * @return the full exception name (including the package)<br>
+     *         null - if the message doesnt contain an exception
+     */
+    public Optional<String> findException()
     {
-        Matcher matcher = REGEX_HAS_EXCEPTION.matcher(message);
-
-        if(matcher.find())
+        if(message.contains("Exception"))
         {
-            return matcher.group(1);
+            Matcher matcher = REGEX_GET_EXCEPTION_NAME.matcher(message);
+            if(matcher.find())
+            {
+                return Optional.ofNullable(matcher.group(1));
+            }
         }
 
-        return null;
+        return Optional.empty();
     }
 
     @Override
@@ -126,22 +138,52 @@ public class LogEntry
 
     public static void main(String[] args)
     {
-        //LogEntry logEntry = new LogEntry("14 Apr 2022 13:42:32,798", "INFO", "main", "LocalServiceProvider", "destroying service platform.jdbc.xa.XaManagerService");
-        //LogEntry logEntry = new LogEntry("14 Apr 2022 13:42:32,798  INFO [main] LocalServiceProvider:? - destroying service platform.jdbc.xa.XaManagerService");
-        LogEntry logEntry = new LogEntry("05 Jul 2022 12:53:59,257  INFO [NGKP-RCV Chl: 1, Port: 2012] DefaultSocTelegramHandler:? - Send telegram: TT0811(1->201)##RequestId=21396557|ToNr=434|ToTrId=0#|CurrentPos=(28/1)|LocalDestinations=(33/2)(74/1)(0/0)(0/0)(0/0)|OrderCode=8003|NoCheckOfReqId|AckCode=8003| // TT0811Subtype1Version0:senderId=1|receiverId=201|type=811|subType=1|version=0|reserve=0|requestId=21396557|toNr=434|toTrId=0|CuNr=28|PosNr=1|CuNr=33|PosNr=2|CuNr=74|PosNr=1|CuNr=0|PosNr=0|CuNr=0|PosNr=0|CuNr=0|PosNr=0|orderCode=8003|orderExtension1={1}|orderExtension2={}|acknowledge=8003|ackExtension1={}|ackExtension2={}");
-        System.out.println(logEntry);
-        System.err.println("Exception: " + logEntry.getException());
+        //--- Print exceptions in all log files ---//
 
-        logEntry = new LogEntry("03 May 2022 16:54:02,963  WARN [Timer-9] WamasSettingsClient:? - Unable to locate settings server: java.lang.IllegalStateException: reset in progress");
-        System.out.println(logEntry);
-        System.err.println("Exception: " + logEntry.getException());
+        StringBuilder laterPrint = new StringBuilder("\n");
 
-        logEntry = new LogEntry("04 May 2022 16:07:40,733  WARN [Timer-6] SystemStateCheckerTimerTask:? - communication with settings server failed: 1\n" +
-                "java.lang.RuntimeException: lookup of settings server failed\n" +
-                "\tat com.wamas.world.desktopapp.swt.SystemStateCheckerTimerTask.run(SystemStateCheckerTimerTask.java:58)\n" +
-                "\tat java.util.TimerThread.mainLoop(Timer.java:555)\n" +
-                "\tat java.util.TimerThread.run(Timer.java:505)");
-        System.out.println(logEntry);
-        System.err.println("Exception: " + logEntry.getException());
+        for(LogFile logFile : LogReader.readAllLogFiles("test_logs"))
+        {
+            System.out.printf("--- %s ---\n", logFile.getFilename());
+
+            for(LogEntry entry : logFile.getEntries())
+            {
+                Optional<String> exception = entry.findException();
+
+                if(exception.isPresent())
+                {
+                    String id = logFile.getFilename() + "@" + entry.getEntryID();
+
+                    System.out.printf("\t%s : %s\n", id, exception.get());
+                    laterPrint.append(id).append(":\n").append(entry).append("\n");
+                }
+            }
+
+            System.out.append('\n');
+        }
+
+        System.out.print(laterPrint);
+
+
+
+//        //--- Measure the time needed to find exceptions ---//
+//
+//        //read all log entries in a single list:
+//        LogFile[] logFiles = LogReader.readAllLogFiles("test_logs");
+//        List<LogEntry> logEntryList = new ArrayList<>();
+//        Arrays.stream(logFiles).map(LogFile::getEntries).forEach(logEntryList::addAll);
+//
+//        System.out.println(logEntryList.size());
+//
+//        //result:
+//        //finding the exception in 167mb of log entries (~600_000 entries) takes about 50ms
+//        //200gb would take ~60seconds :D
+//        Timer.timeIt(() -> {
+//            for (LogEntry entry : logEntryList)
+//            {
+//                entry.findException();
+//            }
+//        }, 100);
+
     }
 }

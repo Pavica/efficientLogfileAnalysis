@@ -142,6 +142,15 @@ public class Search implements Closeable {
             );
         }
 
+        if(filter.getException() != null)
+        {
+            int exceptionID = IndexManager.getInstance().getExceptionID(filter.getException());
+            queryBuilder.add(
+                IntPoint.newExactQuery("exception", exceptionID),
+                BooleanClause.Occur.MUST
+            );
+        }
+
         if(filter.getMessage() != null)
         {
             //Approach 1: search for sentence with sloppiness (word order can differ)

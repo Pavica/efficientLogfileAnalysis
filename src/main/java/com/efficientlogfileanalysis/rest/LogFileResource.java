@@ -88,7 +88,6 @@ public class LogFileResource {
     @Path("classNames")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getClassNames() {
-        //Set<String> classNames = ClassIDManager.getInstance().getClassNames();
         Set<String> classNames = IndexManager.getInstance().getClassNames();
         return Response.ok(classNames).type(MediaType.APPLICATION_JSON).build();
     }
@@ -97,8 +96,15 @@ public class LogFileResource {
     @Path("modules")
     public Response getAllModules()
     {
-        //Set<String> moduleNames = ModuleIDManager.getInstance().getModuleNames();
         Set<String> moduleNames = IndexManager.getInstance().getModuleNames();
+        return Response.ok(moduleNames).build();
+    }
+
+    @GET
+    @Path("exceptions")
+    public Response getAllExceptions()
+    {
+        Set<String> moduleNames = IndexManager.getInstance().getExceptionNames();
         return Response.ok(moduleNames).build();
     }
 }

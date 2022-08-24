@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import com.efficientlogfileanalysis.data.*;
@@ -41,6 +42,7 @@ public class IndexManager {
     private SerializableBiMap<Short, String> fileIDManager;
     private SerializableBiMap<Integer, String> moduleIDManager;
     private SerializableBiMap<Integer, String> classIDManager;
+    private SerializableBiMap<Integer, String> exceptionIDManager;
     private SerializableBiMap<Byte, String> logLevelIDManager;
 
     //additional managers for informations that have nothing to do with Lucene
@@ -51,6 +53,7 @@ public class IndexManager {
         fileIDManager           =   new SerializableBiMap<>(I_TypeConverter.SHORT_TYPE_CONVERTER, I_TypeConverter.STRING_TYPE_CONVERTER);
         moduleIDManager         =   new SerializableBiMap<>(I_TypeConverter.INTEGER_TYPE_CONVERTER, I_TypeConverter.STRING_TYPE_CONVERTER);
         classIDManager          =   new SerializableBiMap<>(I_TypeConverter.INTEGER_TYPE_CONVERTER, I_TypeConverter.STRING_TYPE_CONVERTER);
+        exceptionIDManager      =   new SerializableBiMap<>(I_TypeConverter.INTEGER_TYPE_CONVERTER, I_TypeConverter.STRING_TYPE_CONVERTER);
         logLevelIDManager       =   new SerializableBiMap<>(I_TypeConverter.BYTE_TYPE_CONVERTER, I_TypeConverter.STRING_TYPE_CONVERTER);
 
         logLevelIndexManager    =   new SerializableBiMap<>(I_TypeConverter.SHORT_TYPE_CONVERTER, I_TypeConverter.listConverter(I_TypeConverter.BYTE_TYPE_CONVERTER));
@@ -69,11 +72,12 @@ public class IndexManager {
 
     /**
      * Builds all of the required indices
-     * @return true when the index was created successfully and false if not 
      * @throws IOException When the files cant be created or written to
      */
     public void createIndices() throws IOException {
         //disallow the creation of the index
+
+        //TODO Boolean shouldn't be used for synchronization
         synchronized(isCurrentlyIndexing) {
             if(isCurrentlyIndexing) {
                 Thread.currentThread().interrupt();
@@ -144,6 +148,7 @@ public class IndexManager {
         moduleIDManager.writeIndex(path + "module_id_manager");
         classIDManager.writeIndex(path + "class_id_manager");
         logLevelIDManager.writeIndex(path + "log_level_id_manager");
+        exceptionIDManager.writeIndex(path + "exception_id_manager");
         logLevelIndexManager.writeIndex(path + "logLevel_index_manager");
         logDateManager.writeIndex(path + "log_date_manager");
     }
@@ -154,6 +159,7 @@ public class IndexManager {
         moduleIDManager.readIndex(path + "module_id_manager");
         classIDManager.readIndex(path + "class_id_manager");
         logLevelIDManager.readIndex(path + "log_level_id_manager");
+        exceptionIDManager.readIndex(path + "exception_id_manager");
         logLevelIndexManager.readIndex(path + "logLevel_index_manager");
         logDateManager.readIndex(path + "log_date_manager");
     }
@@ -214,6 +220,15 @@ public class IndexManager {
                 //add the module to the module index
                 moduleIDManager.addIfAbsent(moduleIDManager.size(), logEntry.getModule());
                 int moduleID = moduleIDManager.getKey(logEntry.getModule());
+
+                Optional<String> exception = logEntry.findException();
+                if(exception.isPresent())
+                {
+                    exceptionIDManager.addIfAbsent(exceptionIDManager.size(), exception.get());
+                    int exceptionID = exceptionIDManager.getKey(exception.get());
+
+                    document.add(new IntPoint("exception", exceptionID));
+                }
 
                 document.add(new NumericDocValuesField("date", logEntry.getTime()));
                 document.add(new LongPoint("date", logEntry.getTime()));
@@ -316,6 +331,17 @@ public class IndexManager {
 
 
     //----- ClassIDManager -----//
+    public int getExceptionID(String exceptionName) {
+        return exceptionIDManager.getKey(exceptionName);
+    }
+
+    public Set<String> getExceptionNames() {
+        return exceptionIDManager.getValueSet();
+    }
+    //----- ClassIDManager -----//
+
+
+    //----- ClassIDManager -----//
     public int getClassID(String className) {
         return classIDManager.getKey(className);
     }
@@ -329,38 +355,42 @@ public class IndexManager {
     public static void main(String[] args)
     {
         IndexManager mgr = IndexManager.getInstance();
-        //mgr.createIndices();
-        //mgr.saveIndices();
+//        mgr.readIndices();
+        mgr.createIndices();
+        mgr.saveIndices();
+
+        mgr.getExceptionNames().forEach(System.out::println);
+
         //mgr.readIndices();
         //System.out.println(mgr.moduleIDManager);
 
-        for(int i = 0;i < 8; ++i) {
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        mgr.createIndices();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-            }).start();
-        }
-
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                for(int i = 0;i < 2_00; ++i) {
-                    System.out.println(mgr.exists());
-                    try {
-                        Thread.sleep(100);
-                    } catch (InterruptedException e) {
-                        // TODO Auto-generated catch block
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }).start();
+//        for(int i = 0;i < 8; ++i) {
+//            new Thread(new Runnable() {
+//                @Override
+//                public void run() {
+//                    try {
+//                        mgr.createIndices();
+//                    } catch (Exception e) {
+//                        e.printStackTrace();
+//                    }
+//                }
+//            }).start();
+//        }
+//
+//        new Thread(new Runnable() {
+//            @Override
+//            public void run() {
+//                for(int i = 0;i < 2_00; ++i) {
+//                    System.out.println(mgr.exists());
+//                    try {
+//                        Thread.sleep(100);
+//                    } catch (InterruptedException e) {
+//                        // TODO Auto-generated catch block
+//                        e.printStackTrace();
+//                    }
+//                }
+//            }
+//        }).start();
     }
 
 

@@ -221,6 +221,17 @@ async function loadModules()
     return await response.json();
 }
 
+
+async function loadExceptions()
+{
+    let response = await fetch("api/logFiles/exceptions");
+    if(!response.ok){
+        alert("Server Error: " + response.status);
+        return;
+    }
+    return await response.json();
+}
+
 /**
  * Function used to get all the data from the inputs and put the input in a filterData object.
  * Once the data has been set it begins the search.
@@ -242,7 +253,7 @@ async function readyForSearch(){
 
     let moduleName =  $('#modulDataList').val() == "" ? null : $('#modulDataList').val();
     let className =  $('#classDataList').val() == "" ? null : $('#classDataList').val();
-    let exceptionName =  $('#exceptionDataList').val() == null ? null : $('#exceptionDataList').val();
+    let exceptionName =  $('#exceptionDataList').val() == "" ? null : $('#exceptionDataList').val();
 
 
     filter = createFilterData(startDate, endDate, logLevel, moduleName, className, exceptionName, logMessage);

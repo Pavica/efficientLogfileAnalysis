@@ -67,7 +67,7 @@ public class SerializableBiMap<K, V> extends BiMap<K, V> {
 
     /**
      * Writes the Index to a file with the specified name<br>
-     * The same as <code>writeIndex(new RandomAccessFile(fileName, "rw"))</code> with the additional benefit of actually closing the file
+     * If present deletes the old file<br>
      * @param fileName the name of the file
      * @throws IOException if the file can't be written to
      */
