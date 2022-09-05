@@ -44,10 +44,10 @@ public class IndexManager {
     /**
      * The current state of the index
      */
-    private static IndexState currentState;
-    private static Lock indexCreation;
-    private static Condition indexCreationCondition;
-    private static boolean isThreadWaiting;
+    private IndexState currentState;
+    private Lock indexCreation;
+    private Condition indexCreationCondition;
+    private boolean isThreadWaiting;
     
     /**
      * The directory where the index gets created.
