@@ -7,7 +7,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import com.efficientlogfileanalysis.data.*;
 import com.efficientlogfileanalysis.test.Timer;
@@ -23,20 +27,34 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.BytesRef;
 
 public class IndexManager {
+    private enum IndexState {
+        // index creation wasnt started yet or interrupted
+        NOT_READY,
+        // the index is ready for use
+        READY,
+        // when a file couldnt be read
+        ERROR,
+        // the index is currently being build
+        INDEXING,
+        // index creation was interrupted but is still running
+        INTERRUPTED
+    }
+    
+
+    /**
+     * The current state of the index
+     */
+    private static IndexState currentState;
+    private static Lock indexCreation;
+    private static Condition indexCreationCondition;
+    private static boolean isThreadWaiting;
+    
     /**
      * The directory where the index gets created.
      */
     public static final String PATH_TO_INDEX = "index";
 
     private static IndexManager instance;
-    /**
-     * Is true when the index is currently being build.
-     */
-    private static Boolean isCurrentlyIndexing;
-    /**
-     * Is true when the index was build in the past
-     */
-    private static boolean indexExists;
 
     //id manager
     private SerializableBiMap<Short, String> fileIDManager;
@@ -59,7 +77,10 @@ public class IndexManager {
         logLevelIndexManager    =   new SerializableBiMap<>(I_TypeConverter.SHORT_TYPE_CONVERTER, I_TypeConverter.listConverter(I_TypeConverter.BYTE_TYPE_CONVERTER));
         logDateManager          =   new SerializableBiMap<>(I_TypeConverter.SHORT_TYPE_CONVERTER, I_TypeConverter.TIME_RANGE_CONVERTER);
 
-        isCurrentlyIndexing = false;
+        currentState = IndexState.NOT_READY;
+        indexCreation = new ReentrantLock();
+        indexCreationCondition = indexCreation.newCondition();
+        isThreadWaiting = false;
     }
 
     public static synchronized IndexManager getInstance() {
@@ -75,48 +96,70 @@ public class IndexManager {
      * @throws IOException When the files cant be created or written to
      */
     public void createIndices() throws IOException {
-        //disallow the creation of the index
+        indexCreation.lock();
 
-        //TODO Boolean shouldn't be used for synchronization
-        synchronized(isCurrentlyIndexing) {
-            if(isCurrentlyIndexing) {
-                Thread.currentThread().interrupt();
-                System.out.println("index interrupted");
-                indexExists = false;
-                return;
-            }
-
-            isCurrentlyIndexing = true;
+        if(currentState == IndexState.INTERRUPTED) {
+            indexCreation.unlock();
+            return;
         }
+
+        //waits for the indexing procedure to end (only 1 thread waits here)
+        if(currentState == IndexState.INDEXING) {
+            currentState = IndexState.INTERRUPTED;
+            try {
+                indexCreationCondition.await();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+        indexCreationWorker();
+
+        if(currentState == IndexState.ERROR) {
+            throw new IOException();
+        }
+
+        //restarts the index creation (if there is already a thread waiting)
+        if(currentState == IndexState.INTERRUPTED) {
+            indexCreationCondition.signal();
+        }
+        indexCreation.unlock();
+    }
+
+    private void indexCreationWorker() throws IOException {
+        currentState = IndexState.INDEXING;
+        indexCreation.unlock();
          
         Timer t = new Timer();
 
         //Check if the logfile directory exists
         if(!new File(Settings.getInstance().getLogFilePath()).exists()) {
             System.out.println("Specified log directory " + Settings.getInstance().getLogFilePath() + " does not exist");
-            System.exit(-1);
+            indexCreation.lock();
+            currentState = IndexState.ERROR;
+            return;
         }
 
         //create log level ID index
         for(String s : Search.allLogLevels) {
             logLevelIDManager.putValue((byte)logLevelIDManager.size(), s);
         }
-
-        //stop indexing if interrupted
-        if(Thread.currentThread().isInterrupted()) {
-            allowCreationOfIndex();
-            indexExists = false;
+        
+        indexCreation.lock();
+        //restart indexing if interrupted
+        if(currentState == IndexState.INTERRUPTED) {
             return;
         }
+        indexCreation.unlock();
 
         createLuceneIndex();
 
-        //stop indexing if interrupted
-        if(Thread.currentThread().isInterrupted()) {
-            allowCreationOfIndex();
-            indexExists = false;
+        indexCreation.lock();
+        //restart indexing if interrupted
+        if(currentState == IndexState.INTERRUPTED) {
             return;
         }
+        indexCreation.unlock();
 
         //create logLevel index
         try (Search search = new Search())
@@ -131,13 +174,14 @@ public class IndexManager {
         catch (IOException ioe)
         {
             ioe.printStackTrace();
-            System.exit(-1);
+            indexCreation.lock();
+            currentState = IndexState.ERROR;
+            return;
         }
 
-        allowCreationOfIndex();
-
         System.out.println(t);
-        indexExists = true;
+        indexCreation.lock();
+        currentState = IndexState.READY;
         return;
     }
 
@@ -152,6 +196,7 @@ public class IndexManager {
         logLevelIndexManager.writeIndex(path + "logLevel_index_manager");
         logDateManager.writeIndex(path + "log_date_manager");
     }
+
     public void readIndices() throws IOException
     {
         String path = "index" + File.separator;
@@ -257,7 +302,7 @@ public class IndexManager {
 
                 indexWriter.addDocument(document);
 
-                if(Thread.currentThread().isInterrupted()) {
+                if(currentState == IndexState.INTERRUPTED) {
                     indexWriter.close();
                     return;
                 }
@@ -268,15 +313,12 @@ public class IndexManager {
         indexWriter.close();
     }
 
-    private void allowCreationOfIndex() {
-        //the building of the index can start again
-        synchronized(isCurrentlyIndexing) {
-            isCurrentlyIndexing = false;
-        }
+    public IndexState getIndexState() {
+        return currentState;
     }
 
     public boolean exists() {
-        return indexExists;
+        return currentState == IndexState.READY;
     }
 
     //----- fileIDManager ----//
@@ -355,44 +397,43 @@ public class IndexManager {
     @SneakyThrows
     public static void main(String[] args)
     {
+        Random rand = new Random(1000);
         IndexManager mgr = IndexManager.getInstance();
-//        mgr.readIndices();
-        mgr.createIndices();
-        mgr.saveIndices();
+        //mgr.readIndices();
+        //mgr.createIndices();
+        //mgr.saveIndices();
 
-        mgr.getExceptionNames().forEach(System.out::println);
+        //mgr.getExceptionNames().forEach(System.out::println);
 
         //mgr.readIndices();
         //System.out.println(mgr.moduleIDManager);
 
-//        for(int i = 0;i < 8; ++i) {
-//            new Thread(new Runnable() {
-//                @Override
-//                public void run() {
-//                    try {
-//                        mgr.createIndices();
-//                    } catch (Exception e) {
-//                        e.printStackTrace();
-//                    }
-//                }
-//            }).start();
-//        }
-//
-//        new Thread(new Runnable() {
-//            @Override
-//            public void run() {
-//                for(int i = 0;i < 2_00; ++i) {
-//                    System.out.println(mgr.exists());
-//                    try {
-//                        Thread.sleep(100);
-//                    } catch (InterruptedException e) {
-//                        // TODO Auto-generated catch block
-//                        e.printStackTrace();
-//                    }
-//                }
-//            }
-//        }).start();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                for(int i = 0;i < 2048; ++i) {
+                    System.out.println(currentState);
+                    try {
+                        Thread.sleep(rand.nextInt(1000));
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }).start();
+
+        for(int i = 0;i < 128; ++i) {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try { 
+                        mgr.createIndices();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }).start();
+            Thread.sleep(rand.nextInt(1000));
+        }
     }
-
-
 }
