@@ -412,7 +412,7 @@ public class IndexManager {
             @Override
             public void run() {
                 for(int i = 0;i < 2048; ++i) {
-                    System.out.println(currentState);
+                    System.out.println(IndexManager.getInstance().currentState);
                     try {
                         Thread.sleep(rand.nextInt(1000));
                     } catch (InterruptedException e) {
