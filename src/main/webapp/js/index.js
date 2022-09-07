@@ -14,6 +14,8 @@ function loadDocument(){
     setInputColors(document.documentElement.style.getPropertyValue('--main-color'),
         document.documentElement.style.getPropertyValue('--main-text-color'));
 
+    initIndexToast()
+
     //Inputs
     initializeDatePickers();
     fillDataLists();
@@ -21,6 +23,8 @@ function loadDocument(){
     //Modal
     abortFetchOnModalExit();
     resizeColumnsOnModalEnter();
+
+
 }
 
 /**
@@ -50,5 +54,34 @@ async function fillDataLists(){
     let exceptions = await loadExceptions();
     $.each(exceptions, function(i, item) {
         $("#datalistOptionsException").append($("<option>").attr('value', item));
+    });
+}
+
+function initIndexToast(){
+
+    document.getElementById("toastIndex").innerHTML =
+        `
+        <div class="position-fixed bottom-0 end-0 p-3">
+            <div class="toast text-white bg-danger fade show">
+                 <div class="toast-header text-white" style="background-color: #c32232">
+                    <strong class="me-auto">Indexing!</strong>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+                 </div>
+                <div class="toast-body">
+                    <p>Index is currently being updated.</p>
+                    <p>Please wait 10 seconds!</p>
+                </div>
+            </div>
+        </div>
+        `
+
+    var toastElementList = 0;
+    var toastList = 0;
+
+    toastElementList  = [].slice.call(document.querySelectorAll(".toast"));
+    toastList = toastElementList.map(function (element) {
+        return new bootstrap.Toast(element, {
+            autohide: false
+        });
     });
 }
