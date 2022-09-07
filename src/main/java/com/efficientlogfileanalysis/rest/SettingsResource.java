@@ -8,6 +8,7 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.Response;
 
+import java.io.File;
 import java.io.IOException;
 
 @Path("/settings")
@@ -32,6 +33,15 @@ public class SettingsResource {
     @Path("/path")
     public Response setPath(String newPath)
     {
+        File logFolder = new File(newPath);
+
+        //prevent invalid log directory paths
+        if(logFolder.exists() || !logFolder.isDirectory())
+        {
+            return Response.status(Response.Status.BAD_REQUEST).build();
+        }
+
+
         try
         {
             Settings settings = Settings.getInstance();
