@@ -16,7 +16,7 @@ import java.util.*;
 /**
  * Data class representing a single log entry.
  * @author Clark Jaindl
- * last changed: 01.08.2022
+ * last changed: 03.09.2022
  */
 @Path("/statistic")
 public class StatisticResource {
@@ -36,18 +36,10 @@ public class StatisticResource {
     /** contains the end of timestamp intervals on the multilineChart */
     private LocalDateTime endOfInterval;
 
+    /** contains all time stamps of the multilineChart */
     private List<LocalDateTime> endOfIntervalsList = new ArrayList<>();
 
-    /** list of all existing loglevel types */
-    private List<String> logLevelList = new ArrayList<String>(){{
-        add("INFO");
-        add("DEBUG");
-        add("WARN");
-        add("ERROR");
-        add("TRACE");
-        add("FATAL");
-    }};
-
+    /** contains all relevant data for the statistics */
     private List<HashMap<String, Integer>> statisticsData = new ArrayList<>();
 
     /** map containing timestamps for the multilineChart */
@@ -55,9 +47,6 @@ public class StatisticResource {
 
     /** list containing statisticsDataMap, multiStatisticsDataMap and timeStampsMap */
     private List<List> list = new ArrayList<>();
-
-    /** counter variable used to identify each section on the multilineChart*/
-    private int counter = 0;
 
 
     /**
@@ -102,23 +91,6 @@ public class StatisticResource {
         }
     }
 
-//    /**
-//     * Function used to initialize all maps after every new search.
-//     */
-//    public void initializeMaps() {
-//
-//        statisticsDataMap.clear();
-//        multiStatisticsDataMap.clear();
-//        list.clear();
-//
-//        logLevelList.forEach(e -> {
-//            statisticsDataMap.put(e, 0);
-//            multiStatisticsDataMap.put(e, new int[]{0,0,0,0,0,0,0,0,0,0,0,0});
-//        });
-//
-//        counter = 0;
-//    }
-
     /**
      * Function used to fill the maps with data for the statistics
      *
@@ -150,73 +122,5 @@ public class StatisticResource {
 
         return Response.ok(list).build();
 
-        /*
-
-        initializeMaps();
-
-        try (Search search = new Search())
-        {
-            List<LogEntry> helper;
-
-            Search search = new Search();
-
-            helper = search.sortedSearch(filter);
-
-            for (int i = 0; i < helper.size(); i++) {
-
-                LogEntry data = helper.get(i);
-                addLogLevelData(data.getLogLevel());
-                addLogLevelDataDependingOnTime(data);
-            }
-
-            list.add(statisticsDataMap);
-            list.add(multiStatisticsDataMap);
-            list.add(timeStampsMap);
-
-            return Response.ok(list).build();
-        } catch (IOException e) {
-            e.printStackTrace();
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
-        }*/
     }
-
-//    /**
-//     * Function used to determine the quantity of each loglevel.
-//     * Used for all statistics except multilineChart
-//     *
-//     * @param logLevel logLevel which amount has to be raised
-//     */
-//    public void addLogLevelData(String logLevel) {
-//        int value = statisticsDataMap.get(logLevel);
-//        value++;
-//        statisticsDataMap.put(logLevel, value);
-//    }
-//
-//    /**
-//     * Function used to determine the quantity of each loglevel for each section on the multilineChart
-//     *
-//     * @param data logEntry which is one line in a logfile
-//     */
-//    public void addLogLevelDataDependingOnTime(LogEntry data) {
-//        LocalDateTime date = LocalDateTime.ofInstant(Instant.ofEpochMilli(data.getTime()), ZoneId.systemDefault());
-//        if (counter <= 11) {
-//            if (date.isBefore(endOfInterval)) {
-//                int[] value = multiStatisticsDataMap.get(data.getLogLevel());
-//
-//                value[counter]++;
-//                multiStatisticsDataMap.put(data.getLogLevel(), value);
-//
-//            } else {
-//                endOfInterval = endOfInterval.plus(Duration.of(gapTime, ChronoUnit.MILLIS));
-//
-//                counter++;
-//                if (counter <= 11) {
-//                    int[] value = multiStatisticsDataMap.get(data.getLogLevel());
-//                    value[counter]++;
-//                    multiStatisticsDataMap.put(data.getLogLevel(), value);
-//
-//                }
-//            }
-//        }
-//    }
 }
