@@ -36,36 +36,23 @@ public class SettingsResource {
         File logFolder = new File(newPath);
 
         //prevent invalid log directory paths
-        if(logFolder.exists() || !logFolder.isDirectory())
+        if( !(logFolder.exists() && logFolder.isDirectory()) )
         {
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
-
 
         try
         {
             Settings settings = Settings.getInstance();
             settings.setLogFilePath(newPath);
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        IndexManager.getInstance().createIndices();
 
-                        if(IndexManager.getInstance().exists()) {
-                            System.out.println("Index not created");
-                        }
-                    } catch (IOException ioe) {
-                        ioe.printStackTrace();
-                    }
-                }
-            });
-            return Response.ok().build();
+            IndexManager.getInstance().startIndexCreationWorker();
         }
         catch (IOException e) {
-            e.printStackTrace();
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
         }
+
+        return Response.ok().build();
     }
 
 }

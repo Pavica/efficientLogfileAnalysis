@@ -1,5 +1,6 @@
 package com.efficientlogfileanalysis.rest;
 
+import com.efficientlogfileanalysis.log.IndexManager;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.Response;
@@ -10,6 +11,6 @@ public class StateResource {
     @GET
     public Response getState()
     {
-        return Response.ok("Ready").build();
+        return Response.ok(IndexManager.getInstance().getIndexState()).build();
     }
 }

@@ -20,7 +20,8 @@ public class LogFileApplication extends Application implements ServletContextLis
         }
         catch (IOException ex)
         {
-            throw new RuntimeException(ex);
+            //if the index is not present start to index the files
+            IndexManager.getInstance().startIndexCreationWorker();
         }
     }
 
