@@ -286,6 +286,8 @@ public class Search implements Closeable {
         return files;
     }
 
+    //TODO is never used
+    @Deprecated
     /**
      * Searches the log files with the given filter for matches and then returns information about its parent log file and all the matches as ids in that log file
      * @param filter specifies what entries should be matched

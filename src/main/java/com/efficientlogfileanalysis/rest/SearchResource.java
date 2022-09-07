@@ -77,26 +77,27 @@ public class SearchResource {
         return filterBuilder.build();
     }
 
-    @Deprecated
-    @POST
-    @Path("/filter")
-    @Produces("application/json")
-    public Response filteredSearch(FilterData filterData)
-    {
-        Filter filter = parseFilterData(filterData);
+//    @Deprecated
+//    @POST
+//    @Path("/filter")
+//    @Produces("application/json")
+//    public Response filteredSearch(FilterData filterData)
+//    {
+//        Filter filter = parseFilterData(filterData);
+//
+//        try (Search search = new Search())
+//        {
+//            List<SearchEntry> result = search.search(filter);
+//
+//            return Response.ok(result).build();
+//        }
+//        catch (IOException e)
+//        {
+//            e.printStackTrace();
+//            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+//        }
+//    }
 
-        try (Search search = new Search())
-        {
-            List<SearchEntry> result = search.search(filter);
-
-            return Response.ok(result).build();
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
-        }
-    }
 
     @Data
     @AllArgsConstructor
@@ -113,10 +114,15 @@ public class SearchResource {
         }
     }
 
+    /**
+     * Search for logFiles containing entries that match the given filter
+     * @param filterData contains filter information
+     * @return meta information about all logFiles that match the given criteria
+     */
     @POST
     @Path("/files")
     @Produces("application/json")
-    public Response search(FilterData filterData)
+    public Response searchForFiles(FilterData filterData)
     {
         Filter filter = parseFilterData(filterData);
 
@@ -150,26 +156,32 @@ public class SearchResource {
         }
     }
 
+    /**
+     * Returns all entries matching the given filterData in a specific logfile
+     * @param filterData contains filter information that every logEntry needs to match
+     * @param fileName the name of the logfile to be searched
+     * @return all matching entries without the logMessage
+     */
     @POST
     @Path("/file/{fileName}")
     @Produces("application/json")
-    public Response search(FilterData filterData, @PathParam("fileName") String fileName)
+    public Response searchInFile(FilterData filterData, @PathParam("fileName") String fileName)
     {
+        //parse filter data
         Filter filter = parseFilterData(filterData);
-        short fileID = IndexManager.getInstance().getFileID(fileName);
 
+        //add the fileID to the filter
+        short fileID = IndexManager.getInstance().getFileID(fileName);
         filter.setFileID(fileID);
 
         try (Search search = new Search())
         {
-            List<Long> entryIDs = search.searchForLogEntryIDs(filter);
-
-            String logPath = Settings.getInstance().getLogFilePath();
-
             List<LogEntry> result = new ArrayList<>();
+            List<Long> entryIDs = search.searchForLogEntryIDs(filter);
 
             try (LogReader logReader = new LogReader())
             {
+                String logPath = Settings.getInstance().getLogFilePath();
                 for(long entryID : entryIDs)
                 {
                     result.add(logReader.readLogEntryWithoutMessage(logPath, fileID, entryID));
@@ -211,6 +223,13 @@ public class SearchResource {
         List<LogEntry> logEntries;
     }
 
+    /**
+     * Returns the matching LogEntries in a given file in pages
+     * @param pageRequestData data identifying the previous page (if null returns the first page)
+     * @param fileName the name of the file to be searched
+     * @param amount the maximal amount of entries for each page
+     * @return the matching logEntries including a pageRequestData object that needs to be specified to retrieve the next page
+     */
     @POST
     @Path("/file/{fileName}/{amount}")
     @Produces("application/json")

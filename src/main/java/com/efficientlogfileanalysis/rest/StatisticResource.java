@@ -133,9 +133,9 @@ public class StatisticResource {
 
         Search search = new Search();
 
-        setTimeSpan(filterData.getBeginDate(), filterData.getEndDate());
-
         Filter filter = SearchResource.parseFilterData(filterData);
+
+        setTimeSpan(filter.getBeginDate(), filter.getEndDate());
 
         for(int i = 0 ; i < 12 ; i++){
             filter.setEndDate(LogEntry.toLong(endOfIntervalsList.get(i)));

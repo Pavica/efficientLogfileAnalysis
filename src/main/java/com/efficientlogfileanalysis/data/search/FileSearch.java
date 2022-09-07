@@ -5,6 +5,8 @@ import lombok.Data;
 import java.util.ArrayList;
 import java.util.List;
 
+//TODO remove unused code
+@Deprecated
 @Data
 public class FileSearch {
     private String filename;
