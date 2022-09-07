@@ -42,7 +42,7 @@ public class Settings {
     private void setDefaultValues() {
         logFilePath = 
             System.getProperty("user.home") +
-            (System.getProperty("os.name").contains("win") ? "/" : "\\") + "logs";
+            "/logs";
         maxSizeOfCacheFile = 0;
     }
 
