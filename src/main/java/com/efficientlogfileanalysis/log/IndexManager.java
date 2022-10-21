@@ -139,12 +139,13 @@ public class IndexManager {
             return;
         }
 
+        indexCreation.lock();
+
         //restarts the index creation (if there is already a thread waiting)
         if(currentState == IndexState.INTERRUPTED) {
             indexCreationCondition.signal();
         }
 
-        indexCreation.lock();
         currentState = IndexState.READY;
         indexCreation.unlock();
     }
@@ -180,8 +181,6 @@ public class IndexManager {
 
         saveIndices();
         System.out.println(t);
-
-        return;
     }
 
     public void saveIndices() throws IOException
@@ -404,20 +403,51 @@ public class IndexManager {
     @SneakyThrows
     public static void main(String[] args)
     {
-        Random rand = new Random(1000);
+        Settings.getInstance().setLogFilePath("C:\\Users\\AndiK\\OneDrive\\Dokumente\\HTL 5. Jahr\\Diplomarbeit\\efficientLogfileAnalysis\\test_logs");
         IndexManager mgr = IndexManager.getInstance();
 
-        System.out.println(mgr.currentState);
+        Thread printStatus = new Thread(() -> {
+            while(true){
+                System.out.println(mgr.currentState);
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+        printStatus.start();
 
-        Settings.getInstance().setLogFilePath("C:\\");
-        mgr.createIndices();
+        Thread creationWorker = new Thread(mgr::createIndices);
+        creationWorker.start();
 
-        System.out.println(mgr.currentState);
+        Random r = new Random();
 
-        Settings.getInstance().setLogFilePath("C:\\Users\\AndiK\\OneDrive\\Dokumente\\HTL 5. Jahr\\Diplomarbeit\\efficientLogfileAnalysis\\test_logs");
-        mgr.createIndices();
+        while(true){
+            Thread.sleep(r.nextInt(8000));
+            System.out.println("Another Thread starts");
 
-        System.out.println(mgr.currentState);
+            Thread newCreationWorker = new Thread(mgr::createIndices);
+            newCreationWorker.start();
+        }
+
+
+
+
+//        Random rand = new Random(1000);
+//        IndexManager mgr = IndexManager.getInstance();
+//
+//        System.out.println(mgr.currentState);
+//
+//        Settings.getInstance().setLogFilePath("C:\\");
+//        mgr.createIndices();
+//
+//        System.out.println(mgr.currentState);
+//
+//        Settings.getInstance().setLogFilePath("C:\\Users\\AndiK\\OneDrive\\Dokumente\\HTL 5. Jahr\\Diplomarbeit\\efficientLogfileAnalysis\\test_logs");
+//        mgr.createIndices();
+//
+//        System.out.println(mgr.currentState);
 
 
         //mgr.readIndices();
