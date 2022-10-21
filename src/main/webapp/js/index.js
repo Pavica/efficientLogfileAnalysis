@@ -57,31 +57,93 @@ async function fillDataLists(){
     });
 }
 
-function initIndexToast(){
+async function initIndexToast() {
 
-    document.getElementById("toastIndex").innerHTML =
-        `
+    let state = "NOT_READY";
+
+    while (state != "READY") {
+
+        console.log("test")
+
+        await delay(500);
+
+        try{
+            let response = await fetch("api/state");
+            state = await response.text();
+        }catch(e){
+            setToast("Connection lost!", "Lost connection to server", "Please check the connection.", "#c32232", "bg-danger", true);
+        }
+
+        switch (state) {
+            case "INDEXING":
+                setToast("Indexing!", "Index is currently being updated!", "Please wait about 10 seconds.", "#ffc240", "bg-warning", false);
+                break;
+
+            case "ERROR":
+                setToast("Error!", "Index could not be updated!", "Please try again.", "#c32232", "bg-danger", true);
+                break;
+
+            case "INTERRUPTED":
+                setToast("Interrupted!", "Indexing was interrupted!", "Please restart.", "#c32232", "bg-danger", true);
+                break;
+            case "READY":
+
+                setToast("Ready!", "Index is ready!", "You may continue working.", "forestgreen", "bg-success", true);
+                break;
+        }
+        if(state == "INTERRUPTED" || state == "ERROR")
+            break;
+
+        var toastElementList = 0;
+        var toastList = 0;
+
+        toastElementList = [].slice.call(document.querySelectorAll(".toast"));
+        toastList = toastElementList.map(function (element) {
+            return new bootstrap.Toast(element, {
+                autohide: true
+            });
+        });
+    }
+}
+
+function setToast(header, text1, text2, n_background, h_background, x){
+    if(x){
+        document.getElementById("toastIndex").innerHTML =
+            `
         <div class="position-fixed bottom-0 end-0 p-3">
-            <div class="toast text-white bg-danger fade show">
-                 <div class="toast-header text-white" style="background-color: #c32232">
-                    <strong class="me-auto">Indexing!</strong>
+            <div class="toast text-white fade show" style="background-color: ${n_background}">
+                 <div class="toast-header text-white ${h_background}">
+                    <strong class="me-auto">${header}</strong>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
                  </div>
                 <div class="toast-body">
-                    <p>Index is currently being updated.</p>
-                    <p>Please wait 10 seconds!</p>
+                    <p>${text1}</p>
+                    <p>${text2}</p>
                 </div>
             </div>
         </div>
-        `
+        `;
+    }else{
+        document.getElementById("toastIndex").innerHTML =
+            `
+        <div class="position-fixed bottom-0 end-0 p-3">
+            <div class="toast text-white fade show" style="background-color: ${n_background}">
+                 <div class="toast-header text-white ${h_background}">
+                    <strong class="me-auto">${header}</strong>
+                 </div>
+                <div class="toast-body">
+                    <p>${text1}</p>
+                    <p>${text2}</p>
+                </div>
+            </div>
+        </div>
+        `;
+    }
 
-    var toastElementList = 0;
-    var toastList = 0;
+}
 
-    toastElementList  = [].slice.call(document.querySelectorAll(".toast"));
-    toastList = toastElementList.map(function (element) {
-        return new bootstrap.Toast(element, {
-            autohide: false
-        });
+function delay(milliseconds){
+    return new Promise(resolve => {
+        setTimeout(resolve, milliseconds);
     });
 }
