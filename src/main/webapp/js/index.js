@@ -1,7 +1,7 @@
 /**
- * author: Luka
+ * author: Luka/Clark
  * version: 1.0
- * last changed: 21.07.2022
+ * last changed: 21.10.2022
  */
 
 /**
@@ -61,7 +61,7 @@ async function initIndexToast() {
 
     let state = "NOT_READY";
 
-    while (state != "READY") {
+    while (state != "READY" && state != "INTERRUPTED") {
 
         console.log("test")
 
