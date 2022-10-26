@@ -61,8 +61,7 @@ public class StatisticResource {
         this.startDate = LocalDateTime.ofInstant(Instant.ofEpochMilli(startDate), ZoneId.systemDefault());
         this.endDate = LocalDateTime.ofInstant(Instant.ofEpochMilli(endDate), ZoneId.systemDefault());
 
-        gapTime = ChronoUnit.MILLIS.between(this.startDate, this.endDate);
-
+        gapTime = endDate - startDate;
         gapTime = gapTime / 12;
 
         endOfInterval = this.startDate;
