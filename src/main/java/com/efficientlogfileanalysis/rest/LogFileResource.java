@@ -1,9 +1,9 @@
 package com.efficientlogfileanalysis.rest;
 
-import com.efficientlogfileanalysis.data.LogEntry;
+import com.efficientlogfileanalysis.logs.data.LogEntry;
 import com.efficientlogfileanalysis.data.Settings;
-import com.efficientlogfileanalysis.log.IndexManager;
-import com.efficientlogfileanalysis.log.LogReader;
+import com.efficientlogfileanalysis.index.IndexManager;
+import com.efficientlogfileanalysis.logs.LogReader;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;

@@ -1,4 +1,4 @@
-package com.efficientlogfileanalysis.test;
+package com.efficientlogfileanalysis.util;
 
 import lombok.ToString;
 
@@ -22,7 +22,7 @@ public class Timer {
      * Last-changed: 11.7.2022
      */
     @ToString
-    public class Time {
+    public static class Time {
         public long totalTime;
         public long longestTime;
         public long shortestTime;

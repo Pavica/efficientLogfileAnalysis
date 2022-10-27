@@ -1,11 +1,14 @@
-package com.efficientlogfileanalysis.log;
+package com.efficientlogfileanalysis.luceneSearch;
 
-import com.efficientlogfileanalysis.data.LogEntry;
+import com.efficientlogfileanalysis.index.IndexManager;
+import com.efficientlogfileanalysis.logs.data.LogEntry;
+import com.efficientlogfileanalysis.logs.data.LogLevel;
 import com.efficientlogfileanalysis.data.Settings;
 import com.efficientlogfileanalysis.data.Tuple;
-import com.efficientlogfileanalysis.data.search.Filter;
-import com.efficientlogfileanalysis.data.search.SearchEntry;
+import com.efficientlogfileanalysis.luceneSearch.data.Filter;
+import com.efficientlogfileanalysis.luceneSearch.data.SearchEntry;
 
+import com.efficientlogfileanalysis.logs.LogReader;
 import com.efficientlogfileanalysis.util.ByteConverter;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -28,7 +31,6 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -39,11 +41,6 @@ import java.util.stream.Collectors;
  * last changed: 28.07.2022
  */
 public class Search implements Closeable {
-
-    /**
-     * A list with all log levels
-     */
-    public static final String[] allLogLevels = {"INFO", "DEBUG", "WARN", "ERROR", "TRACE", "FATAL"};
 
     DirectoryReader directoryReader;
     private IndexSearcher searcher;
@@ -96,9 +93,8 @@ public class Search implements Closeable {
             //TODO improve that
 
             for(
-                Byte notIncluded : Arrays.stream(allLogLevels)
-                    //.map(LogLevelIDManager.getInstance()::get)
-                    .map(IndexManager.getInstance()::getLogLevelID)
+                Byte notIncluded : Arrays.stream(LogLevel.values())
+                    .map(LogLevel::getId)
                     .filter(s -> !filter.getLogLevels().contains(s))
                     .collect(Collectors.toList())
             ) {
@@ -219,7 +215,7 @@ public class Search implements Closeable {
                 long entryIndex = document.getField("logEntryID").numericValue().longValue();
 
                 long logEntryTime = logReader.readDateOfEntry(path, fileID, entryIndex);
-                String logLevel = logReader.readLogLevelOfEntry(path, fileID, entryIndex);
+                LogLevel logLevel = logReader.readLogLevelOfEntry(path, fileID, entryIndex);
 
                 //logFiles.putIfAbsent(fileIndex, new SearchEntry(FileIDManager.getInstance().get(fileID)));
                 logFiles.putIfAbsent(fileID, new SearchEntry(IndexManager.getInstance().getFileName(fileID)));
@@ -230,64 +226,6 @@ public class Search implements Closeable {
         return new ArrayList<>(logFiles.values());
     }
 
-    public List<List<Byte>> searchForLogLevelsInFiles() throws IOException {
-        ArrayList<List<Byte>> files = new ArrayList<>();
-        Filter.FilterBuilder filterBuilder;
-        Query query;
-        GroupingSearch groupingSearch;
-        TopGroups topGroups;
-        List<Byte> levelsPerFile;
-
-        //files.ensureCapacity(FileIDManager.getInstance().values.getKeySet().size());
-        files.ensureCapacity(IndexManager.getInstance().getFileIDs().size());
-
-        //go through all files
-        //for(short fileID : FileIDManager.getInstance().values.getKeySet()) {
-        for(short fileID : IndexManager.getInstance().getFileIDs()) {
-            filterBuilder = Filter
-                .builder()
-                .fileID(fileID);
-
-            //add Filter for all log levels
-            for(String s : Search.allLogLevels) {
-                //filterBuilder.addLogLevel(LogLevelIDManager.getInstance().get(s));
-                filterBuilder.addLogLevel(IndexManager.getInstance().getLogLevelID(s));
-            }
-
-            query = parseFilter(filterBuilder.build()).build();
-            groupingSearch = new GroupingSearch("logLevel");
-
-            //sets how the returned groups are sorted
-            //the default criteria is "RELEVANCE" which is why Field_doc (the index order) is faster
-            groupingSearch.setGroupSort(new Sort(SortField.FIELD_DOC));
-
-            //only return one result for each group:
-            groupingSearch.setGroupDocsLimit(1);
-
-            //perform group search
-            topGroups = null;
-            try {
-                topGroups = groupingSearch.search(searcher, query, 0, Search.allLogLevels.length);
-            } catch (IOException ioe) {
-                ioe.printStackTrace();
-            } finally {
-                assert topGroups != null;
-            }
-
-            levelsPerFile = new ArrayList<>(topGroups.groups.length);
-            for(GroupDocs gdoc : topGroups.groups)
-            {
-                levelsPerFile.add(((BytesRef) gdoc.groupValue).bytes[0]);
-            }
-
-            files.add(fileID, levelsPerFile);
-        }
-
-        return files;
-    }
-
-    //TODO is never used
-    @Deprecated
     /**
      * Searches the log files with the given filter for matches and then returns information about its parent log file and all the matches as ids in that log file
      * @param filter specifies what entries should be matched
@@ -317,7 +255,65 @@ public class Search implements Closeable {
         return logEntries;
     }
 
-    public HashMap<String, Integer> getLogLevelCount(Filter filter) throws IOException {
+    /**
+     * Returns a list of all logLevels present in each file
+     * @return a list containing a list of all levels present in a file
+     */
+    public List<List<Byte>> searchForLogLevelsInFiles() {
+        ArrayList<List<Byte>> files = new ArrayList<>();
+        Filter.FilterBuilder filterBuilder;
+        Query query;
+        GroupingSearch groupingSearch;
+        TopGroups topGroups;
+        List<Byte> levelsPerFile;
+
+        //files.ensureCapacity(FileIDManager.getInstance().values.getKeySet().size());
+        files.ensureCapacity(IndexManager.getInstance().getFileIDs().size());
+
+        //go through all files
+        //for(short fileID : FileIDManager.getInstance().values.getKeySet()) {
+        for(short fileID : IndexManager.getInstance().getFileIDs()) {
+            filterBuilder = Filter
+                    .builder()
+                    .fileID(fileID);
+
+            query = parseFilter(filterBuilder.build()).build();
+            groupingSearch = new GroupingSearch("logLevel");
+
+            //sets how the returned groups are sorted
+            //the default criteria is "RELEVANCE" which is why Field_doc (the index order) is faster
+            groupingSearch.setGroupSort(new Sort(SortField.FIELD_DOC));
+
+            //only return one result for each group:
+            groupingSearch.setGroupDocsLimit(1);
+
+            //perform group search
+            topGroups = null;
+            try {
+                topGroups = groupingSearch.search(searcher, query, 0, LogLevel.values().length);
+            } catch (IOException ioe) {
+                ioe.printStackTrace();
+            } finally {
+                //TODO snoms asserts entfernen!
+                assert topGroups != null;
+            }
+
+            levelsPerFile = new ArrayList<>(topGroups.groups.length);
+            for(GroupDocs gdoc : topGroups.groups)
+            {
+                levelsPerFile.add(((BytesRef) gdoc.groupValue).bytes[0]);
+            }
+
+            files.add(fileID, levelsPerFile);
+        }
+
+        return files;
+    }
+
+    /**
+     * Returns the number of logEntries having a certain logLevel
+     */
+    public HashMap<LogLevel, Integer> getLogLevelCount(Filter filter) throws IOException {
 
         Query query = parseFilter(filter).build();
 
@@ -327,14 +323,14 @@ public class Search implements Closeable {
 
         TopGroups topGroups = groupingSearch.search(searcher, query, 0, 100000);
 
-        HashMap<String, Integer> logLevelData = new HashMap<>();
+        HashMap<LogLevel, Integer> logLevelData = new HashMap<>();
 
         for(GroupDocs groupDoc : topGroups.groups)
         {
             System.out.println(groupDoc.groupValue);
 
             byte logLevelID = ((BytesRef) groupDoc.groupValue).bytes[0];
-            String logLevel = IndexManager.getInstance().getLogLevelName(logLevelID);
+            LogLevel logLevel = LogLevel.fromID(logLevelID);
 
             long totalHits = groupDoc.totalHits.value;
 
