@@ -11,7 +11,10 @@ import lombok.SneakyThrows;
 
 import java.io.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -31,47 +34,57 @@ public class LogReader implements Closeable {
     @SneakyThrows
     public static LogFile[] readAllLogFiles(String path)
     {
+        File[] files = new File(path).listFiles();
+
+        if(files == null){
+            return new LogFile[0];
+        }
+
+        return Arrays.stream(files)
+                .map(file -> new LogFile(file.getName(), readSingleFile(file.getAbsolutePath())))
+                .toArray(LogFile[]::new);
+    }
+
+    /**
+     * Reads all logEntries from a single file
+     * @param path The path to the file
+     * @return A list containing all Logentries
+     */
+    @SneakyThrows
+    public static List<LogEntry> readSingleFile(String path)
+    {
         Matcher startOfLogEntry = Pattern.compile(REGEX_START_OF_LOG_ENTRY).matcher("");
 
-        File[] logFolderFileList = new File(path).listFiles();
-        LogFile[] logFiles = new LogFile[logFolderFileList.length];
-        short currentFileIndex = 0;
+        List<LogEntry> entries = new ArrayList<>();
 
-        for (File file : logFolderFileList)
+        try(BufferedReader br = new BufferedReader(new FileReader(path)))
         {
-            try(BufferedReader br = new BufferedReader(new FileReader(file)))
-            {
-                String line = "";
-                String currentLine;
-                long currentByteCount = -1;
+            String line;
+            String currentEntry = "";
+            long bytesRead = -1;
 
-                logFiles[currentFileIndex] = new LogFile(file.getName());
+            while (currentEntry != null) {
 
-                while ((currentLine = br.readLine()) != null) {
+                line = br.readLine();
 
-                    if (line.equals("") || !startOfLogEntry.reset(currentLine).matches()) {
-                        line += currentLine + "\n";
-                        continue;
-                    }
-
-                    LogEntry newLogEntry = new LogEntry(line, currentByteCount == -1 ? 0 : currentByteCount);
-
-                    //add a \n for the exact bytecount
-                    line += "\n";
-                    currentByteCount += line.getBytes().length;
-
-                    line = currentLine;
-                    logFiles[currentFileIndex].addEntry(newLogEntry);
-
+                //if the current entry is empty or the line is part of it (does not start with a date) add it to the entry
+                if (line != null && (currentEntry.equals("") || !startOfLogEntry.reset(line).matches())) {
+                    currentEntry += line + "\n";
+                    continue;
                 }
 
-                logFiles[currentFileIndex].addEntry(new LogEntry(line, currentByteCount == -1 ? 0 : currentByteCount));
+                LogEntry newLogEntry = new LogEntry(currentEntry, bytesRead == -1 ? 0 : bytesRead);
+                entries.add(newLogEntry);
 
-                ++currentFileIndex;
+                //add a \n for the exact bytecount
+                currentEntry += "\n";
+                bytesRead += currentEntry.getBytes().length;
+
+                currentEntry = line;
             }
         }
 
-        return logFiles;
+        return entries;
     }
 
     private  Matcher startOfLogEntry;

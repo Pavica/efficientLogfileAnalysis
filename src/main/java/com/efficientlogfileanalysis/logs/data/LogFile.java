@@ -1,5 +1,6 @@
 package com.efficientlogfileanalysis.logs.data;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.util.ArrayList;
@@ -10,6 +11,7 @@ import java.util.List;
  * @author Jan Mandl
  */
 @Data
+@AllArgsConstructor
 public class LogFile {
     public String filename;
     private List<LogEntry> entries;
