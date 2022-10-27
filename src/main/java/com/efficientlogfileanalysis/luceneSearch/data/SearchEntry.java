@@ -1,5 +1,6 @@
-package com.efficientlogfileanalysis.data.search;
+package com.efficientlogfileanalysis.luceneSearch.data;
 
+import com.efficientlogfileanalysis.logs.data.LogLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -16,14 +17,14 @@ public class SearchEntry {
     private long firstDate = Long.MAX_VALUE;
     private long lastDate = 0;
     private final List<Long> logEntryIDs = new ArrayList<>();
-    private final List<String> logLevels = new ArrayList<>();
+    private final List<LogLevel> logLevels = new ArrayList<>();
 
     public SearchEntry(String filename)
     {
         this.filename = filename;
     }
 
-    public void addLogEntry(long entryID, String logLevel, long date)
+    public void addLogEntry(long entryID, LogLevel logLevel, long date)
     {
         logEntryIDs.add(entryID);
 

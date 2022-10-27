@@ -1,4 +1,4 @@
-package com.efficientlogfileanalysis.data;
+package com.efficientlogfileanalysis.index.data;
 
 import lombok.ToString;
 
@@ -10,7 +10,7 @@ import java.util.Set;
  * @author Jan Mandl
  */
 @ToString
-public class BiMap<K, V> {
+public class BiMap<K, V>{
     /**
      * Stores the (key | value)
      */

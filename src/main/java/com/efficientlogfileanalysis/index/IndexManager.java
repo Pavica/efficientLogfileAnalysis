@@ -1,4 +1,4 @@
-package com.efficientlogfileanalysis.log;
+package com.efficientlogfileanalysis.index;
 
 import java.io.File;
 import java.io.IOException;
@@ -13,8 +13,16 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import com.efficientlogfileanalysis.data.*;
-import com.efficientlogfileanalysis.test.Timer;
+import com.efficientlogfileanalysis.data.Settings;
+import com.efficientlogfileanalysis.index.data.TimeRange;
+import com.efficientlogfileanalysis.index.data.BiMap;
+import com.efficientlogfileanalysis.index.data.I_TypeConverter;
+import com.efficientlogfileanalysis.index.data.SerializableBiMap;
+import com.efficientlogfileanalysis.logs.data.LogEntry;
+import com.efficientlogfileanalysis.logs.data.LogFile;
+import com.efficientlogfileanalysis.logs.LogReader;
+import com.efficientlogfileanalysis.luceneSearch.Search;
+import com.efficientlogfileanalysis.util.Timer;
 import com.efficientlogfileanalysis.util.ByteConverter;
 import lombok.SneakyThrows;
 import org.apache.lucene.analysis.Analyzer;
@@ -28,11 +36,11 @@ import org.apache.lucene.util.BytesRef;
 
 public class IndexManager {
     private enum IndexState {
-        // index creation wasnt started yet or interrupted
+        // index creation wasn't started yet or interrupted
         NOT_READY,
         // the index is ready for use
         READY,
-        // when a file couldnt be read
+        // when a file couldn't be read
         ERROR,
         // the index is currently being build
         INDEXING,
@@ -61,9 +69,8 @@ public class IndexManager {
     private SerializableBiMap<Integer, String> moduleIDManager;
     private SerializableBiMap<Integer, String> classIDManager;
     private SerializableBiMap<Integer, String> exceptionIDManager;
-    private SerializableBiMap<Byte, String> logLevelIDManager;
 
-    //additional managers for informations that have nothing to do with Lucene
+    //additional managers for information that have nothing to do with Lucene
     private SerializableBiMap<Short, List<Byte>> logLevelIndexManager;
     private SerializableBiMap<Short, TimeRange> logDateManager;
 
@@ -72,7 +79,6 @@ public class IndexManager {
         moduleIDManager         =   new SerializableBiMap<>(I_TypeConverter.INTEGER_TYPE_CONVERTER, I_TypeConverter.STRING_TYPE_CONVERTER);
         classIDManager          =   new SerializableBiMap<>(I_TypeConverter.INTEGER_TYPE_CONVERTER, I_TypeConverter.STRING_TYPE_CONVERTER);
         exceptionIDManager      =   new SerializableBiMap<>(I_TypeConverter.INTEGER_TYPE_CONVERTER, I_TypeConverter.STRING_TYPE_CONVERTER);
-        logLevelIDManager       =   new SerializableBiMap<>(I_TypeConverter.BYTE_TYPE_CONVERTER, I_TypeConverter.STRING_TYPE_CONVERTER);
 
         logLevelIndexManager    =   new SerializableBiMap<>(I_TypeConverter.SHORT_TYPE_CONVERTER, I_TypeConverter.listConverter(I_TypeConverter.BYTE_TYPE_CONVERTER));
         logDateManager          =   new SerializableBiMap<>(I_TypeConverter.SHORT_TYPE_CONVERTER, I_TypeConverter.TIME_RANGE_CONVERTER);
@@ -160,11 +166,6 @@ public class IndexManager {
             throw new IOException();
         }
 
-        //create log level ID index
-        for(String s : Search.allLogLevels) {
-            logLevelIDManager.putValue((byte)logLevelIDManager.size(), s);
-        }
-
         //create lucene index and all indexes created by looping over the logEntries
         createLuceneIndex();
 
@@ -189,7 +190,6 @@ public class IndexManager {
         fileIDManager.writeIndex(path + "file_id_manager");
         moduleIDManager.writeIndex(path + "module_id_manager");
         classIDManager.writeIndex(path + "class_id_manager");
-        logLevelIDManager.writeIndex(path + "log_level_id_manager");
         exceptionIDManager.writeIndex(path + "exception_id_manager");
         logLevelIndexManager.writeIndex(path + "logLevel_index_manager");
         logDateManager.writeIndex(path + "log_date_manager");
@@ -208,7 +208,6 @@ public class IndexManager {
         fileIDManager.readIndex(path + "file_id_manager");
         moduleIDManager.readIndex(path + "module_id_manager");
         classIDManager.readIndex(path + "class_id_manager");
-        logLevelIDManager.readIndex(path + "log_level_id_manager");
         exceptionIDManager.readIndex(path + "exception_id_manager");
         logLevelIndexManager.readIndex(path + "logLevel_index_manager");
         logDateManager.readIndex(path + "log_date_manager");
@@ -286,8 +285,8 @@ public class IndexManager {
                     document.add(new NumericDocValuesField("date", logEntry.getTime()));
                     document.add(new LongPoint("date", logEntry.getTime()));
                     document.add(new StoredField("logEntryID", logEntry.getEntryID()));
-                    document.add(new LongPoint("logLevel", logLevelIDManager.getKey(logEntry.getLogLevel())));
-                    document.add(new StoredField("logLevel", logLevelIDManager.getKey(logEntry.getLogLevel())));
+                    document.add(new LongPoint("logLevel", logEntry.getLogLevel().getId()));
+                    document.add(new StoredField("logLevel", logEntry.getLogLevel().getId()));
                     document.add(new TextField("message", logEntry.getMessage(), Field.Store.NO));
                     document.add(new IntPoint("classname", classID));
                     document.add(new IntPoint("module", moduleID));
@@ -298,14 +297,14 @@ public class IndexManager {
 
                     //add the file index as a sortedField so that lucene can group by it
                     document.add(new SortedDocValuesField(
-                            "fileIndex",
-                            new BytesRef(ByteConverter.shortToByte(fileID)))
+                        "fileIndex",
+                        new BytesRef(ByteConverter.shortToByte(fileID)))
                     );
                     document.add(new SortedDocValuesField(
-                            "logLevel",
-                            new BytesRef(new byte[] {
-                                    logLevelIDManager.getKey(logEntry.getLogLevel())
-                            })
+                        "logLevel",
+                        new BytesRef(new byte[] {
+                            logEntry.getLogLevel().getId()
+                        })
                     ));
 
                     indexWriter.addDocument(document);
@@ -355,17 +354,6 @@ public class IndexManager {
         return logLevelIndexManager.getValue(fileID);
     }
     //----- LogLevelIndexManager -----//
-
-
-    //----- LogLevelIDManager -----//
-    public String getLogLevelName(byte logLevelID) {
-        return logLevelIDManager.getValue(logLevelID);
-    }
-
-    public byte getLogLevelID(String s) {
-        return logLevelIDManager.getKey(s);
-    }
-    //----- LogLevelIDManager -----//
 
 
     //----- ModuleIDManager -----//

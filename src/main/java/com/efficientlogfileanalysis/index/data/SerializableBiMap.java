@@ -1,8 +1,6 @@
-package com.efficientlogfileanalysis.data;
+package com.efficientlogfileanalysis.index.data;
 
-import com.efficientlogfileanalysis.data.BiMap;
 import com.efficientlogfileanalysis.data.Tuple;
-import com.efficientlogfileanalysis.log.I_TypeConverter;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -44,7 +42,7 @@ public class SerializableBiMap<K, V> extends BiMap<K, V> {
     /**
      * Reads the index from a file and puts it into the values HashMap.
      * @param file A RandomAccessFile containing an index
-     * @throws IOException
+     * @throws IOException if the file can't be read from
      */
     public void readIndex(RandomAccessFile file) throws IOException
     {
@@ -81,7 +79,7 @@ public class SerializableBiMap<K, V> extends BiMap<K, V> {
     /**
      * Writes the Index to a RandomAccessFile with a binary format. Serialization is done by the TypeConverter class. 
      * @param file A RandomAccessFile the index is being written to
-     * @throws IOException
+     * @throws IOException if the file can't be written to
      */
     public void writeIndex(RandomAccessFile file) throws IOException
     {
@@ -105,7 +103,7 @@ public class SerializableBiMap<K, V> extends BiMap<K, V> {
 
     @Override
     public String toString() {
-        StringBuilder output = new StringBuilder("");
+        StringBuilder output = new StringBuilder();
 
         for(K key : getKeySet())
         {

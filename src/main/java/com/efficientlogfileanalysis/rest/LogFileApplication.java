@@ -1,6 +1,6 @@
 package com.efficientlogfileanalysis.rest;
 
-import com.efficientlogfileanalysis.log.IndexManager;
+import com.efficientlogfileanalysis.index.IndexManager;
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
 import jakarta.servlet.annotation.WebListener;

@@ -1,13 +1,14 @@
 package com.efficientlogfileanalysis.rest;
 
-import com.efficientlogfileanalysis.data.LogEntry;
+import com.efficientlogfileanalysis.logs.data.LogEntry;
+import com.efficientlogfileanalysis.logs.data.LogLevel;
 import com.efficientlogfileanalysis.data.Settings;
 import com.efficientlogfileanalysis.data.Tuple;
-import com.efficientlogfileanalysis.data.search.Filter;
-import com.efficientlogfileanalysis.data.search.SearchEntry;
-import com.efficientlogfileanalysis.log.LogReader;
-import com.efficientlogfileanalysis.log.IndexManager;
-import com.efficientlogfileanalysis.log.Search;
+import com.efficientlogfileanalysis.luceneSearch.data.Filter;
+import com.efficientlogfileanalysis.luceneSearch.data.FilterData;
+import com.efficientlogfileanalysis.logs.LogReader;
+import com.efficientlogfileanalysis.index.IndexManager;
+import com.efficientlogfileanalysis.luceneSearch.Search;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Response;
 import lombok.AllArgsConstructor;
@@ -23,83 +24,6 @@ import java.util.List;
 public class SearchResource {
 
     @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class FilterData
-    {
-        private Long beginDate;
-        private Long endDate;
-        private List<String> logLevels;
-        private String module;
-        private String className;
-        private String exception;
-        private String message;
-    }
-
-    public static Filter parseFilterData(FilterData filterData)
-    {
-        Filter.FilterBuilder filterBuilder = Filter.builder();
-
-        if(filterData.beginDate != null)
-        {
-            filterBuilder.beginDate(filterData.beginDate);
-        }
-
-        if(filterData.endDate != null)
-        {
-            filterBuilder.endDate(filterData.endDate);
-        }
-
-        //filterData.logLevels.stream().map(LogLevelIDManager.getInstance()::get).forEach(filterBuilder::addLogLevel);
-        filterData.logLevels.stream().map(IndexManager.getInstance()::getLogLevelID).forEach(filterBuilder::addLogLevel);
-
-
-        if(filterData.module != null)
-        {
-            filterBuilder.module(filterData.module);
-        }
-
-        if(filterData.className != null)
-        {
-            filterBuilder.className(filterData.className);
-        }
-
-        if(filterData.exception != null)
-        {
-            filterBuilder.exception(filterData.exception);
-        }
-
-        if(filterData.message != null && !filterData.message.isEmpty())
-        {
-            filterBuilder.message(filterData.message);
-        }
-
-        return filterBuilder.build();
-    }
-
-//    @Deprecated
-//    @POST
-//    @Path("/filter")
-//    @Produces("application/json")
-//    public Response filteredSearch(FilterData filterData)
-//    {
-//        Filter filter = parseFilterData(filterData);
-//
-//        try (Search search = new Search())
-//        {
-//            List<SearchEntry> result = search.search(filter);
-//
-//            return Response.ok(result).build();
-//        }
-//        catch (IOException e)
-//        {
-//            e.printStackTrace();
-//            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
-//        }
-//    }
-
-
-    @Data
     @AllArgsConstructor
     @NoArgsConstructor
     public static class FileData
@@ -107,9 +31,9 @@ public class SearchResource {
         private long firstDate = 0;
         private long lastDate = Long.MAX_VALUE;
         private String filename = null;
-        private List<String> logLevels = new ArrayList<>();
+        private List<LogLevel> logLevels = new ArrayList<>();
 
-        public void addLogLevel(String logLevel) {
+        public void addLogLevel(LogLevel logLevel) {
             logLevels.add(logLevel);
         }
     }
@@ -124,7 +48,7 @@ public class SearchResource {
     @Produces("application/json")
     public Response searchForFiles(FilterData filterData)
     {
-        Filter filter = parseFilterData(filterData);
+        Filter filter = filterData.parse();
 
         try (Search search = new Search())
         {
@@ -140,7 +64,7 @@ public class SearchResource {
                 fileData.setLastDate(mgr.getLogFileDateRange(fileID).endDate);
 
                 for(byte logLevelID : mgr.getLogLevelsOfFile(fileID)) {
-                    fileData.addLogLevel(mgr.getLogLevelName(logLevelID));
+                    fileData.addLogLevel(LogLevel.fromID(logLevelID));
                 }
 
                 fileData.setFilename(mgr.getFileName(fileID));
@@ -168,7 +92,7 @@ public class SearchResource {
     public Response searchInFile(FilterData filterData, @PathParam("fileName") String fileName)
     {
         //parse filter data
-        Filter filter = parseFilterData(filterData);
+        Filter filter = filterData.parse();
 
         //add the fileID to the filter
         short fileID = IndexManager.getInstance().getFileID(fileName);
@@ -244,7 +168,7 @@ public class SearchResource {
         ScoreDoc lastSearchEntry = lastSearchData == null ? null : new ScoreDoc(lastSearchData.docNumber, lastSearchData.docScore);
 
         //Get the ID of the requested file
-        Filter filter = parseFilterData(pageRequestData.filterData);
+        Filter filter = pageRequestData.filterData.parse();
         short fileID = IndexManager.getInstance().getFileID(fileName);
 
         filter.setFileID(fileID);

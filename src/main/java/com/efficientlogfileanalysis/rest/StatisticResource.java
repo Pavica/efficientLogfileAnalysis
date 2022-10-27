@@ -1,8 +1,10 @@
 package com.efficientlogfileanalysis.rest;
 
-import com.efficientlogfileanalysis.data.LogEntry;
-import com.efficientlogfileanalysis.data.search.Filter;
-import com.efficientlogfileanalysis.log.Search;
+import com.efficientlogfileanalysis.logs.data.LogLevel;
+import com.efficientlogfileanalysis.luceneSearch.data.Filter;
+import com.efficientlogfileanalysis.luceneSearch.data.FilterData;
+import com.efficientlogfileanalysis.luceneSearch.Search;
+import com.efficientlogfileanalysis.util.DateConverter;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
@@ -40,7 +42,7 @@ public class StatisticResource {
     private List<LocalDateTime> endOfIntervalsList = new ArrayList<>();
 
     /** contains all relevant data for the statistics */
-    private List<HashMap<String, Integer>> statisticsData = new ArrayList<>();
+    private List<HashMap<LogLevel, Integer>> statisticsData = new ArrayList<>();
 
     /** map containing timestamps for the multilineChart */
     private List<String> timeStampsList = new ArrayList<>();
@@ -58,11 +60,10 @@ public class StatisticResource {
      */
     public void setTimeSpan(long startDate, long endDate) {
 
-        this.startDate = LocalDateTime.ofInstant(Instant.ofEpochMilli(startDate), ZoneId.systemDefault());
-        this.endDate = LocalDateTime.ofInstant(Instant.ofEpochMilli(endDate), ZoneId.systemDefault());
+        this.startDate = DateConverter.toDateTime(startDate);
+        this.endDate = DateConverter.toDateTime(endDate);
 
-        gapTime = ChronoUnit.MILLIS.between(this.startDate, this.endDate);
-
+        gapTime = endDate - startDate;
         gapTime = gapTime / 12;
 
         endOfInterval = this.startDate;
@@ -101,26 +102,30 @@ public class StatisticResource {
     @POST
     @Path("/data")
     @Produces("application/json")
-    public Response sortedStatistics(SearchResource.FilterData filterData) throws IOException {
+    public Response sortedStatistics(FilterData filterData) {
 
-        Search search = new Search();
+        try ( Search search = new Search() )
+        {
+            Filter filter = filterData.parse();
 
-        Filter filter = SearchResource.parseFilterData(filterData);
+            setTimeSpan(filter.getBeginDate(), filter.getEndDate());
 
-        setTimeSpan(filter.getBeginDate(), filter.getEndDate());
+            for(int i = 0 ; i < 12 ; i++){
+                filter.setEndDate(DateConverter.toLong(endOfIntervalsList.get(i)));
+                filter.setBeginDate(DateConverter.toLong(endOfIntervalsList.get(i).minus(Duration.of(gapTime, ChronoUnit.MILLIS))));
+                HashMap<LogLevel, Integer> map = search.getLogLevelCount(filter);
 
-        for(int i = 0 ; i < 12 ; i++){
-            filter.setEndDate(LogEntry.toLong(endOfIntervalsList.get(i)));
-            filter.setBeginDate(LogEntry.toLong(endOfIntervalsList.get(i).minus(Duration.of(gapTime, ChronoUnit.MILLIS))));
-            HashMap<String, Integer> map = search.getLogLevelCount(filter);
+                statisticsData.add(map);
+            }
 
-            statisticsData.add(map);
+            list.add(statisticsData);
+            list.add(timeStampsList);
+
+            return Response.ok(list).build();
         }
-
-        list.add(statisticsData);
-        list.add(timeStampsList);
-
-        return Response.ok(list).build();
-
+        catch (IOException e)
+        {
+            return Response.serverError().build();
+        }
     }
 }

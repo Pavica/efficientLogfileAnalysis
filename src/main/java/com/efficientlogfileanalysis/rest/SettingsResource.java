@@ -1,7 +1,7 @@
 package com.efficientlogfileanalysis.rest;
 
 import com.efficientlogfileanalysis.data.Settings;
-import com.efficientlogfileanalysis.log.IndexManager;
+import com.efficientlogfileanalysis.index.IndexManager;
 
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.PUT;
@@ -14,6 +14,12 @@ import java.io.IOException;
 @Path("/settings")
 public class SettingsResource {
 
+    /**
+     * Returns the path to the LogFile folder
+     * @return
+     *      200 - OK -> The path was successfully retrieved
+     *      500 - INTERNAL_SERVER_ERROR -> The path could not be read
+     */
     @GET
     @Path("/path")
     public Response getPath()
@@ -29,6 +35,14 @@ public class SettingsResource {
         }
     }
 
+    /**
+     * Sets the path to the LogFile folder and initiates Indexation
+     * @param newPath the new path of the LogFile folder
+     * @return
+     *      200 - OK -> If the path has successfully been set
+     *      400 - BAD_REQUEST -> If the Folder doesn't exist or the path is invalid
+     *      500 - INTERNAL_SERVER_ERROR -> The Path couldn't be set or the Index worker couldn't be started
+     */
     @PUT
     @Path("/path")
     public Response setPath(String newPath)

@@ -1,9 +1,11 @@
 package com.efficientlogfileanalysis.test;
 
-import com.efficientlogfileanalysis.log.LogReader;
-import com.efficientlogfileanalysis.log.IndexManager;
-import com.efficientlogfileanalysis.data.LogEntry;
+import com.efficientlogfileanalysis.logs.data.LogEntry;
+import com.efficientlogfileanalysis.logs.data.LogLevel;
+import com.efficientlogfileanalysis.logs.LogReader;
+import com.efficientlogfileanalysis.index.IndexManager;
 import com.efficientlogfileanalysis.data.Settings;
+import com.efficientlogfileanalysis.util.Timer;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.LongPoint;
@@ -84,7 +86,7 @@ public class ReadIndex {
 
                 LogEntry result = new LogEntry(
                     0,
-                    value.getField("logLevel").stringValue(),
+                    LogLevel.valueOf(value.getField("logLevel").stringValue()),
                     value.getField("module").stringValue(),
                     value.getField("classname").stringValue(),
                     value.getField("message").stringValue(),
@@ -99,7 +101,7 @@ public class ReadIndex {
                             result.getEntryID()
                         ).retrieveDateAsLocalDateTime()
                     );
-                };
+                }
 
                 //System.out.println(mgr.get(Short.parseShort(value.getField("fileIndex").stringValue())));
                 System.out.println(mgr.getFileName(Short.parseShort(value.getField("fileIndex").stringValue())));
@@ -107,7 +109,7 @@ public class ReadIndex {
             }
 
         } catch (IOException ioe) {
-            System.out.println(ioe.toString());
+            System.out.println(ioe);
         }
 
         System.out.println("Time elapsed: " + timer.time() + "ms");

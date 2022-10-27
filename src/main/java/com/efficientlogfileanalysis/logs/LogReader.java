@@ -1,20 +1,22 @@
-package com.efficientlogfileanalysis.log;
+package com.efficientlogfileanalysis.logs;
 
-import com.efficientlogfileanalysis.data.LogEntry;
-import com.efficientlogfileanalysis.data.LogFile;
+import com.efficientlogfileanalysis.index.IndexManager;
 import com.efficientlogfileanalysis.data.Settings;
-import com.efficientlogfileanalysis.test.Timer;
+import com.efficientlogfileanalysis.logs.data.LogEntry;
+import com.efficientlogfileanalysis.logs.data.LogFile;
+import com.efficientlogfileanalysis.logs.data.LogLevel;
+import com.efficientlogfileanalysis.util.Timer;
+import com.efficientlogfileanalysis.util.DateConverter;
 import lombok.SneakyThrows;
 
 import java.io.*;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * A class with methods for reading informations out of logfiles.
+ * A class with methods for reading information out of logfiles.
  * @author Andreas Kurz, Jan Mandl
  */
 public class LogReader implements Closeable {
@@ -184,7 +186,7 @@ public class LogReader implements Closeable {
 
         //Read the log level
         file.readFully(bytes, 0, 7);
-        logEntry.setLogLevel(new String(bytes, 0, 7).trim());
+        logEntry.setLogLevel(LogLevel.valueOf(new String(bytes, 0, 7).trim()));
 
         //--- Read the module ---//
         //skip the first square bracket
@@ -262,10 +264,12 @@ public class LogReader implements Closeable {
         byte[] bytes = new byte[24];
         file.read(bytes);
 
-        long milliseconds = LocalDateTime.parse(
-            new String(bytes),
-            LogEntry.DTF
-        ).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+        long milliseconds = DateConverter.toLong(
+            LocalDateTime.parse(
+                new String(bytes),
+                LogEntry.DTF
+            )
+        );
 
         return milliseconds;
     }
@@ -278,7 +282,7 @@ public class LogReader implements Closeable {
      * @return The log level of the entry as a String object
      * @throws IOException if the log directory can't be accessed
      */
-    public String readLogLevelOfEntry(String path, short fileIndex, long logEntryID) throws IOException {
+    public LogLevel readLogLevelOfEntry(String path, short fileIndex, long logEntryID) throws IOException {
         prepareFile(path, fileIndex);
         
         RandomAccessFile file = openFiles.get(fileIndex);
@@ -287,7 +291,7 @@ public class LogReader implements Closeable {
         file.seek(logEntryID + 24);
         file.read(bytes);
 
-        return new String(bytes).trim();
+        return LogLevel.valueOf(new String(bytes).trim());
     }
 
     @SneakyThrows
@@ -308,7 +312,7 @@ public class LogReader implements Closeable {
 
         LogReader reader = new LogReader();
 
-        System.out.println(reader.readLogEntryWithoutMessage(Settings.getInstance().getLogFilePath(), (short) 0, 142_566l));
+        System.out.println(reader.readLogEntryWithoutMessage(Settings.getInstance().getLogFilePath(), (short) 0, 142_566L));
 
         Timer timer = new Timer();
 
@@ -319,7 +323,7 @@ public class LogReader implements Closeable {
         Timer.Time time = timer.timeExecutionSpeed(() -> {
             try
             {
-                reader.getLogEntry(path, fileID, 0l);
+                reader.getLogEntry(path, fileID, 0L);
             }
             catch (IOException e) {
                 throw new RuntimeException(e);

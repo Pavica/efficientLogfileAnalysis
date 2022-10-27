@@ -1,6 +1,5 @@
-package com.efficientlogfileanalysis.log;
+package com.efficientlogfileanalysis.index.data;
 
-import com.efficientlogfileanalysis.data.TimeRange;
 import com.efficientlogfileanalysis.data.Tuple;
 
 import java.io.IOException;
@@ -33,7 +32,7 @@ public interface I_TypeConverter<T>{
 
     static<T> I_TypeConverter<List<T>> listConverter(I_TypeConverter<T> typeConverter){
         return new ListTypeConverter(typeConverter);
-    };
+    }
 
     class ListTypeConverter<T> implements I_TypeConverter<List<T>>
     {

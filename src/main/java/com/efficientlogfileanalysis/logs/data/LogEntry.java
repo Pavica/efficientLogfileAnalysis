@@ -1,14 +1,12 @@
-package com.efficientlogfileanalysis.data;
+package com.efficientlogfileanalysis.logs.data;
 
-import com.efficientlogfileanalysis.log.LogReader;
-import com.efficientlogfileanalysis.test.Timer;
+import com.efficientlogfileanalysis.logs.LogReader;
+import com.efficientlogfileanalysis.util.DateConverter;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.regex.*;
@@ -34,7 +32,7 @@ public class LogEntry
      * The time the message was logged in miliseconds
      */
     private long time;
-    private String logLevel;
+    private LogLevel logLevel;
     /**
      * The value between a pair of []
      */
@@ -51,11 +49,21 @@ public class LogEntry
      * The nth byte at which position the log entry starts in the file
      */
     private long entryID;
-    
+
+    public LogEntry(String time, LogLevel logLevel, String module, String className, String message, long entryID)
+    {
+        setDateFromString(time);
+        this.logLevel = logLevel;
+        this.module = module;
+        this.className = className;
+        this.message = message;
+        this.entryID = entryID;
+    }
+
     public LogEntry(String logEntry)
     {
         setDateFromString(logEntry.substring(0, 24));
-        this.logLevel = logEntry.substring(24, 31).trim();
+        this.logLevel = LogLevel.valueOf(logEntry.substring(24, 31).trim());
 
         int indexOfClosedParenthesis = logEntry.indexOf("]", 32);
         this.module = logEntry.substring(32, indexOfClosedParenthesis);
@@ -69,46 +77,6 @@ public class LogEntry
     {
         this(logEntry);
         this.entryID = entryID;
-    }
-
-    public LogEntry(String time, String logLevel, String module, String className, String message, long entryID)
-    {
-        setDateFromString(time);
-        this.logLevel = logLevel;
-        this.module = module;
-        this.className = className;
-        this.message = message;
-        this.entryID = entryID;
-    }
-
-    /**
-     * Convenience function. Converts date an time to a long value in milliseconds.
-     * @return The current date and time in miliseconds with precision of seconds.
-     */
-    public static long toLong(LocalDateTime ldt) {
-        LocalDateTime time = LocalDateTime.of(
-            ldt.getYear(),
-            ldt.getMonth(),
-            ldt.getDayOfMonth(),
-            ldt.getHour(),
-            ldt.getMinute(),
-            ldt.getSecond()
-        );
-        return time.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
-    }
-
-    public void setDateFromString(String time)
-    {
-        this.time = LocalDateTime.parse(time, DTF).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
-    }
-
-    public void setDateAsLocalDateTime(LocalDateTime ldt) {
-        this.time = LogEntry.toLong(ldt);
-    }
-
-    public LocalDateTime retrieveDateAsLocalDateTime()
-    {
-        return LocalDateTime.ofInstant(Instant.ofEpochMilli(time), ZoneId.systemDefault());
     }
 
     /**
@@ -128,6 +96,20 @@ public class LogEntry
         }
 
         return Optional.empty();
+    }
+
+    public void setDateFromString(String time)
+    {
+        this.time = DateConverter.toLong(LocalDateTime.parse(time, DTF));
+    }
+
+    public void setDateAsLocalDateTime(LocalDateTime ldt) {
+        this.time = DateConverter.toLong(ldt);
+    }
+
+    public LocalDateTime retrieveDateAsLocalDateTime()
+    {
+        return DateConverter.toDateTime(time);
     }
 
     @Override

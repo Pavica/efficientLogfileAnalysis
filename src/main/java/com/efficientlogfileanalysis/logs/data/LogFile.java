@@ -1,7 +1,6 @@
-package com.efficientlogfileanalysis.data;
+package com.efficientlogfileanalysis.logs.data;
 
 import lombok.Data;
-import lombok.ToString;
 
 import java.util.ArrayList;
 import java.util.List;
