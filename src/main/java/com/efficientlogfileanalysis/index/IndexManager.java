@@ -174,14 +174,14 @@ public class IndexManager {
         private IndexWriter indexWriter;
 
         private ConcurrentQueue<IndexCreatorTask> tasks = new ConcurrentQueue<>();
-        private Thread fileChangeChecker;
+        private DirectoryWatcher fileChangeChecker;
 
         private boolean directoryChanged = true;
         private boolean shutdown = false;
 
         public void run()
         {
-            fileChangeChecker = new Thread(this::checkForFileChanges);
+            fileChangeChecker = new DirectoryWatcher(Settings.getInstance().getLogFilePath(), tasks::push);
             fileChangeChecker.start();
 
             while(true)
@@ -234,8 +234,7 @@ public class IndexManager {
             }
         }
 
-        public void prepareIndexing() throws IOException
-        {
+        public void prepareIndexing() throws IOException {
             //Open the index directory (creates the directory if it doesn't exist)
             indexDirectory = FSDirectory.open(IndexManager.PATH_TO_INDEX.resolve("lucene"));
 
@@ -257,6 +256,14 @@ public class IndexManager {
             indexDirectory.close();
         }
 
+        private void fileCreated(String filename) throws IOException, InterruptedException {
+            updateFile(filename);
+        }
+
+        private void fileChanged(String filename) throws IOException, InterruptedException {
+            updateFile(filename);
+        }
+
         public void redoIndex()
         {
             directoryChanged = true;
@@ -271,21 +278,22 @@ public class IndexManager {
 
         private void createNewIndex()
         {
+//            try(LuceneIndexCreator indexCreator = new LuceneIndexCreator())
             try
             {
                 deleteIndex();
                 prepareIndexing();
 
-                System.out.println("I WILL KILL HIM");
-                fileChangeChecker.interrupt();
-                fileChangeChecker = new Thread(this::checkForFileChanges);
-                fileChangeChecker.start();
+                fileChangeChecker = fileChangeChecker.switchDirectory(
+                    Settings.getInstance().getLogFilePath()
+                );
 
                 String logFolder = Settings.getInstance().getLogFilePath();
                 File[] files = new File(logFolder).listFiles();
 
                 for(File file : files)
                 {
+//                    indexSingleLogFile(indexCreator, file.getName());
                     indexSingleLogFile(file.getName());
 
                     if(directoryChanged){
@@ -303,41 +311,38 @@ public class IndexManager {
             }
         }
 
-        private void fileCreated(String filename) throws IOException, InterruptedException {
-            updateFile(filename);
-        }
-
-        private void fileChanged(String filename) throws IOException, InterruptedException {
-            updateFile(filename);
-        }
-
         private void updateFile(String filename) throws IOException, InterruptedException
         {
             prepareIndexing();
             File file = new File(Settings.getInstance().getLogFilePath() + File.separator + filename);
 
-            boolean shouldRetry = true;
-            while(shouldRetry)
-            {
-                try
+//            try(LuceneIndexCreator indexCreator = new LuceneIndexCreator())
+//            {
+                boolean shouldRetry = true;
+                while(shouldRetry)
                 {
-                    indexSingleLogFile(filename);
-                    shouldRetry = false;
-
-                    if(!file.exists()){
+                    try
+                    {
+//                        indexSingleLogFile(indexCreator, filename);
+                        indexSingleLogFile(filename);
                         shouldRetry = false;
+
+                        if(!file.exists()){
+                            shouldRetry = false;
+                        }
+                    }
+                    catch(FileSystemException ex) {
+                        System.out.println("File is currently being read by another process\nRetrying in 250ms");
+                        Thread.sleep(100);
                     }
                 }
-                catch(FileSystemException ex) {
-                    System.out.println("File is currently being read by another process\nRetrying in 250ms");
-                    Thread.sleep(100);
-                }
-            }
+//            }
 
             saveIndices();
             closeIndexing();
         }
 
+//        private void indexSingleLogFile(LuceneIndexCreator indexCreator, String filename) throws IOException
         private void indexSingleLogFile(String filename) throws IOException
         {
             //add the file id to the index
@@ -373,6 +378,7 @@ public class IndexManager {
             );
 
             for(LogEntry logEntry : fileData.getEntries()) {
+//                indexLogEntry(indexCreator, logEntry, fileID);
                 indexLogEntry(logEntry, fileID);
 
                 if(this.directoryChanged){
@@ -381,6 +387,7 @@ public class IndexManager {
             }
         }
 
+//        private void indexLogEntry(LuceneIndexCreator indexCreator, LogEntry logEntry, short fileID) throws IOException
         private void indexLogEntry(LogEntry logEntry, short fileID) throws IOException
         {
             Document document = new Document();
@@ -430,59 +437,8 @@ public class IndexManager {
                 })
             ));
 
+//            indexCreator.getIndexWriter().addDocument(document);
             indexWriter.addDocument(document);
-        }
-
-        public void checkForFileChanges()
-        {
-            String path = Settings.getInstance().getLogFilePath();
-            WatchService watchService;
-
-            try
-            {
-                watchService = FileSystems.getDefault().newWatchService();
-                Paths.get(Settings.getInstance().getLogFilePath()).register(watchService,
-                        StandardWatchEventKinds.ENTRY_CREATE,
-                        StandardWatchEventKinds.ENTRY_MODIFY,
-                        StandardWatchEventKinds.ENTRY_DELETE
-                );
-            }
-            catch (IOException ioException)
-            {
-                System.out.println("Files could not be watched!");
-                return;
-            }
-
-            try
-            {
-                while (!Thread.currentThread().isInterrupted())
-                {
-                    WatchKey key = watchService.take();
-
-                    for (WatchEvent event : key.pollEvents())
-                    {
-                        if (event.kind() == StandardWatchEventKinds.OVERFLOW) {
-                            System.out.println("Overflow");
-                            continue;
-                        }
-
-                        Path fileName = (Path) event.context();
-                        File file = Paths.get(path).resolve(fileName).toFile();
-
-                        tasks.push(new IndexCreatorTask(
-                            file.getName(),
-                            event.kind() == StandardWatchEventKinds.ENTRY_CREATE ? IndexCreatorTask.TaskType.FILE_CREATED :
-                            event.kind() == StandardWatchEventKinds.ENTRY_MODIFY ? IndexCreatorTask.TaskType.FILE_APPENDED :
-                            IndexCreatorTask.TaskType.FILE_DELETED
-                        ));
-                    }
-                    key.reset();
-                }
-            }
-            catch (Exception interruptedException) {
-                System.out.println("I died");
-                interruptedException.printStackTrace();
-            }
         }
     }
 
