@@ -1,5 +1,6 @@
 package com.efficientlogfileanalysis.logs;
 
+import com.efficientlogfileanalysis.data.Settings;
 import com.efficientlogfileanalysis.index.IndexManager;
 import com.efficientlogfileanalysis.logs.data.LogEntry;
 import com.efficientlogfileanalysis.logs.data.LogFile;
@@ -27,6 +28,19 @@ public class LogReader implements Closeable {
 
     private static final String REGEX_START_OF_LOG_ENTRY = "^\\d{2} \\w{3} \\d{4}[\\s\\S]*";
 
+    public static File[] getAllLogFiles(String logFolder)
+    {
+        File[] files = new File(logFolder).listFiles(
+            name -> name.isFile() && name.getName().endsWith(".log")
+        );
+
+        if(files == null){
+            return new File[0];
+        }
+
+        return files;
+    }
+
     /**
      * Reads all the files in a directory into a Logfile array.
      * @param path The path to the folder
@@ -35,13 +49,7 @@ public class LogReader implements Closeable {
     @SneakyThrows
     public static LogFile[] readAllLogFiles(String path)
     {
-        File[] files = new File(path).listFiles();
-
-        if(files == null){
-            return new LogFile[0];
-        }
-
-        return Arrays.stream(files)
+        return Arrays.stream(getAllLogFiles(path))
                 .map(file -> new LogFile(file.getName(), readSingleFile(file.getAbsolutePath()).getEntries()))
                 .toArray(LogFile[]::new);
     }

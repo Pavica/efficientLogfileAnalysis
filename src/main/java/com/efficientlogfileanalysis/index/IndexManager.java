@@ -1,7 +1,6 @@
 package com.efficientlogfileanalysis.index;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.*;
@@ -14,13 +13,7 @@ import com.efficientlogfileanalysis.logs.LogReader;
 import com.efficientlogfileanalysis.logs.data.LogFileData;
 import com.efficientlogfileanalysis.util.ByteConverter;
 import lombok.SneakyThrows;
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.*;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.BytesRef;
 
 public class IndexManager {
@@ -172,18 +165,26 @@ public class IndexManager {
         private DirectoryWatcher fileChangeChecker;
 
         private boolean directoryChanged = true;
-        private boolean shutdown = false;
+        private boolean interrupted = false;
 
         public void run()
         {
             fileChangeChecker = new DirectoryWatcher(Settings.getInstance().getLogFilePath(), tasks::push);
             fileChangeChecker.start();
 
-            while(true)
+            try
+            {
+                updateFile(Settings.getInstance().getLogFilePath());
+            }
+            catch (InterruptedException e) {interrupted = true;}
+            catch (IOException e) {e.printStackTrace();}
+
+            while(!interrupted || directoryChanged)
             {
                 try
                 {
                     while(directoryChanged){
+                        interrupted = false;
                         System.out.println("Recreating Index");
                         directoryChanged = false;
                         currentState = IndexState.INDEXING;
@@ -210,17 +211,13 @@ public class IndexManager {
                 }
                 catch (InterruptedException e) {
                     currentState = IndexState.INTERRUPTED;
+                    interrupted = true;
                 }
                 catch (IOException e){
                     //--- An error occurred --//
                     System.err.println("Everything died");
                     e.printStackTrace();
                     currentState = IndexState.ERROR;
-                    return;
-                }
-
-                if(shutdown){
-                    fileChangeChecker.interrupt();
                     return;
                 }
             }
@@ -244,8 +241,8 @@ public class IndexManager {
 
         public void shutdown()
         {
-            this.shutdown = true;
             this.interrupt();
+            fileChangeChecker.interrupt();
         }
 
         private void createNewIndex()
@@ -261,7 +258,7 @@ public class IndexManager {
                     );
 
                     String logFolder = Settings.getInstance().getLogFilePath();
-                    File[] files = new File(logFolder).listFiles();
+                    File[] files = LogReader.getAllLogFiles(Settings.getInstance().getLogFilePath());
 
                     for(File file : files)
                     {
@@ -281,9 +278,22 @@ public class IndexManager {
             }
         }
 
+        private void checkAllFilesForUpdates() throws IOException, InterruptedException
+        {
+            for(File file : LogReader.getAllLogFiles(Settings.getInstance().getLogFilePath()))
+            {
+                updateFile(file.getName());
+            }
+        }
+
         private void updateFile(String filename) throws IOException, InterruptedException
         {
             File file = new File(Settings.getInstance().getLogFilePath() + File.separator + filename);
+
+            //ignore all files that don't end in .log
+            if(!file.exists() || file.isDirectory() || !file.getName().endsWith(".log")){
+                return;
+            }
 
             try(LuceneIndexCreator indexCreator = new LuceneIndexCreator())
             {
