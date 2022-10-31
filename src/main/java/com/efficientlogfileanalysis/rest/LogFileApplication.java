@@ -14,18 +14,10 @@ import java.io.IOException;
 public class LogFileApplication extends Application implements ServletContextListener {
 
     public void contextInitialized(ServletContextEvent e) {
-        try
-        {
-            IndexManager.getInstance().readIndices();
-        }
-        catch (IOException ex)
-        {
-            //if the index is not present start to index the files
-            IndexManager.getInstance().startIndexCreationWorker();
-        }
+        //IndexManager.getInstance().startIndexCreationWorker();
     }
 
     public void contextDestroyed(ServletContextEvent e) {
-        System.out.println("Server stopped");
+        IndexManager.getInstance().stopIndexCreationWorker();
     }
 }

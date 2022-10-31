@@ -1,22 +1,23 @@
 package com.efficientlogfileanalysis.logs;
 
 import com.efficientlogfileanalysis.index.IndexManager;
-import com.efficientlogfileanalysis.data.Settings;
 import com.efficientlogfileanalysis.logs.data.LogEntry;
 import com.efficientlogfileanalysis.logs.data.LogFile;
+import com.efficientlogfileanalysis.logs.data.LogFileData;
 import com.efficientlogfileanalysis.logs.data.LogLevel;
-import com.efficientlogfileanalysis.util.Timer;
 import com.efficientlogfileanalysis.util.DateConverter;
 import lombok.SneakyThrows;
 
 import java.io.*;
+import java.nio.channels.FileChannel;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.time.format.DateTimeParseException;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static com.efficientlogfileanalysis.test.ReadFile.readLine;
 
 /**
  * A class with methods for reading information out of logfiles.
@@ -24,7 +25,7 @@ import java.util.regex.Pattern;
  */
 public class LogReader implements Closeable {
 
-    private static final String REGEX_START_OF_LOG_ENTRY = "^\\d{2} \\w{3} \\d{4}.*";
+    private static final String REGEX_START_OF_LOG_ENTRY = "^\\d{2} \\w{3} \\d{4}[\\s\\S]*";
 
     /**
      * Reads all the files in a directory into a Logfile array.
@@ -41,7 +42,7 @@ public class LogReader implements Closeable {
         }
 
         return Arrays.stream(files)
-                .map(file -> new LogFile(file.getName(), readSingleFile(file.getAbsolutePath())))
+                .map(file -> new LogFile(file.getName(), readSingleFile(file.getAbsolutePath()).getEntries()))
                 .toArray(LogFile[]::new);
     }
 
@@ -51,40 +52,69 @@ public class LogReader implements Closeable {
      * @return A list containing all Logentries
      */
     @SneakyThrows
-    public static List<LogEntry> readSingleFile(String path)
+    public static LogFileData readSingleFile(String path)
     {
-        Matcher startOfLogEntry = Pattern.compile(REGEX_START_OF_LOG_ENTRY).matcher("");
+        return readSingleFile(path, 0);
+    }
 
+    public static LogFileData readSingleFile(String path, long offset) throws IOException {
+        Matcher startOfLogEntry = Pattern.compile(REGEX_START_OF_LOG_ENTRY).matcher("");
         List<LogEntry> entries = new ArrayList<>();
 
-        try(BufferedReader br = new BufferedReader(new FileReader(path)))
-        {
-            String line;
-            String currentEntry = "";
-            long bytesRead = -1;
+        FileChannel fileChannel = FileChannel.open(Paths.get(path));
+        fileChannel.position(offset);
+        Scanner scanner = new Scanner(fileChannel);
+        scanner.useDelimiter("\n");
 
-            while (currentEntry != null) {
+        long bytesRead = offset;
 
-                line = br.readLine();
+        String line;
+        String currentEntry = "";
 
-                //if the current entry is empty or the line is part of it (does not start with a date) add it to the entry
-                if (line != null && (currentEntry.equals("") || !startOfLogEntry.reset(line).matches())) {
-                    currentEntry += line + "\n";
-                    continue;
-                }
+        while (currentEntry != null) {
 
-                LogEntry newLogEntry = new LogEntry(currentEntry, bytesRead == -1 ? 0 : bytesRead);
+            //read a single line
+            line = !scanner.hasNext() ? null : scanner.next() + "\n";
+
+            //skip empty lines
+            if(currentEntry.equals("") && line != null && (line.equals("\r\n") || line.equals("\n"))){
+                bytesRead += line.getBytes().length;
+                continue;
+            }
+
+            //if the current entry is empty or the line is part of it (does not start with a date) add it to the entry
+            if (line != null && (currentEntry.isEmpty() || !startOfLogEntry.reset(line).matches())) {
+                currentEntry += line;
+                continue;
+            }
+
+            try
+            {
+                //try to add the new entry
+                LogEntry newLogEntry = new LogEntry(currentEntry, bytesRead);
                 entries.add(newLogEntry);
 
-                //add a \n for the exact bytecount
-                currentEntry += "\n";
+                //add how many bytes have been read
                 bytesRead += currentEntry.getBytes().length;
 
+                //move on to the next line
                 currentEntry = line;
+            }
+            catch(IndexOutOfBoundsException | DateTimeParseException | NumberFormatException somethingWentWrong) {
+                //if the entry can't be passed stop reading the file
+                break;
             }
         }
 
-        return entries;
+        //check if bytes read got out of bounds
+        //happens if the last entry was missing a \n
+        if(bytesRead > fileChannel.size())
+        {
+            bytesRead = fileChannel.size();
+        }
+
+        scanner.close();
+        return new LogFileData(entries, bytesRead - offset);
     }
 
     private  Matcher startOfLogEntry;
@@ -310,40 +340,14 @@ public class LogReader implements Closeable {
     @SneakyThrows
     public static void main(String[] args) {
 
-//        List<String> result = new ArrayList<>();
-//        for(LogFile logFile : LogReader.readAllLogFiles("test_logs"))
-//        {
-//            logFile.getEntries().stream().map(LogEntry::getLogLevel).forEach(level -> {
-//                if(!result.contains(level))
-//                {
-//                    result.add(level);
-//                }
-//            });
-//        }
-//
-//        result.forEach(System.out::println);
+        LogFileData data = readSingleFile(
+                "C:\\Users\\AndiK\\OneDrive\\Dokumente\\HTL 5. Jahr\\Diplomarbeit\\efficientLogfileAnalysis\\test_logs_auto\\DesktopClient-DEGFF-N-0165.haribo.dom.log",
+                0L);
+        data.getEntries().forEach(entry -> System.out.println(entry.getEntryID() + " " + entry));
+        System.out.println("------------------");
+        System.out.println(data.getBytesRead());
 
-        LogReader reader = new LogReader();
-
-        System.out.println(reader.readLogEntryWithoutMessage(Settings.getInstance().getLogFilePath(), (short) 0, 142_566L));
-
-        Timer timer = new Timer();
-
-        //short fileID = FileIDManager.getInstance().get("DesktopClient-My-User-PC.mshome.net.log");
-        short fileID = IndexManager.getInstance().getFileID("DesktopClient-My-User-PC.mshome.net.log");
-        String path = Settings.getInstance().getLogFilePath();
-
-        Timer.Time time = timer.timeExecutionSpeed(() -> {
-            try
-            {
-                reader.getLogEntry(path, fileID, 0L);
-            }
-            catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }, 100_000);
-
-        System.out.println(time);
+        System.exit(0);
 
 
 //        ArrayList<LogEntry> sno = new ArrayList<>();

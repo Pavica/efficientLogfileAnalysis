@@ -386,6 +386,15 @@ public class Search implements Closeable {
         return getEntryIDsFromResult(hits);
     }
 
+    public List<LogEntry> searchForNearestLogEntries(short fileID, long entryID)
+    {
+        List<LogEntry> entries = null;
+
+//        searcher.
+        
+        return entries;
+    }
+
     public Tuple<List<Long>, ScoreDoc> searchForLogEntryIDsWithPagination(Filter filter, int maxEntryAmount, ScoreDoc offset) throws IOException
     {
         Query query = parseFilter(filter).build();

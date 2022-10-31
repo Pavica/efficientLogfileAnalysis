@@ -192,6 +192,7 @@ public class SearchResource {
             {
                 for(long entryID : result.value1)
                 {
+                    //get preceding log entries
                     logEntries.add(logReader.readLogEntryWithoutMessage(logPath, fileID, entryID));
                 }
             }
