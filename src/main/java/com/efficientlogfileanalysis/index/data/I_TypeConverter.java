@@ -4,8 +4,7 @@ import com.efficientlogfileanalysis.data.Tuple;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 /**
  * Interface that serializes the given type<br>
@@ -31,24 +30,35 @@ public interface I_TypeConverter<T>{
     int write(RandomAccessFile file, T value) throws IOException;
 
     static<T> I_TypeConverter<List<T>> listConverter(I_TypeConverter<T> typeConverter){
-        return new ListTypeConverter(typeConverter);
+        return new CollectionTypeConverter(typeConverter, ArrayList::new);
     }
 
-    class ListTypeConverter<T> implements I_TypeConverter<List<T>>
-    {
-        private I_TypeConverter<T> typeConverter;
+    static<T> I_TypeConverter<Set<T>> setConverter(I_TypeConverter<T> typeConverter){
+        return new CollectionTypeConverter(typeConverter, LinkedHashSet::new);
+    }
 
-        public ListTypeConverter(I_TypeConverter<T> typeConverter)
+    class CollectionTypeConverter<T, L extends Collection<T>> implements I_TypeConverter<L>
+    {
+        private interface CollectionCreator<L>
+        {
+            L createCollection(int expectedSize);
+        }
+
+        private I_TypeConverter<T> typeConverter;
+        private CollectionCreator<L> collectionCreator;
+
+        public CollectionTypeConverter(I_TypeConverter<T> typeConverter, CollectionCreator collectionCreator)
         {
             this.typeConverter = typeConverter;
+            this.collectionCreator = collectionCreator;
         }
 
         @Override
-        public Tuple<Integer, List<T>> read(RandomAccessFile file) throws IOException {
+        public Tuple<Integer, L> read(RandomAccessFile file) throws IOException {
             int lengthRead = 4;
             int listLength = file.readInt();
 
-            List<T> list = new ArrayList<>(listLength);
+            L list = collectionCreator.createCollection(listLength);
 
             for(int i = 0; i < listLength; i++)
             {
@@ -61,7 +71,7 @@ public interface I_TypeConverter<T>{
         }
 
         @Override
-        public int write(RandomAccessFile file, List<T> value) throws IOException {
+        public int write(RandomAccessFile file, L value) throws IOException {
             int lengthWritten = 4;
 
             file.writeInt(value.size());
@@ -74,6 +84,35 @@ public interface I_TypeConverter<T>{
             return lengthWritten;
         }
     }
+
+    /**
+     * Converter for Long objects.
+     */
+    I_TypeConverter<Long> LONG_TYPE_CONVERTER = new I_TypeConverter<Long>() {
+        /**
+         * Reads a Long object from a RandomAccessFile.
+         * @param file A RandomAccessFile that is going to be written to
+         * @return A Tuple object that with the amount of bytes read and a Long object
+         * @throws IOException
+         */
+        @Override
+        public Tuple<Integer, Long> read(RandomAccessFile file) throws IOException {
+            return new Tuple<>(8, file.readLong());
+        }
+
+        /**
+         * Writes a Long object into a given RandomAccessFile and returns the amount of bytes that were written.
+         * @param file A RandomAccessFile that is going to be written to
+         * @param value The Long object that is written to the file
+         * @return The amount of bytes that were written to the file
+         * @throws IOException
+         */
+        @Override
+        public int write(RandomAccessFile file, Long value) throws IOException {
+            file.writeLong(value);
+            return 2;
+        }
+    };
 
     /**
      * Converter for Integer objects.

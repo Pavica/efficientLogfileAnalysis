@@ -40,8 +40,6 @@ async function setPath(path)
         return false;
     }
 
-    initIndexToast();
-
     return true;
 }
 

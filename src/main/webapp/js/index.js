@@ -20,6 +20,7 @@ function loadDocument(){
     });
 
     loadFirstTextIntoFields();
+
     initIndexToast();
 
     //Inputs
@@ -47,6 +48,10 @@ function initializeDatePickers(){
 }
 
 async function fillDataLists(){
+    $("#datalistOptionsModul").empty();
+    $("#datalistOptionsClass").empty();
+    $("#datalistOptionsException").empty();
+
     let modules = await loadModules();
     $.each(modules, function(i, item) {
         $("#datalistOptionsModul").append($("<option>").attr('value', item));
@@ -65,49 +70,63 @@ async function initIndexToast() {
 
     let state = "NOT_READY";
 
-    while (state != "READY") {
+    while (true) {
+        try
+        {
+            let response = await fetch("api/state/updates", {
+                method : "POST",
+                headers : {
+                    "content-type" : "application/json"
+                },
+                body : JSON.stringify(
+                    state
+                )
+            });
 
-        console.log("test")
+            if(!response.ok){
+                throw "Server is unreachable";
+            }
 
-        await delay(500);
-
-        try{
-            let response = await fetch("api/state");
             state = await response.text();
-        }catch(e){
+            displayState(state);
+        }
+        catch(e){
             setToast("Connection lost!", "Lost connection to server", "Please check the connection.", "#c32232", "bg-danger", true);
+            await delay(1000);
         }
+    }
+}
 
-        switch (state) {
-            case "INDEXING":
-                setToast("Indexing!", "Index is currently being updated!", "Please wait about 10 seconds.", "#ffc240", "bg-warning", false);
-                break;
-
-            case "ERROR":
-                setToast("Error!", "Index could not be updated!", "Please try again.", "#c32232", "bg-danger", true);
-                break;
-
-            case "INTERRUPTED":
-                setToast("Interrupted!", "Indexing was interrupted!", "Please restart.", "#c32232", "bg-danger", true);
-                break;
-            case "READY":
-
-                setToast("Ready!", "Index is ready!", "You may continue working.", "forestgreen", "bg-success", true);
-                break;
-        }
-        if(state == "INTERRUPTED" || state == "ERROR")
+function displayState(state)
+{
+    switch (state) {
+        case "INDEXING":
+            setToast("Indexing!", "Index is currently being updated!", "Please wait about 10 seconds.", "#ffc240", "bg-warning", false);
+            fillDataLists();
             break;
 
-        let toastElementList = 0;
-        let toastList = 0;
+        case "ERROR":
+            setToast("Error!", "Index could not be updated!", "Please try again.", "#c32232", "bg-danger", true);
+            break;
 
-        toastElementList = [].slice.call(document.querySelectorAll(".toast"));
-        toastList = toastElementList.map(function (element) {
-            return new bootstrap.Toast(element, {
-                autohide: true
-            });
-        });
+        case "INTERRUPTED":
+            setToast("Interrupted!", "Indexing was interrupted!", "Please restart.", "#c32232", "bg-danger", true);
+            break;
+
+        case "READY":
+            setToast("Ready!", "Index is ready!", "You may continue working.", "forestgreen", "bg-success", true);
+            break;
     }
+
+    let toastElementList = 0;
+    let toastList = 0;
+
+    toastElementList = [].slice.call(document.querySelectorAll(".toast"));
+    toastList = toastElementList.map(function (element) {
+        return new bootstrap.Toast(element, {
+            autohide: true
+        });
+    });
 }
 
 function setToast(header, text1, text2, n_background, h_background, x){
