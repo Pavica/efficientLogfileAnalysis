@@ -1,6 +1,5 @@
 package com.efficientlogfileanalysis.logs;
 
-import com.efficientlogfileanalysis.data.Settings;
 import com.efficientlogfileanalysis.index.IndexManager;
 import com.efficientlogfileanalysis.logs.data.LogEntry;
 import com.efficientlogfileanalysis.logs.data.LogFile;
@@ -12,6 +11,7 @@ import lombok.SneakyThrows;
 import java.io.*;
 import java.nio.channels.FileChannel;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -322,7 +322,7 @@ public class LogReader implements Closeable {
         RandomAccessFile file = prepareRandomAccessFile(path, fileID, logEntryID);
 
         long startPosition = logEntryID - byteRange;
-        long maxPosition = file.getFilePointer() + byteRange;
+        long maxPosition = logEntryID + byteRange;
         if(startPosition < 0) {
             startPosition = 0;
         }
@@ -353,6 +353,10 @@ public class LogReader implements Closeable {
             }
             entries.add(new LogEntry(entry, entryID));
         }while(file.getFilePointer() < maxPosition);
+
+        if(currentLine != null && !currentLine.isEmpty() && nextEntryID < maxPosition){
+            entries.add(new LogEntry(currentLine, nextEntryID));
+        }
 
         return entries;
     }
