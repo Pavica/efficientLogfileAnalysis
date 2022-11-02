@@ -443,7 +443,9 @@ async function displayFileLogEntries(filename){
 
         removeEntryIdOnModalExit();
 
-        //centers the pagination within the column
-        $("ul").addClass( 'justify-content-center');
+        table.on( 'draw.dt page.dt', function ( e, dt, type, indexes ) {
+            //centers the pagination within the column
+            $("ul").addClass( 'justify-content-center');
+        });
     }
 }
