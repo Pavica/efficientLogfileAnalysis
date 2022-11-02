@@ -2,65 +2,38 @@ package com.efficientlogfileanalysis.index;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.Optional;
-import java.util.Random;
-import java.util.Set;
+import java.nio.file.*;
+import java.util.*;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import com.efficientlogfileanalysis.data.ConcurrentQueue;
 import com.efficientlogfileanalysis.data.Settings;
-import com.efficientlogfileanalysis.index.data.TimeRange;
-import com.efficientlogfileanalysis.index.data.BiMap;
-import com.efficientlogfileanalysis.index.data.I_TypeConverter;
-import com.efficientlogfileanalysis.index.data.SerializableBiMap;
+import com.efficientlogfileanalysis.index.data.*;
 import com.efficientlogfileanalysis.logs.data.LogEntry;
-import com.efficientlogfileanalysis.logs.data.LogFile;
 import com.efficientlogfileanalysis.logs.LogReader;
-import com.efficientlogfileanalysis.luceneSearch.Search;
-import com.efficientlogfileanalysis.util.Timer;
+import com.efficientlogfileanalysis.logs.data.LogFileData;
 import com.efficientlogfileanalysis.util.ByteConverter;
 import lombok.SneakyThrows;
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.*;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.BytesRef;
 
 public class IndexManager {
-    private enum IndexState {
-        // index creation wasn't started yet or interrupted
-        NOT_READY,
-        // the index is ready for use
-        READY,
-        // when a file couldn't be read
-        ERROR,
-        // the index is currently being build
-        INDEXING,
-        // index creation was interrupted but is still running
-        INTERRUPTED
-    }
-    
 
     /**
      * The current state of the index
      */
     private IndexState currentState;
-    private Lock indexCreation;
-    private Condition indexCreationCondition;
-    private boolean isThreadWaiting;
+
+    private Lock stateLock = new ReentrantLock();
+    private Condition stateChanged = stateLock.newCondition();
+    private List<IndexStateObserver> indexStateObservers = new ArrayList<>();
     
     /**
      * The directory where the index gets created.
      */
-    public static final String PATH_TO_INDEX = "index";
+    public static final Path PATH_TO_INDEX = Paths.get("index");
 
     private static IndexManager instance;
 
@@ -71,8 +44,11 @@ public class IndexManager {
     private SerializableBiMap<Integer, String> exceptionIDManager;
 
     //additional managers for information that have nothing to do with Lucene
-    private SerializableBiMap<Short, List<Byte>> logLevelIndexManager;
+    private SerializableBiMap<Short, Set<Byte>> logLevelIndexManager;
     private SerializableBiMap<Short, TimeRange> logDateManager;
+    private SerializableMap<Short, Long> bytesRead;
+
+    private IndexCreator indexCreator;
 
     private IndexManager(){
         fileIDManager           =   new SerializableBiMap<>(I_TypeConverter.SHORT_TYPE_CONVERTER, I_TypeConverter.STRING_TYPE_CONVERTER);
@@ -80,13 +56,11 @@ public class IndexManager {
         classIDManager          =   new SerializableBiMap<>(I_TypeConverter.INTEGER_TYPE_CONVERTER, I_TypeConverter.STRING_TYPE_CONVERTER);
         exceptionIDManager      =   new SerializableBiMap<>(I_TypeConverter.INTEGER_TYPE_CONVERTER, I_TypeConverter.STRING_TYPE_CONVERTER);
 
-        logLevelIndexManager    =   new SerializableBiMap<>(I_TypeConverter.SHORT_TYPE_CONVERTER, I_TypeConverter.listConverter(I_TypeConverter.BYTE_TYPE_CONVERTER));
+        logLevelIndexManager    =   new SerializableBiMap<>(I_TypeConverter.SHORT_TYPE_CONVERTER, I_TypeConverter.setConverter(I_TypeConverter.BYTE_TYPE_CONVERTER));
         logDateManager          =   new SerializableBiMap<>(I_TypeConverter.SHORT_TYPE_CONVERTER, I_TypeConverter.TIME_RANGE_CONVERTER);
+        bytesRead               =   new SerializableMap<>(I_TypeConverter.SHORT_TYPE_CONVERTER, I_TypeConverter.LONG_TYPE_CONVERTER);
 
-        currentState = IndexState.NOT_READY;
-        indexCreation = new ReentrantLock();
-        indexCreationCondition = indexCreation.newCondition();
-        isThreadWaiting = false;
+        setCurrentState(IndexState.NOT_READY);
     }
 
     public static synchronized IndexManager getInstance() {
@@ -95,93 +69,6 @@ public class IndexManager {
         }
 
         return instance;
-    }
-
-    /**
-     * Convenience method that creates the lucene index in a separate thread
-     */
-    public void startIndexCreationWorker()
-    {
-        Thread newThread = new Thread(this::createIndices);
-        newThread.start();
-    }
-
-    /**
-     * Builds all of the required indices
-     * @throws IOException When the files cant be created or written to
-     */
-    public void createIndices() {
-        indexCreation.lock();
-
-        if(currentState == IndexState.INTERRUPTED) {
-            indexCreation.unlock();
-            return;
-        }
-
-        //waits for the indexing procedure to end (only 1 thread waits here)
-        if(currentState == IndexState.INDEXING) {
-            currentState = IndexState.INTERRUPTED;
-            try
-            {
-                indexCreationCondition.await();
-            }
-            catch (InterruptedException e)
-            {
-                currentState = IndexState.ERROR;
-                indexCreation.unlock();
-            }
-        }
-
-        currentState = IndexState.INDEXING;
-        indexCreation.unlock();
-
-        try {
-            indexCreationWorker();
-        }
-        catch (IOException e) {
-            indexCreation.lock();
-            currentState = IndexState.ERROR;
-            indexCreation.unlock();
-            return;
-        }
-
-        indexCreation.lock();
-
-        //restarts the index creation (if there is already a thread waiting)
-        if(currentState == IndexState.INTERRUPTED) {
-            indexCreationCondition.signal();
-        }
-
-        currentState = IndexState.READY;
-        indexCreation.unlock();
-    }
-
-    private void indexCreationWorker() throws IOException
-    {
-        Timer t = new Timer();
-
-        //Check if the logfile directory exists
-        if(!new File(Settings.getInstance().getLogFilePath()).exists()) {
-            System.out.println("Specified log directory " + Settings.getInstance().getLogFilePath() + " does not exist");
-            throw new IOException();
-        }
-
-        //create lucene index and all indexes created by looping over the logEntries
-        createLuceneIndex();
-
-        //create logLevel index
-        try (Search search = new Search())
-        {
-            //create log level index
-            List<List<Byte>> files = search.searchForLogLevelsInFiles();
-            for(short i = 0;i < files.size(); ++i)
-            {
-                logLevelIndexManager.putValue(i, files.get(i));
-            }
-        }
-
-        saveIndices();
-        System.out.println(t);
     }
 
     public void saveIndices() throws IOException
@@ -193,6 +80,7 @@ public class IndexManager {
         exceptionIDManager.writeIndex(path + "exception_id_manager");
         logLevelIndexManager.writeIndex(path + "logLevel_index_manager");
         logDateManager.writeIndex(path + "log_date_manager");
+        bytesRead.writeIndex(path + "bytes_read");
     }
 
     public void readIndices() throws IOException
@@ -211,112 +99,346 @@ public class IndexManager {
         exceptionIDManager.readIndex(path + "exception_id_manager");
         logLevelIndexManager.readIndex(path + "logLevel_index_manager");
         logDateManager.readIndex(path + "log_date_manager");
+        bytesRead.readIndex(path + "bytes_read");
 
-        currentState = IndexState.READY;
+        setCurrentState(IndexState.READY);
     }
 
-
-    /**
-     * Creates the Lucene index, the logDate index, the module index, the file index and the class index.
-     * @throws IOException
-     */
-    private void createLuceneIndex() throws IOException
+    public void deleteIndex() throws IOException
     {
-        //Create path object
-        Path indexPath = Paths.get(IndexManager.PATH_TO_INDEX + "/" + "lucene");
-
         //Delete previous directory
-        if(indexPath.toFile().exists())
+        if(PATH_TO_INDEX.toFile().exists())
         {
-            Files.walk(indexPath).map(Path::toFile).forEach(File::delete);
+            Files.walk(PATH_TO_INDEX)
+                .map(Path::toFile)
+                .sorted(Comparator.comparing(File::isDirectory)) //sort so that files are deleted before their directories are
+                .forEach(File::delete);
         }
 
-        //Open the index directory (creates the directory if it doesn't exist)
-        Directory indexDirectory = FSDirectory.open(indexPath);
+        fileIDManager.clear();
+        moduleIDManager.clear();
+        classIDManager.clear();
+        exceptionIDManager.clear();
+        logLevelIndexManager.clear();
+        logDateManager.clear();
+        bytesRead.clear();
+    }
 
-        //Create Analyzer object
-        //The analyzer removes useless tokens ( words like a, an is etc.)
-        Analyzer analyzer = new StandardAnalyzer();
+    private synchronized void setCurrentState(IndexState state)
+    {
+        stateLock.lock();
+        currentState = state;
+        notifyIndexStateObservers(state);
+        stateChanged.signalAll();
+        stateLock.unlock();
+    }
 
-        //The IndexWriter is used to create an Index
-        IndexWriterConfig indexWriterConfig = new IndexWriterConfig(analyzer);
+    public IndexState waitForIndexStateChange() throws InterruptedException
+    {
+        stateLock.lock();
+        stateChanged.await();
+        stateLock.unlock();
 
-        //Specify the Index to be written to and the config
-        try ( IndexWriter indexWriter = new IndexWriter(indexDirectory, indexWriterConfig))
+        return currentState;
+    }
+
+    public void attachIndexStateObserver(IndexStateObserver newObserver)
+    {
+        indexStateObservers.add(newObserver);
+    }
+
+    private void notifyIndexStateObservers(IndexState newState)
+    {
+        for(IndexStateObserver observer : indexStateObservers){
+            observer.update(newState);
+        }
+    }
+
+    /**
+     * Convenience method that creates the lucene index in a separate thread
+     */
+    public void startIndexCreationWorker()
+    {
+        try
         {
-            //Read all the log entries from all the files into a list
-            LogFile[] logFiles = LogReader.readAllLogFiles(Settings.getInstance().getLogFilePath());
+            readIndices();
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
 
-            for(LogFile logfile : logFiles)
+        if(indexCreator == null || !indexCreator.isAlive())
+        {
+            indexCreator = new IndexCreator();
+            indexCreator.start();
+        }
+        else
+        {
+            indexCreator.redoIndex();
+        }
+    }
+
+    public void stopIndexCreationWorker()
+    {
+        indexCreator.shutdown();
+    }
+
+    private class IndexCreator extends Thread{
+
+        private ConcurrentQueue<IndexCreatorTask> tasks = new ConcurrentQueue<>();
+        private DirectoryWatcher fileChangeChecker;
+
+        private boolean directoryChanged = false;
+        private boolean interrupted = false;
+
+        public void run()
+        {
+            fileChangeChecker = new DirectoryWatcher(Settings.getInstance().getLogFilePath(), tasks::push);
+            fileChangeChecker.start();
+
+            try
             {
-                //add the file id to the index
-                fileIDManager.addIfAbsent((short)fileIDManager.size(), logfile.filename);
-                short fileID = fileIDManager.getKey(logfile.filename);
+                checkAllFilesForUpdates();
+            }
+            catch (InterruptedException e) {interrupted = true;}
+            catch (IOException e) {e.printStackTrace();}
 
-                //save the begin and end date of each file
-                logDateManager.putValue(
-                        fileID,
-                        new TimeRange(
-                                logfile.getEntries().get(0).getTime(),
-                                logfile.getEntries().get(logfile.getEntries().size()-1).getTime()
-                        )
-                );
+            while(!interrupted || directoryChanged)
+            {
+                try
+                {
+                    while(directoryChanged){
+                        interrupted = false;
+                        System.out.println("Recreating Index");
+                        directoryChanged = false;
+                        setCurrentState(IndexState.INDEXING);
+                        createNewIndex();
+                        setCurrentState(IndexState.READY);
+                    }
 
-                for(LogEntry logEntry : logfile.getEntries()) {
-                    Document document = new Document();
+                    IndexCreatorTask task = tasks.pop();
 
-                    //add the classname to the classname index
-                    classIDManager.addIfAbsent(classIDManager.size(), logEntry.getClassName());
-                    int classID = classIDManager.getKey(logEntry.getClassName());
-
-                    //add the module to the module index
-                    moduleIDManager.addIfAbsent(moduleIDManager.size(), logEntry.getModule());
-                    int moduleID = moduleIDManager.getKey(logEntry.getModule());
-
-                    Optional<String> exception = logEntry.findException();
-                    if(exception.isPresent())
+                    setCurrentState(IndexState.INDEXING);
+                    switch(task.getTaskType())
                     {
-                        exceptionIDManager.addIfAbsent(exceptionIDManager.size(), exception.get());
-                        int exceptionID = exceptionIDManager.getKey(exception.get());
-
-                        document.add(new IntPoint("exception", exceptionID));
+                        case FILE_CREATED:
+                            fileCreated(task.getFilename());
+                            break;
+                        case FILE_APPENDED:
+                            fileChanged(task.getFilename());
+                            break;
                     }
 
-                    document.add(new NumericDocValuesField("date", logEntry.getTime()));
-                    document.add(new LongPoint("date", logEntry.getTime()));
-                    document.add(new StoredField("logEntryID", logEntry.getEntryID()));
-                    document.add(new LongPoint("logLevel", logEntry.getLogLevel().getId()));
-                    document.add(new StoredField("logLevel", logEntry.getLogLevel().getId()));
-                    document.add(new TextField("message", logEntry.getMessage(), Field.Store.NO));
-                    document.add(new IntPoint("classname", classID));
-                    document.add(new IntPoint("module", moduleID));
-                    document.add(new StoredField("fileIndex", fileID));
-
-                    //add the fileIndex as a IntPoint so that lucene can search for entries in a specific file
-                    document.add(new IntPoint("fileIndex", fileID));
-
-                    //add the file index as a sortedField so that lucene can group by it
-                    document.add(new SortedDocValuesField(
-                        "fileIndex",
-                        new BytesRef(ByteConverter.shortToByte(fileID)))
-                    );
-                    document.add(new SortedDocValuesField(
-                        "logLevel",
-                        new BytesRef(new byte[] {
-                            logEntry.getLogLevel().getId()
-                        })
-                    ));
-
-                    indexWriter.addDocument(document);
-
-                    if(currentState == IndexState.INTERRUPTED) {
-                        indexWriter.close();
-                        return;
+                    if(tasks.isEmpty()){
+                        setCurrentState(IndexState.READY);
                     }
+                }
+                catch (InterruptedException e) {
+                    setCurrentState(IndexState.INTERRUPTED);
+                    interrupted = true;
+                }
+                catch (IOException e){
+                    //--- An error occurred --//
+                    System.err.println("Everything died");
+                    e.printStackTrace();
+                    setCurrentState(IndexState.ERROR);
+                    return;
                 }
             }
         }
+
+        private void fileCreated(String filename) throws IOException, InterruptedException {
+            System.out.println("Indexing new file: " + filename);
+            updateFile(filename);
+        }
+
+        private void fileChanged(String filename) throws IOException, InterruptedException {
+            System.out.println("Indexing changes in file: " + filename);
+            updateFile(filename);
+        }
+
+        public void redoIndex()
+        {
+            directoryChanged = true;
+            this.interrupt();
+        }
+
+        public void shutdown()
+        {
+            this.interrupt();
+            fileChangeChecker.interrupt();
+        }
+
+        private void createNewIndex()
+        {
+            try
+            {
+                deleteIndex();
+
+                try(LuceneIndexCreator indexCreator = new LuceneIndexCreator())
+                {
+                    fileChangeChecker = fileChangeChecker.switchDirectory(
+                            Settings.getInstance().getLogFilePath()
+                    );
+
+                    String logFolder = Settings.getInstance().getLogFilePath();
+                    File[] files = LogReader.getAllLogFiles(Settings.getInstance().getLogFilePath());
+
+                    for(File file : files)
+                    {
+                        indexSingleLogFile(indexCreator, file.getName());
+
+                        if(directoryChanged){
+                            return;
+                        }
+                    }
+
+                    saveIndices();
+                }
+            }
+            catch(IOException ex)
+            {
+                ex.printStackTrace();
+            }
+        }
+
+        private void checkAllFilesForUpdates() throws IOException, InterruptedException
+        {
+            for(File file : LogReader.getAllLogFiles(Settings.getInstance().getLogFilePath()))
+            {
+                updateFile(file.getName());
+            }
+        }
+
+        private void updateFile(String filename) throws IOException, InterruptedException
+        {
+            File file = new File(Settings.getInstance().getLogFilePath() + File.separator + filename);
+
+            //ignore all files that don't end in .log
+            if(!file.exists() || file.isDirectory() || !file.getName().endsWith(".log")){
+                return;
+            }
+
+            try(LuceneIndexCreator indexCreator = new LuceneIndexCreator())
+            {
+                boolean shouldRetry = true;
+                while(shouldRetry)
+                {
+                    try
+                    {
+                        indexSingleLogFile(indexCreator, filename);
+                        shouldRetry = false;
+
+                        if(!file.exists()){
+                            shouldRetry = false;
+                        }
+                    }
+                    catch(FileSystemException ex) {
+                        System.out.println("File is currently being read by another process\nRetrying in 250ms");
+                        Thread.sleep(100);
+                    }
+                }
+            }
+
+            saveIndices();
+        }
+
+        private void indexSingleLogFile(LuceneIndexCreator indexCreator, String filename) throws IOException
+        {
+            //add the file id to the index
+            fileIDManager.addIfAbsent((short)fileIDManager.size(), filename);
+            short fileID = fileIDManager.getKey(filename);
+
+            bytesRead.putIfAbsent(fileID, 0L);
+            long bytesIndexed = bytesRead.get(fileID);
+
+            LogFileData fileData = LogReader.readSingleFile(
+            Settings.getInstance().getLogFilePath() + File.separator + filename,
+                bytesIndexed
+            );
+
+            if(fileData.getEntries().size() <= 0){
+                return;
+            }
+
+            bytesRead.put(fileID, bytesIndexed + fileData.getBytesRead());
+
+            TimeRange previousTimeRange = logDateManager.getValue(fileID);
+
+            if(previousTimeRange == null){
+                previousTimeRange = new TimeRange();
+                previousTimeRange.beginDate = fileData.getEntries().get(0).getTime();
+            }
+            previousTimeRange.endDate = fileData.getEntries().get(fileData.getEntries().size() - 1).getTime();
+
+            //save the beginning and end date of each file
+            logDateManager.putValue(
+                fileID,
+                previousTimeRange
+            );
+
+            for(LogEntry logEntry : fileData.getEntries()) {
+                indexLogEntry(indexCreator, logEntry, fileID);
+
+                if(this.directoryChanged){
+                    return;
+                }
+            }
+        }
+
+        private void indexLogEntry(LuceneIndexCreator indexCreator, LogEntry logEntry, short fileID) throws IOException
+        {
+            Document document = new Document();
+
+            logLevelIndexManager.addIfAbsent(fileID, new LinkedHashSet<>());
+            logLevelIndexManager.getValue(fileID).add(logEntry.getLogLevel().getId());
+
+            //add the classname to the classname index
+            classIDManager.addIfAbsent(classIDManager.size(), logEntry.getClassName());
+            int classID = classIDManager.getKey(logEntry.getClassName());
+
+            //add the module to the module index
+            moduleIDManager.addIfAbsent(moduleIDManager.size(), logEntry.getModule());
+            int moduleID = moduleIDManager.getKey(logEntry.getModule());
+
+            Optional<String> exception = logEntry.findException();
+            if(exception.isPresent())
+            {
+                exceptionIDManager.addIfAbsent(exceptionIDManager.size(), exception.get());
+                int exceptionID = exceptionIDManager.getKey(exception.get());
+
+                document.add(new IntPoint("exception", exceptionID));
+            }
+
+            document.add(new NumericDocValuesField("date", logEntry.getTime()));
+            document.add(new LongPoint("date", logEntry.getTime()));
+            document.add(new StoredField("logEntryID", logEntry.getEntryID()));
+            document.add(new LongPoint("logLevel", logEntry.getLogLevel().getId()));
+            document.add(new StoredField("logLevel", logEntry.getLogLevel().getId()));
+            document.add(new TextField("message", logEntry.getMessage(), Field.Store.NO));
+            document.add(new IntPoint("classname", classID));
+            document.add(new IntPoint("module", moduleID));
+            document.add(new StoredField("fileIndex", fileID));
+
+            //add the fileIndex as a IntPoint so that lucene can search for entries in a specific file
+            document.add(new IntPoint("fileIndex", fileID));
+
+            //add the file index as a sortedField so that lucene can group by it
+            document.add(new SortedDocValuesField(
+                "fileIndex",
+                new BytesRef(ByteConverter.shortToByte(fileID)))
+            );
+            document.add(new SortedDocValuesField(
+                "logLevel",
+                new BytesRef(new byte[] {
+                        logEntry.getLogLevel().getId()
+                })
+            ));
+
+            indexCreator.getIndexWriter().addDocument(document);
+        }
     }
+
 
     public IndexState getIndexState() {
         return currentState;
@@ -350,8 +472,8 @@ public class IndexManager {
     }
 
     //----- LogLevelIndexManager -----//
-    public List<Byte> getLogLevelsOfFile(short fileID) {
-        return logLevelIndexManager.getValue(fileID);
+    public Set<Byte> getLogLevelsOfFile(short fileID) {
+        return logLevelIndexManager.getValueOrDefault(fileID, new LinkedHashSet<>());
     }
     //----- LogLevelIndexManager -----//
 
@@ -391,88 +513,39 @@ public class IndexManager {
     @SneakyThrows
     public static void main(String[] args)
     {
-        Settings.getInstance().setLogFilePath("C:\\Users\\AndiK\\OneDrive\\Dokumente\\HTL 5. Jahr\\Diplomarbeit\\efficientLogfileAnalysis\\test_logs");
-        IndexManager mgr = IndexManager.getInstance();
-
-        Thread printStatus = new Thread(() -> {
-            while(true){
-                System.out.println(mgr.currentState);
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        });
-        printStatus.start();
-
-        Thread creationWorker = new Thread(mgr::createIndices);
-        creationWorker.start();
-
-        Random r = new Random();
-
-        while(true){
-            Thread.sleep(r.nextInt(8000));
-            System.out.println("Another Thread starts");
-
-            Thread newCreationWorker = new Thread(mgr::createIndices);
-            newCreationWorker.start();
-        }
-
-
-
-
-//        Random rand = new Random(1000);
-//        IndexManager mgr = IndexManager.getInstance();
+////        IndexManager.getInstance().createLuceneIndex();
+//        IndexManager.getInstance().deleteIndex();
 //
-//        System.out.println(mgr.currentState);
-//
-//        Settings.getInstance().setLogFilePath("C:\\");
-//        mgr.createIndices();
-//
-//        System.out.println(mgr.currentState);
+//        if(true){
+//            return;
+//        }
 //
 //        Settings.getInstance().setLogFilePath("C:\\Users\\AndiK\\OneDrive\\Dokumente\\HTL 5. Jahr\\Diplomarbeit\\efficientLogfileAnalysis\\test_logs");
-//        mgr.createIndices();
+//        IndexManager mgr = IndexManager.getInstance();
 //
-//        System.out.println(mgr.currentState);
-
-
-        //mgr.readIndices();
-        //mgr.createIndices();
-        //mgr.saveIndices();
-
-        //mgr.getExceptionNames().forEach(System.out::println);
-
-        //mgr.readIndices();
-        //System.out.println(mgr.moduleIDManager);
-
-//        new Thread(new Runnable() {
-//            @Override
-//            public void run() {
-//                for(int i = 0;i < 2048; ++i) {
-//                    System.out.println(IndexManager.getInstance().currentState);
-//                    try {
-//                        Thread.sleep(rand.nextInt(1000));
-//                    } catch (InterruptedException e) {
-//                        e.printStackTrace();
-//                    }
+//        Thread printStatus = new Thread(() -> {
+//            while(true){
+//                System.out.println(mgr.currentState);
+//                try {
+//                    Thread.sleep(1000);
+//                } catch (InterruptedException e) {
+//                    throw new RuntimeException(e);
 //                }
 //            }
-//        }).start();
+//        });
+//        printStatus.start();
 //
-//        for(int i = 0;i < 128; ++i) {
-//            new Thread(new Runnable() {
-//                @Override
-//                public void run() {
-//                    try {
-//                        mgr.createIndices();
-//                    } catch (Exception e) {
-//                        e.printStackTrace();
-//                    }
-//                }
-//            }).start();
-//            Thread.sleep(rand.nextInt(1000));
+//        Thread creationWorker = new Thread(mgr::createIndices);
+//        creationWorker.start();
+//
+//        Random r = new Random();
+//
+//        while(true){
+//            Thread.sleep(r.nextInt(8000));
+//            System.out.println("Another Thread starts");
+//
+//            Thread newCreationWorker = new Thread(mgr::createIndices);
+//            newCreationWorker.start();
 //        }
     }
 }

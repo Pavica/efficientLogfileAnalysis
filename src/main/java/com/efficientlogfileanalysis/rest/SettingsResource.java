@@ -24,15 +24,8 @@ public class SettingsResource {
     @Path("/path")
     public Response getPath()
     {
-        try
-        {
-            Settings settings = Settings.getInstance();
-            return Response.ok(settings.getLogFilePath()).build();
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
-        }
+        Settings settings = Settings.getInstance();
+        return Response.ok(settings.getLogFilePath()).build();
     }
 
     /**
