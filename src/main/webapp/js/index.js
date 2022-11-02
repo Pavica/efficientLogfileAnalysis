@@ -10,9 +10,16 @@
 function loadDocument(){
     //Settings
     loadCookies();
-    loadPathIntoField();
     setInputColors(document.documentElement.style.getPropertyValue('--main-color'),
         document.documentElement.style.getPropertyValue('--main-text-color'));
+
+    //fetch Path and Limit on modal open
+    $(document).on('show.bs.modal', '#settingsModal', function () {
+        loadPathIntoField();
+
+    });
+
+    loadFirstTextIntoFields();
 
     initIndexToast();
 
@@ -23,23 +30,21 @@ function loadDocument(){
     //Modal
     abortFetchOnModalExit();
     resizeColumnsOnModalEnter();
-
-
 }
 
 /**
  * Function used to initialize and thereby activate the datepicker for startDate and endDate
  */
 function initializeDatePickers(){
-        $( "#startDate" ).datepicker({
-            dateFormat: "dd.mm.yy"
-        });
-        setMinMaxDate("startDate");
+    $( "#startDate" ).datepicker({
+        dateFormat: "dd.mm.yy"
+    });
+    setMinMaxDate("startDate");
 
-        $( "#endDate" ).datepicker({
-            dateFormat: "dd.mm.yy"
-        });
-        setMinMaxDate("endDate");
+    $( "#endDate" ).datepicker({
+        dateFormat: "dd.mm.yy"
+    });
+    setMinMaxDate("endDate");
 }
 
 async function fillDataLists(){
@@ -113,8 +118,8 @@ function displayState(state)
             break;
     }
 
-    var toastElementList = 0;
-    var toastList = 0;
+    let toastElementList = 0;
+    let toastList = 0;
 
     toastElementList = [].slice.call(document.querySelectorAll(".toast"));
     toastList = toastElementList.map(function (element) {

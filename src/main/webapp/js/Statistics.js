@@ -13,11 +13,11 @@ let allStatistics = ['barChart', 'pieChart', 'lineChart', 'polarAreaChart', 'mul
 
 /** contains all existing statistics with their checkbox id */
 let statisticsMap = new Map([
-    ['barChart', 'showbarChart'],
-    ['pieChart', 'showpieChart'],
-    ['lineChart', 'showlineChart'],
-    ['polarAreaChart', 'showpolarAreaChart'],
-    ['multiLineChart', 'showmultiLineChart'],
+    ['barChart', 2],
+    ['pieChart', 1],
+    ['lineChart', 2],
+    ['polarAreaChart', 1],
+    ['multiLineChart', 2],
 ]);
 
 /** contains all LogLevels and the amount of each */
@@ -416,8 +416,9 @@ function checkIfChecked(elementId){
 /** Function used to reload all currently active statistics */
 function reloadAllActiveStatistics(){
     statisticsMap.forEach((value, key, map) => {
-        if(checkIfChecked(value)){
-            onShowStatistics(document.getElementById(value), key, 2);
+        let id = "show"+key;
+        if(checkIfChecked(id)){
+            onShowStatistics(document.getElementById(id), key, value);
         }
     })
 }

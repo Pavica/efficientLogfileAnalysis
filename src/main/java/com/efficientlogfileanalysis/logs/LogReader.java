@@ -12,7 +12,6 @@ import lombok.SneakyThrows;
 import java.io.*;
 import java.nio.channels.FileChannel;
 import java.nio.file.Paths;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -316,7 +315,75 @@ public class LogReader implements Closeable {
 
         return logEntry;
     }
-    
+
+    public List<LogEntry> getNearbyEntries(String path, short fileID, long logEntryID, long byteRange) throws IOException
+    {
+        List<LogEntry> entries = new ArrayList<>();
+        RandomAccessFile file = prepareRandomAccessFile(path, fileID, logEntryID);
+
+        long startPosition = logEntryID - byteRange;
+        long maxPosition = file.getFilePointer() + byteRange;
+        if(startPosition < 0) {
+            startPosition = 0;
+        }
+
+        file.seek(startPosition);
+
+        String currentLine = "";
+        long nextEntryID = startPosition;
+        while(!startOfLogEntry.reset(currentLine).matches()){
+            nextEntryID = file.getFilePointer();
+            currentLine = file.readLine();
+        }
+
+        String entry;
+        long entryID;
+        do
+        {
+            entry = currentLine;
+            entryID = nextEntryID;
+            nextEntryID = file.getFilePointer();
+            while(
+                    (currentLine = file.readLine()) != null &&
+                            !startOfLogEntry.reset(currentLine).matches()
+            )
+            {
+                nextEntryID = file.getFilePointer();
+                entry += currentLine + "\n";
+            }
+            entries.add(new LogEntry(entry, entryID));
+        }while(file.getFilePointer() < maxPosition);
+
+        return entries;
+    }
+
+    /*public String getNearbyEntriesRaw(String path, short fileID, long logEntryID, long byteRange) throws IOException
+    {
+        String entries;
+        RandomAccessFile file = prepareRandomAccessFile(path, fileID, logEntryID);
+
+        long startPosition = logEntryID - byteRange;
+        long maxPosition = file.getFilePointer() + byteRange;
+        if(startPosition < 0) {
+            startPosition = 0;
+        }
+
+        file.seek(startPosition);
+
+        String currentLine = "";
+        while(!startOfLogEntry.reset(currentLine).matches()){
+            currentLine = file.readLine();
+        }
+        entries = currentLine + "\n";
+        do
+        {
+            entries += file.readLine() + "\n";
+        }while(file.getFilePointer() < maxPosition);
+
+        return entries;
+    }*/
+
+
     /**
      * Reads the date of the specified entry and returns it in miliseconds.
      * @param path The path to the folder containing the log files
