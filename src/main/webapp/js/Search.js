@@ -4,11 +4,11 @@
  * last changed: 26.07.2022
  */
 
-let controller = new AbortController()
+let controller = new AbortController();
 let mySignal = controller.signal;
 
 function abortFetching() {
-    controller.abort()
+    controller.abort();
 }
 
 function resetFetching(){
@@ -25,6 +25,12 @@ function abortFetchOnModalExit(){
 function resizeColumnsOnModalEnter(){
     $('#logModal').on('shown.bs.modal', function (e) {
         $($.fn.dataTable.tables(true)).DataTable().columns.adjust();
+    });
+}
+
+function removeEntryIdOnModalExit(){
+    $('#logModal').on('hide.bs.modal', function (e) {
+        entryId=null;
     });
 }
 
@@ -240,6 +246,7 @@ async function loadExceptions()
 async function readyForSearch(){
     let logMessage = $('#search').val();
 
+    addTime();
     let startDate = trueStartDate == null ? null : trueStartDate.getTime();
     let endDate = trueEndDate == null ? null : trueEndDate.getTime();
 
@@ -272,9 +279,7 @@ async function startSearch(){
 
     setSpinnerVisible(true, "statisticsDropDown");
     statisticsData  = await searchStatisticsData(filter);
-    console.log(statisticsData)
     setSpinnerVisible(false, "statisticsDropDown");
-
 
     getStatisticData(statisticsData[0], statisticsData[1]);
     showActiveStatistics(activeStatistics);
@@ -373,23 +378,43 @@ function createLogFileElements(data){
  * Function used to display log entries of a specified file quickly by doing multiple fetches
  * @param filename specified filename
  */
+
+let entryId = null;
 async function displayFileLogEntries(filename){
     $('#logEntryTable').DataTable().clear();
     $('#logEntryTable').DataTable().destroy();
 
     document.getElementById("floatingTextarea").innerText = "";
-    document.getElementById("logFileTitle").innerText = "Log file name: " + filename;
+    document.getElementById("logFileTitle").innerText = "Logfile Name: " + filename;
 
-    //TODO: potentially add deferRender to make it even faster (very hard with ids)
     let table = $('#logEntryTable').DataTable({
         scrollY: true,
         scrollCollapse: true,
         paging: true,
+        stateSave: true,
         pageLength: 5,
         lengthMenu: [5, 10, 20, 50, 100],
         select: {
             style: 'single'
         },
+        //Controls the structure of the datatable
+        dom: '<"container-fluid"<"row"<"col"l><"col"f>>>rt<"container-fluid"<"row"<"col"i><"col"p><"col"B>>>',
+        buttons: [
+        {
+            text: 'umgebende Logeinträge',
+            enabled: false,
+            className: 'btn button-style',
+            action: function ( e, dt, node, config ) {
+                localStorage.setItem("entryID",entryId);
+                localStorage.setItem("filename",filename);
+                window.open("searchNearby.html",'_blank').focus();
+            },
+            //removes the dataTables button style
+            init: function(api, node, config) {
+                $(node).removeClass('dt-button');
+            }
+        }
+        ],
     });
 
     let lastSearchEntry = null;
@@ -398,10 +423,14 @@ async function displayFileLogEntries(filename){
 
     table.off('select.dt');
     table.on( 'select.dt', async function () {
-       let id = $('.selected')[0].id;
-        document.getElementById("floatingTextarea").innerText = (await loadLogEntry(filename, id)).message;
+        entryId = $('.selected')[0].id;
+        $('#logEntryTable').DataTable().button( 0 ).enable();
+        document.getElementById("floatingTextarea").innerText = (await loadLogEntry(filename, entryId)).message;
     });
-
+    table.on( 'deselect', function ( e, dt, type, indexes ) {
+        entryId = null;
+        $('#logEntryTable').DataTable().button( 0 ).disable();
+    });
     while((data = await searchInFileAmount(filter, filename, lastSearchEntry, 1000)) != null){
         lastSearchEntry = {"docNumber":data.lastSearchEntry.docNumber, "docScore":data.lastSearchEntry.docScore};
         let currentData = data.logEntries;
@@ -410,7 +439,11 @@ async function displayFileLogEntries(filename){
             table.row.add([formatDate2(new Date(currentData[i].time)),currentData[i].logLevel,currentData[i].module,currentData[i].className]).node().id = currentData[i].entryID;
             num++;
         }
-
         table.draw(false);
+
+        removeEntryIdOnModalExit();
+
+        //centers the pagination within the column
+        $("ul").addClass( 'justify-content-center');
     }
 }

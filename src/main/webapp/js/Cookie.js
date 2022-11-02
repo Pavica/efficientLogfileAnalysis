@@ -96,39 +96,49 @@ function reloadColorCookie(){
 /**
  * Function used to set a fetch nearby cookie
  */
-function setFetchNearbyCookie(){
-    let fetchNearbyCookie = getCookie("fetchNearby");
-    $('#fetchNearby').val(fetchNearbyCookie);
+function setSearchNearbyCookie(){
+    let searchNearbyCookie = getCookie("searchNearby");
+    $('#searchNearby').val(searchNearbyCookie);
 }
 
 /**
  * Function used to reload (fill it with new data and reset it) a fetch nearby cookie
  */
-function reloadFetchNearbyCookie(){
-    setCookie("fetchNearby", $('#fetchNearby').val(), 3652);
-    console.log("updated to " + getCookie("fetchNearby"));
+function reloadSearchNearbyCookie(){
+    setCookie("searchNearby", $('#searchNearby').val(), 3652);
+    console.log("updated to " + getCookie("searchNearby"));
 }
 
 /**
  * Function used to load in all existing cookies
  */
 function loadCookies(){
-    if(checkCookie("statistics")){
-        setStatisticsCookie();
-        reloadAllActiveStatistics();
-    }else{
-        setCookie("statistics", "false|false|false|false", 3652);
-    }
+    loadStatisticsCookie();
+    loadColorCookie();
+    loadSearchNearbyCookie();
+}
 
+function loadColorCookie(){
     if(checkCookie("color")){
         setColorCookie();
     }else{
         setCookie("color", "#fff200|#ffffff", 3652);
     }
+}
 
-    if(checkCookie("fetchNearby")){
-        setFetchNearbyCookie();
+function loadSearchNearbyCookie(){
+    if(checkCookie("searchNearby")){
+        setSearchNearbyCookie();
     }else{
-        setCookie("fetchNearby", "0", 3652);
+        setCookie("searchNearby", "0", 3652);
+    }
+}
+
+function loadStatisticsCookie(){
+    if(checkCookie("statistics")){
+        setStatisticsCookie();
+        reloadAllActiveStatistics();
+    }else{
+        setCookie("statistics", "false|false|false|false|false", 3652);
     }
 }

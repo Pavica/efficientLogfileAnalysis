@@ -4,10 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <script src="js/Filter.js"></script>
-    <script src="js/Search.js"></script>
-    <script src="js/Settings.js"></script>
-
+    <link rel="icon" type="image/png" href="images/favicon.ico" sizes="96x96">
 
     <!-- Bootstrap 5 Main -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
@@ -33,12 +30,19 @@
     <script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap5.min.js"></script>
 
+    <!-- DataTables Button -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.2.3/css/buttons.dataTables.min.css">
+    <script src="https://cdn.datatables.net/buttons/2.2.3/js/dataTables.buttons.min.js"></script>
+
     <!-- DataTables Select -->
     <link rel="stylesheet" herf="https://cdn.datatables.net/select/1.4.0/css/select.dataTables.min.css">
     <script src="https://cdn.datatables.net/select/1.4.0/js/dataTables.select.min.js"></script>
 
-
-    <!-- Pagination-Script -->
+    <!-- Filter-Script -->
+    <script src="js/Filter.js"></script>
+    <!-- Search-Script -->
+    <script src="js/Search.js"></script>
+    <!-- SimplePagination-Script -->
     <script src="js/SimplePagination.js" defer></script>
     <!-- Index-Script -->
     <script src="js/index.js" defer></script>
@@ -51,7 +55,7 @@
     <!-- Statistics-Script -->
     <script src="js/Statistics.js" defer></script>
 
-    <title>Main</title>
+    <title>Startseite</title>
     <style>
         :root{
             --main-color: #fff200;
@@ -59,8 +63,8 @@
         }
 
         .searchbar, .filter-menu, .statistics, .logfile-results{
-            margin-right: 3rem;
-            margin-left: 3rem;
+            margin-right: 1rem;
+            margin-left: 1rem;
             margin-top: 2rem;
         }
 
@@ -100,6 +104,10 @@
             height: 15rem;
             resize: vertical;
             overflow: auto;
+        }
+
+        div.dt-buttons{
+            float:right!important;
         }
 
         .button-style{
@@ -189,14 +197,14 @@
 </nav>
 <!-- NavBar -->
 
-<form class="needs-validation" novalidate>
+<form class="needs-validation" id="searchForm" novalidate>
 <div class="searchbar">
     <div class="container">
         <div class="row d-flex">
             <div class="search-container">
                   <div class="d-flex justify-content-center">
                       <input type="text" class="search-bar form-control" placeholder="Suche nach Log-Messages..." name="search" id="search">
-                      <button type="button" class="btn button-style search-button" id="searchButton">Suchen</button>
+                      <button type="button" class="btn button-style search-button" id="searchButton" onclick="openFilterWhenInvalid()">Suchen </button>
                       <input type="hidden" class="onSubmit" onclick="readyForSearch()">
                   </div>
             </div>
@@ -208,7 +216,7 @@
 <!-- Filter-Menu -->
 <div class="filter-menu">
     <div class="container">
-        <div class="collapse" id="collapseFilter">
+        <div class="collapse show" id="collapseFilter">
             <div class="d-flex flex-row row" id="FilterContainer">
             <!-- Date-Picker -->
                     <div class="flex-column p-4 col-md-4 text-center border rounded-3">
@@ -216,13 +224,13 @@
                             <h5 class="filter-header">Zeitraum beschränken: </h5>
                             <div class=" mt-3">
                                 <label for="startDate">Start</label>
-                                <input type="text"  class="form-control" id="startDate" oninput="checkInputValidity(this.id)" onchange="checkInputValidity(this.id)">
+                                <input type="text"  class="form-control" id="startDate" oninput="checkInputValidity(this.id)" onchange="checkInputValidity(this.id)" required>
                                 <span id="startDateSelected"></span>
                             </div>
                             <input id="startTime" class="form-control" type="input" pattern="^(1\d|2[0-3]|0?\d)(:(([1-5])\d|0?\d)){0,2}$" oninput="addTime(this.id)"  placeholder="00:00:00" disabled/>
                             <div class=" mt-3">
                                 <label for="startDate">End</label>
-                                <input type="text"  class="form-control" id="endDate" oninput="checkInputValidity(this.id)" onchange="checkInputValidity(this.id)">
+                                <input type="text"  class="form-control" id="endDate" oninput="checkInputValidity(this.id)" onchange="checkInputValidity(this.id)" required>
                                 <span id="endDateSelected"></span>
                             </div>
                             <input id="endTime" class="form-control" type="input" pattern="^(1\d|2[0-3]|0?\d)(:(([1-5])\d|0?\d)){0,2}$" oninput="addTime(this.id)" placeholder="00:00:00" disabled />
@@ -292,21 +300,21 @@
                                 <h5 class="filter-header mb-2">Weitere Optionen </h5>
                                 <div>
                                     <label for="modulDataList" class="form-label">Modul:</label>
-                                    <input class="form-control" list="datalistOptionsModul" id="modulDataList" oninput="checkIfListInputExists(this.id, this.list.id)" placeholder="Drop down or Search">
+                                    <input class="form-control" list="datalistOptionsModul" id="modulDataList" oninput="checkIfListInputExists(this.id, this.list.id)" placeholder="Drop down oder Suchen">
                                     <datalist id="datalistOptionsModul">
 
                                     </datalist>
                                 </div>
                                 <div>
                                     <label for="classDataList" class="form-label">Klasse:</label>
-                                    <input class="form-control" list="datalistOptionsClass" id="classDataList" oninput="checkIfListInputExists(this.id, this.list.id)" placeholder="Drop down or Search">
+                                    <input class="form-control" list="datalistOptionsClass" id="classDataList" oninput="checkIfListInputExists(this.id, this.list.id)" placeholder="Drop down oder Suchen">
                                     <datalist id="datalistOptionsClass">
 
                                     </datalist>
                                 </div>
                                 <div>
                                     <label for="exceptionDataList" class="form-label">Exception:</label>
-                                    <input class="form-control" list="datalistOptionsException" id="exceptionDataList" oninput="checkIfListInputExists(this.id, this.list.id)" placeholder="Drop down or Search">
+                                    <input class="form-control" list="datalistOptionsException" id="exceptionDataList" oninput="checkIfListInputExists(this.id, this.list.id)" placeholder="Drop down oder Suchen">
                                     <datalist id="datalistOptionsException">
 
                                     </datalist>
@@ -318,7 +326,7 @@
                 </div>
             </div>
             <div class="text-center justify-content-center">
-                <button onclick="onCollapseFilter(document.getElementById('btnFilter'), document.getElementById('btnFilter').innerText == 'Filter ausklappen', 'Filter')" id="btnFilter" class="btn button-style" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFilter" aria-expanded="false" aria-controls="collapseFilter">Filter ausklappen</button>
+                <button onclick="onCollapseFilter($('#btnFilter'))" id="btnFilter" class="btn button-style" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFilter" aria-expanded="false" aria-controls="collapseFilter">Filter </button>
             </div>
         </div>
     </div>
@@ -333,7 +341,7 @@
                 <!-- Statistics Dropdown Button -->
                 <div class="dropdown text-center">
                     <button class="btn dropdown-toggle button-style" type="button" id="statisticsDropDown" data-bs-toggle="dropdown" aria-expanded="false">
-                        Display statistics
+                        Statistken anzeigen
                     </button>
                     <ul class="dropdown-menu p-2" aria-labelledby="statisticsDropDown">
                         <li>
@@ -383,7 +391,7 @@
         </div>
     </div>
     <div class="text-center justify-content-center">
-        <button onclick="onCollapseFilter(document.getElementById('btnStatistics'), document.getElementById('btnStatistics').innerText == 'Statistiken ausklappen', 'Statistiken')" id="btnStatistics" class="btn button-style" type="button" data-bs-toggle="collapse" data-bs-target="#collapseStatistics" aria-expanded="false" aria-controls="collapseStatistics">Statistiken ausklappen</button>
+        <button onclick="onCollapseFilter($('#btnStatistics'))" id="btnStatistics" class="btn button-style" type="button" data-bs-toggle="collapse" data-bs-target="#collapseStatistics" aria-expanded="false" aria-controls="collapseStatistics">Statistiken </button>
     </div>
 </div>
 <!-- Statistics -->
@@ -412,38 +420,38 @@
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Settings</h5>
+                <h5 class="modal-title">Einstellungen</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div class="d-flex flex-column bd-highlight mb-3">
                     <div>
-                        <h3>Color</h3>
+                        <h3>Farben</h3>
                     </div>
                     <div class="border rounded-3 mb-3">
                         <div class="p-2">
-                            <label for="path" class="form-label">Element color:</label>
+                            <label for="path" class="form-label">Element Farbe:</label>
                             <input type="color" id="color" class="w-100" oninput="saveColor($('#color').val())">
                         </div>
                         <div class="p-2">
-                            <label for="path" class="form-label">Element text color:</label>
+                            <label for="path" class="form-label">Element Textfarbe:</label>
                             <input type="color" id="textColor" class="w-100" oninput="saveTextColor($('#textColor').val())">
                         </div>
                         <div class="p-2">
-                            <button class="btn button-style w-100" type="button" onclick="resetColor()">Reset</button>
+                            <button class="btn button-style w-100" type="button" onclick="resetColor()">Zurücksetzten</button>
                         </div>
                     </div>
                     <div>
-                        <h3>Log folder</h3>
+                        <h3>Log Ordner</h3>
                     </div>
                     <div class="border rounded-3 mb-3">
                         <!--onkeydown is used to disable enter press in modal because it closes the window and reloads the page?-->
                         <form class="needs-validation" novalidate onkeydown="return event.key != 'Enter';">
                             <div class="pt-2 px-2">
-                                <label for="path" class="form-label">Log folder path:</label>
+                                <label for="path" class="form-label">Logordner Pfad:</label>
                             </div>
                             <div class="input-group px-2">
-                                <span class="input-group-text">current path</span>
+                                <span class="input-group-text">derzeitiger Pfad</span>
                                 <input type="text" class="form-control" id="path" aria-describedby="basic-addon3" pattern='^(~?[\\/]|\w:\\)([^\\/:*?"<>|][\\/]?)*$' required>
                             </div>
                             <div class="p-2">
@@ -453,23 +461,23 @@
                         </form>
                     </div>
                     <div>
-                        <h3>Fetch nearby</h3>
+                        <h3>Umgebende Logeinträge</h3>
                     </div>
                     <div class="border rounded-3 mb-3">
                         <div class="pt-2 px-2">
-                            <label for="path" class="form-label">fetch nearby limit:</label>
+                            <label for="path" class="form-label">Limit von gesuchten Bytes umgeben vom ausgewählten Eintrag. z.B. entryID = 5000 Limit = 3000: Range[2000:8000] </label>
                         </div>
                             <div class="px-2">
-                                <select class="form-select" id="fetchNearby" onchange="reloadFetchNearbyCookie()">
-                                    <option selected hidden>Choose...</option>
-                                    <option value="1">0</option>
-                                    <option value="5">5</option>
-                                    <option value="10">10</option>
-                                    <option value="15">15</option>
-                                    <option value="20">20</option>
-                                    <option value="30">30</option>
-                                    <option value="50">50</option>
+                                <select class="form-select" id="searchNearby" onchange="reloadSearchNearbyCookie()">
+                                    <option hidden>Choose...</option>
+                                    <option selected value="0">0</option>
                                     <option value="100">100</option>
+                                    <option value="500">500</option>
+                                    <option value="1000">1000</option>
+                                    <option value="2000">2000</option>
+                                    <option value="3000">3000</option>
+                                    <option value="5000">5000</option>
+                                    <option value="10000">10000</option>
                                 </select>
                             </div>
                             <div class="p-2">
@@ -477,11 +485,11 @@
                             </div>
                     </div>
                     <div>
-                        <h3>Limit</h3>
+                        <h3>Speicherlimit</h3>
                     </div>
                     <div class="border rounded-3 mb-3">
                         <div class="pt-2 px-2">
-                            <label for="path" class="form-label">size limit:</label>
+                            <label for="path" class="form-label">Speicherlimit für Logindex:</label>
                         </div>
                         <div class="input-group px-2">
                             <input type="text" class="form-control" id="limit" aria-describedby="basic-addon3" pattern='^(~?[\\/]|\w:\\)([^\\/:*?"<>|][\\/]?)*$' required>
@@ -504,7 +512,7 @@
     <div class="modal-dialog modal-fullscreen modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="logFileTitle">Log file name:</h5>
+                <h5 class="modal-title" id="logFileTitle">Logfile Name:</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
