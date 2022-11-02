@@ -41,7 +41,7 @@ public class DirectoryWatcher extends Thread
         }
         catch (IOException ioException)
         {
-            System.out.println("Files could not be watched!");
+            System.err.println("Files could not be watched!");
             return;
         }
 
@@ -49,12 +49,14 @@ public class DirectoryWatcher extends Thread
         {
             while (!Thread.currentThread().isInterrupted())
             {
+                System.err.println("Waiting");
                 WatchKey key = watchService.take();
+                System.err.println("Something happened");
 
                 for (WatchEvent event : key.pollEvents())
                 {
                     if (event.kind() == StandardWatchEventKinds.OVERFLOW) {
-                        System.out.println("Overflow");
+                        System.err.println("Overflow");
                         continue;
                     }
 
@@ -72,7 +74,7 @@ public class DirectoryWatcher extends Thread
             }
         }
         catch (Exception interruptedException) {
-            System.out.println("I died");
+            System.err.println("I died");
             interruptedException.printStackTrace();
         }
     }

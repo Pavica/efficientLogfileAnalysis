@@ -65,6 +65,22 @@ public class LogReader implements Closeable {
         return readSingleFile(path, 0);
     }
 
+    private static boolean stringContainsOnly(String string, char... values){
+        for(int i = 0; i < string.length(); i++){
+            char currentCharacter = string.charAt(0);
+            boolean characterIsPresent = false;
+            for(char value : values){
+                if(currentCharacter == value){
+                    characterIsPresent = true;
+                }
+            }
+            if(!characterIsPresent){
+                return false;
+            }
+        }
+        return true;
+    }
+
     public static LogFileData readSingleFile(String path, long offset) throws IOException {
         Matcher startOfLogEntry = Pattern.compile(REGEX_START_OF_LOG_ENTRY).matcher("");
         List<LogEntry> entries = new ArrayList<>();
@@ -85,7 +101,7 @@ public class LogReader implements Closeable {
             line = !scanner.hasNext() ? null : scanner.next() + "\n";
 
             //skip empty lines
-            if(currentEntry.equals("") && line != null && (line.equals("\r\n") || line.equals("\n"))){
+            if(currentEntry.equals("") && line != null && stringContainsOnly(line, '\r', ' ', '\n', '\t')){
                 bytesRead += line.getBytes().length;
                 continue;
             }

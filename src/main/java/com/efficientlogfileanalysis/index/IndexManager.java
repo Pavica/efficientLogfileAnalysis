@@ -4,6 +4,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.*;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import com.efficientlogfileanalysis.data.ConcurrentQueue;
 import com.efficientlogfileanalysis.data.Settings;
@@ -17,24 +20,15 @@ import org.apache.lucene.document.*;
 import org.apache.lucene.util.BytesRef;
 
 public class IndexManager {
-    private enum IndexState {
-        // index creation wasn't started yet or interrupted
-        NOT_READY,
-        // the index is ready for use
-        READY,
-        // when a file couldn't be read
-        ERROR,
-        // the index is currently being build
-        INDEXING,
-        // index creation was interrupted but is still running
-        INTERRUPTED
-    }
-    
 
     /**
      * The current state of the index
      */
     private IndexState currentState;
+
+    private Lock stateLock = new ReentrantLock();
+    private Condition stateChanged = stateLock.newCondition();
+    private List<IndexStateObserver> indexStateObservers = new ArrayList<>();
     
     /**
      * The directory where the index gets created.
@@ -66,7 +60,7 @@ public class IndexManager {
         logDateManager          =   new SerializableBiMap<>(I_TypeConverter.SHORT_TYPE_CONVERTER, I_TypeConverter.TIME_RANGE_CONVERTER);
         bytesRead               =   new SerializableMap<>(I_TypeConverter.SHORT_TYPE_CONVERTER, I_TypeConverter.LONG_TYPE_CONVERTER);
 
-        currentState = IndexState.NOT_READY;
+        setCurrentState(IndexState.NOT_READY);
     }
 
     public static synchronized IndexManager getInstance() {
@@ -107,7 +101,7 @@ public class IndexManager {
         logDateManager.readIndex(path + "log_date_manager");
         bytesRead.readIndex(path + "bytes_read");
 
-        currentState = IndexState.READY;
+        setCurrentState(IndexState.READY);
     }
 
     public void deleteIndex() throws IOException
@@ -128,6 +122,36 @@ public class IndexManager {
         logLevelIndexManager.clear();
         logDateManager.clear();
         bytesRead.clear();
+    }
+
+    private synchronized void setCurrentState(IndexState state)
+    {
+        stateLock.lock();
+        currentState = state;
+        notifyIndexStateObservers(state);
+        stateChanged.signalAll();
+        stateLock.unlock();
+    }
+
+    public IndexState waitForIndexStateChange() throws InterruptedException
+    {
+        stateLock.lock();
+        stateChanged.await();
+        stateLock.unlock();
+
+        return currentState;
+    }
+
+    public void attachIndexStateObserver(IndexStateObserver newObserver)
+    {
+        indexStateObservers.add(newObserver);
+    }
+
+    private void notifyIndexStateObservers(IndexState newState)
+    {
+        for(IndexStateObserver observer : indexStateObservers){
+            observer.update(newState);
+        }
     }
 
     /**
@@ -164,7 +188,7 @@ public class IndexManager {
         private ConcurrentQueue<IndexCreatorTask> tasks = new ConcurrentQueue<>();
         private DirectoryWatcher fileChangeChecker;
 
-        private boolean directoryChanged = true;
+        private boolean directoryChanged = false;
         private boolean interrupted = false;
 
         public void run()
@@ -174,7 +198,7 @@ public class IndexManager {
 
             try
             {
-                updateFile(Settings.getInstance().getLogFilePath());
+                checkAllFilesForUpdates();
             }
             catch (InterruptedException e) {interrupted = true;}
             catch (IOException e) {e.printStackTrace();}
@@ -187,14 +211,14 @@ public class IndexManager {
                         interrupted = false;
                         System.out.println("Recreating Index");
                         directoryChanged = false;
-                        currentState = IndexState.INDEXING;
+                        setCurrentState(IndexState.INDEXING);
                         createNewIndex();
-                        currentState = IndexState.READY;
+                        setCurrentState(IndexState.READY);
                     }
 
                     IndexCreatorTask task = tasks.pop();
 
-                    currentState = IndexState.INDEXING;
+                    setCurrentState(IndexState.INDEXING);
                     switch(task.getTaskType())
                     {
                         case FILE_CREATED:
@@ -206,18 +230,18 @@ public class IndexManager {
                     }
 
                     if(tasks.isEmpty()){
-                        currentState = IndexState.READY;
+                        setCurrentState(IndexState.READY);
                     }
                 }
                 catch (InterruptedException e) {
-                    currentState = IndexState.INTERRUPTED;
+                    setCurrentState(IndexState.INTERRUPTED);
                     interrupted = true;
                 }
                 catch (IOException e){
                     //--- An error occurred --//
                     System.err.println("Everything died");
                     e.printStackTrace();
-                    currentState = IndexState.ERROR;
+                    setCurrentState(IndexState.ERROR);
                     return;
                 }
             }
