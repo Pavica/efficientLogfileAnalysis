@@ -7,11 +7,14 @@ import com.efficientlogfileanalysis.logs.LogReader;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Path("/logFiles")
 public class LogFileResource {
@@ -80,6 +83,56 @@ public class LogFileResource {
         }
         catch(IOException exception)
         {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GET
+    @Path("/nearby")
+    @Produces("application/json")
+    public Response getNearbyEntries(
+            @QueryParam("filename") String filename,
+            @QueryParam("entryID") long entryID,
+            @QueryParam("byteRange") int byteRange
+    )
+    {
+        try(LogReader reader = new LogReader())
+        {
+            String path = Settings.getInstance().getLogFilePath();
+            short fileID = IndexManager.getInstance().getFileID(filename);
+            return Response.ok(reader.getNearbyEntries(path, fileID, entryID, byteRange)).build();
+        }
+        catch (IOException e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @Data
+    @AllArgsConstructor
+    public static class RawEntryData{
+        private long entryID;
+        private String entry;
+    }
+
+    @GET
+    @Path("/nearbyRaw")
+    @Produces("application/json")
+    public Response getNearbyEntriesRaw(
+            @QueryParam("filename") String filename,
+            @QueryParam("entryID") long entryID,
+            @QueryParam("byteRange") int byteRange
+    )
+    {
+        try(LogReader reader = new LogReader())
+        {
+            String path = Settings.getInstance().getLogFilePath();
+            short fileID = IndexManager.getInstance().getFileID(filename);
+            List<LogEntry> entries = reader.getNearbyEntries(path, fileID, entryID, byteRange);
+
+            List<RawEntryData> rawData = entries.stream().map(e -> new RawEntryData(e.getEntryID(), e.toString())).collect(Collectors.toList());
+            return Response.ok(rawData).build();
+        }
+        catch (IOException e) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
         }
     }

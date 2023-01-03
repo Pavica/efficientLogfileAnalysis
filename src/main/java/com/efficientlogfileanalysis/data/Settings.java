@@ -25,14 +25,20 @@ public class Settings {
      */
     private long maxSizeOfCacheFile; 
 
-    private Settings() throws IOException {
+    private Settings() {
         File confFile = new File(configFileName);
-        
-        if(confFile.createNewFile()) {
+
+        try
+        {
+            if(confFile.createNewFile()) {
+                setDefaultValues();
+                writeConfigFile();
+            } else {
+                readConfigFile();
+            }
+        }
+        catch (IOException e) {
             setDefaultValues();
-            writeConfigFile();
-        } else {
-            readConfigFile();
         }
     }
 
@@ -100,7 +106,7 @@ public class Settings {
         br.close();
     }
 
-    public static synchronized Settings getInstance() throws IOException {
+    public static synchronized Settings getInstance() {
         if(instance == null) {
             instance = new Settings();
         }

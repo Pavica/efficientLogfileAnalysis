@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link rel="icon" type="image/png" href="images/favicon.ico" sizes="96x96">
+
+  <!-- Bootstrap 5 Main -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+
+  <!-- Bootstrap 5 Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+
+  <!-- Bootstrap 5 Main -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+
+  <!-- Jquery-->
+  <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.1/themes/base/jquery-ui.css">
+  <script src="https://code.jquery.com/jquery-3.6.0.js"></script>
+  <script src="https://code.jquery.com/ui/1.13.1/jquery-ui.js"></script>
+
+  <!-- DataTables -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.1.3/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap5.min.css">
+  <script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap5.min.js"></script>
+
+  <!-- DataTables Button -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.2.3/css/buttons.dataTables.min.css">
+  <script src="https://cdn.datatables.net/buttons/2.2.3/js/dataTables.buttons.min.js"></script>
+
+  <!-- DataTables Select -->
+  <link rel="stylesheet" herf="https://cdn.datatables.net/select/1.4.0/css/select.dataTables.min.css">
+  <script src="https://cdn.datatables.net/select/1.4.0/js/dataTables.select.min.js"></script>
+
+  <!-- Filter-Script -->
+  <script src="js/Filter.js"></script>
+  <!-- Search-Script -->
+  <script src="js/Search.js"></script>
+  <!-- Index-Script -->
+  <script src="js/index.js" defer></script>
+  <!-- Settings-Script -->
+  <script src="js/Settings.js" defer></script>
+  <!-- Cookie-Script -->
+  <script src="js/Cookie.js" defer></script>
+  <!-- Validation-Script -->
+  <script src="js/Validation.js" defer></script>
+  <!-- Statistics-Script -->
+  <script src="js/Statistics.js" defer></script>
+  <!-- SearchNearby-Script -->
+  <script src="js/SearchNearby.js" defer></script>
+
+  <title>Umgebende Logeinträge</title>
+  <style>
+    :root{
+      --main-color: #fff200;
+      --main-text-color: #000000;
+    }
+
+    .mainEntry{
+      border-bottom: 1px solid var(--main-color);
+    }
+
+    .search-nearby, .views{
+      margin-top: 2rem;
+    }
+
+    .filter-header{
+      border-bottom: solid black 1px;
+    }
+
+    .page-link {
+      color: var(--main-color) !important;
+    }
+
+    .page-item.active .page-link, .selected td{
+      box-shadow: none !important;
+      background-color: var(--main-color) !important;
+      border: 1px solid var(--main-color) !important;
+      color: var(--main-text-color) !important;
+    }
+
+    nav{
+      background-color: var(--main-color);
+      white-space: nowrap;
+    }
+
+    .log-textArea{
+      resize: vertical;
+    }
+
+    .log-table{
+      border-collapse: separate;
+    }
+
+    .dataTables_scrollBody{
+      height: 15rem;
+      resize: vertical;
+      overflow: auto;
+    }
+
+    .button-style{
+      background-color: var(--main-color);
+      color: var(--main-text-color);
+    }
+
+    .button-style:hover{
+      color: var(--main-text-color);
+    }
+
+    .table-wrapper{
+      /*display: block;
+      overflow-x: auto;
+      white-space: nowrap;*/
+    }
+
+    .log-date{
+      background-color: var(--main-color);
+      color: var(--main-text-color);
+    }
+
+    .log-center{
+      display: flex;
+      align-items: center;
+    }
+
+    table.dataTable td {
+      /*potentially change font size if necessary*/
+      /*font-size: 15px;*/
+    }
+
+    #logEntryHolder tr:hover{
+      background-color: lightgrey;
+    }
+
+    @media only screen and (max-width: 768px) {
+      .introduction > div{
+        margin-left: auto;
+        margin-right: auto;
+      }
+    }
+  </style>
+</head>
+<body onload="loadDocumentNearby()">
+
+<!-- NavBar -->
+<nav class="navbar navbar-expand-lg navbar-light sticky-top">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="#">
+      <img src="images/ssi_logo.svg" alt="..." width="200" height="40" style="object-fit: contain">
+    </a>
+  </div>
+</nav>
+<!-- NavBar -->
+
+<div class="search-nearby">
+  <div class="collapse show" id="collapseNearby">
+    <div class="container p-4 border rounded-3">
+      <h5 class="filter-header mb-3 text-center">Umgebende Logeinträge: </h5>
+      <form class="needs-validation" novalidate>
+      <div class="d-flex flex-row row">
+        <div class="col-md-3">
+          <div class="d-flex flex-row row">
+            <div class="col-lg-4 text-center">
+              <label for="inputFilename" class="form-label mt-1">Dateiname</label>
+            </div>
+            <div class="col-lg-8">
+              <input type="" id="inputFilename" class="form-control" disabled>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="d-flex flex-row row">
+            <div class="col-lg-4 text-center">
+              <label for="inputEntryID" class="form-label mt-1">EntryID</label>
+            </div>
+            <div class="col-lg-8">
+              <input type="" id="inputEntryID" class="form-control" disabled>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="d-flex flex-row row">
+            <div class="col-lg-4 text-center">
+              <label for="inputByteRange" class="form-label mt-1">Bytebereich</label>
+            </div>
+            <div class="col-lg-8">
+              <input type="number" max="100000" min="0" id="inputByteRange" class="form-control">
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <button type="button" class="btn button-style w-100 h-100">Suchen</button>
+          <input type="hidden" class="onSubmit" onclick="startNearbySearch()">
+        </div>
+      </div>
+      </form>
+    </div>
+  </div>
+  <div class="text-center justify-content-center">
+    <button onclick="onCollapseFilter($('#btnNearby'))" id="btnNearby" class="btn button-style" type="button" data-bs-toggle="collapse" data-bs-target="#collapseNearby" aria-expanded="false" aria-controls="collapseNearby">Filter </button>
+  </div>
+</div>
+
+
+<div class="views">
+  <div class="container p-4 border rounded-3">
+  <!-- Tabs navs -->
+  <ul class="nav nav-tabs nav-justified" id="myTab" role="tablist">
+    <li class="nav-item" role="presentation">
+      <a class="nav-link active" id="login-tab" data-bs-toggle="tab" href="#dataTableView" role="tab" aria-controls="DataTableView" aria-selected="true">DataTableView</a>
+    </li>
+    <li class="nav-item" role="presentation">
+      <a class="nav-link" id="rawView-tab" data-bs-toggle="tab" href="#rawView" role="tab" aria-controls="RawView" aria-selected="false">RawView</a>
+    </li>
+  </ul>
+  <!-- Tabs navs -->
+
+  <!-- dataTableView -->
+  <div class="tab-content" id="myTabContent">
+    <div class="tab-pane fade show active" id="dataTableView" role="tabpanel" aria-labelledby="dataTableView-tab">
+        <div class="table-wrapper">
+          <table class="table log-table" id="logEntryTableNearby">
+            <thead>
+            <tr class="sticky-header">
+              <th scope="col">Datum</th>
+              <th scope="col">Log Level</th>
+              <th scope="col">Modul</th>
+              <th scope="col">Klasse</th>
+            </tr>
+            </thead>
+            <tbody id="logEntryHolder">
+            </tbody>
+          </table>
+        </div>
+        <div class="form-floating mt-3">
+              <textarea disabled class="form-control log-textArea" fetchpriority="high" style="height: 15rem;" placeholder="Click on Log entry to see message" id="floatingTextareaNearby">
+              </textarea>
+        </div>
+    </div>
+    <!-- dataTableView -->
+
+    <!-- rawView -->
+    <div class="tab-pane fade" id="rawView" role="tabpanel" aria-labelledby="rawView-tab">
+      <div disabled class="form-control log-textArea" style="overflow-y:scroll; height:600px;" fetchpriority="high" style="height: 15rem;" id="floatingTextareaNearbyRaw">
+        </div>
+    </div>
+    <!-- rawView -->
+    </div>
+  </div>
+</div>
+</body>
+</html>

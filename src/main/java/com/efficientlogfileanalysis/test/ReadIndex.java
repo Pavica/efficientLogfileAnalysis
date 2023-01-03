@@ -40,7 +40,7 @@ public class ReadIndex {
         Timer timer = new Timer();
 
         //Create path object
-        Path indexPath = Paths.get(IndexManager.PATH_TO_INDEX);
+        Path indexPath = IndexManager.PATH_TO_INDEX;
 
         //Open the index directory (creates the directory if it doesn't exist)
         IndexSearcher indexSearcher = null;

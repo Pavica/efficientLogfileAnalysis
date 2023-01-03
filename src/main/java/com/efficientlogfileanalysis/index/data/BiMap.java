@@ -47,11 +47,20 @@ public class BiMap<K, V>{
         return map1.getOrDefault(key, null);
     }
 
+
+    public V getValueOrDefault(K key, V defaultValue) {
+        return map1.getOrDefault(key, defaultValue);
+    }
+
     /**
      * Gets the key with the value. If the requested value isnt inside the map null is returned.
      */
     public K getKey(V value) {
         return map2.getOrDefault(value, null);
+    }
+
+    public K getKeyOrDefault(V value, K defaultKey) {
+        return map2.getOrDefault(value, defaultKey);
     }
 
     /**
@@ -114,5 +123,10 @@ public class BiMap<K, V>{
         map2.put(value,key);
 
         return true;
+    }
+
+    public void clear() {
+        map1.clear();
+        map2.clear();
     }
 }
