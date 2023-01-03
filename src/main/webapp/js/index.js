@@ -66,9 +66,11 @@ async function fillDataLists(){
     });
 }
 
+//TODO declare state in initIndexToast
+let state;
 async function initIndexToast() {
 
-    let state = "NOT_READY";
+    state = "NOT READY";
 
     while (true) {
         try
@@ -78,10 +80,15 @@ async function initIndexToast() {
                 headers : {
                     "content-type" : "application/json"
                 },
-                body : JSON.stringify(
-                    state
-                )
+                body : state
             });
+
+            console.log(response.status);
+
+            //HTTP 204 = No content; Means that the request timeout was reached
+            if(response.status == 204){
+                continue;
+            }
 
             if(!response.ok){
                 throw "Server is unreachable";
@@ -91,6 +98,7 @@ async function initIndexToast() {
             displayState(state);
         }
         catch(e){
+            state = "SERVER UNREACHABLE";
             setToast("Connection lost!", "Lost connection to server", "Please check the connection.", "#c32232", "bg-danger", true);
             await delay(1000);
         }
@@ -101,20 +109,20 @@ function displayState(state)
 {
     switch (state) {
         case "INDEXING":
-            setToast("Indexing!", "Index is currently being updated!", "Please wait about 10 seconds.", "#ffc240", "bg-warning", false);
-            fillDataLists();
+            setToast("Indexing!", "Index is currently being updated!", "Please wait about 10 seconds.", "#ffc240", "bg-warning", false, false);
             break;
 
         case "ERROR":
-            setToast("Error!", "Index could not be updated!", "Please try again.", "#c32232", "bg-danger", true);
+            setToast("Error!", "Index could not be updated!", "Please try again.", "#c32232", "bg-danger", true, false);
             break;
 
         case "INTERRUPTED":
-            setToast("Interrupted!", "Indexing was interrupted!", "Please restart.", "#c32232", "bg-danger", true);
+            setToast("Interrupted!", "Indexing was interrupted!", "Please restart.", "#c32232", "bg-danger", true, false);
             break;
 
         case "READY":
-            setToast("Ready!", "Index is ready!", "You may continue working.", "forestgreen", "bg-success", true);
+            setToast("Ready!", "Index is ready!", "You may continue working.", "forestgreen", "bg-success", true, true);
+            fillDataLists();
             break;
     }
 
@@ -129,40 +137,21 @@ function displayState(state)
     });
 }
 
-function setToast(header, text1, text2, n_background, h_background, x){
-    if(x){
-        document.getElementById("toastIndex").innerHTML =
-            `
-        <div class="position-fixed bottom-0 end-0 p-3">
-            <div class="toast text-white fade show" style="background-color: ${n_background}">
-                 <div class="toast-header text-white ${h_background}">
-                    <strong class="me-auto">${header}</strong>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
-                 </div>
-                <div class="toast-body">
-                    <p>${text1}</p>
-                    <p>${text2}</p>
-                </div>
+function setToast(header, text1, text2, n_background, h_background, hasCloseButton, autohide = false){
+    document.getElementById("toastIndex").innerHTML = `
+    <div class="position-fixed bottom-0 end-0 p-3">
+        <div class="toast text-white fade show" style="background-color: ${n_background}" data-bs-autohide="${autohide}"> 
+             <div class="toast-header text-white ${h_background}">
+                <strong class="me-auto">${header}</strong>
+                ${hasCloseButton ? '<button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>' : ''}
+             </div>
+            <div class="toast-body">
+                <p>${text1}</p>
+                <p>${text2}</p>
             </div>
         </div>
-        `;
-    }else{
-        document.getElementById("toastIndex").innerHTML =
-            `
-        <div class="position-fixed bottom-0 end-0 p-3">
-            <div class="toast text-white fade show" style="background-color: ${n_background}">
-                 <div class="toast-header text-white ${h_background}">
-                    <strong class="me-auto">${header}</strong>
-                 </div>
-                <div class="toast-body">
-                    <p>${text1}</p>
-                    <p>${text2}</p>
-                </div>
-            </div>
-        </div>
-        `;
-    }
-
+    </div>
+    `;
 }
 
 function delay(milliseconds){

@@ -1,5 +1,6 @@
 package com.efficientlogfileanalysis.data;
 
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.locks.Condition;
@@ -12,16 +13,28 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class ConcurrentQueue<T>{
 
-    private Lock lock;
-    private Condition notEmpty;
+    private final Lock lock;
+    private final Condition notEmpty;
 
-    private Queue<T> queue;
+    private final Queue<T> queue;
 
     public ConcurrentQueue()
     {
         lock = new ReentrantLock();
         notEmpty = lock.newCondition();
         queue = new LinkedList<>();
+    }
+
+    /**
+     * Adds multiple items to the queue
+     * Notifies everyone waiting to pop()
+     * @param elements the new elements
+     */
+    public void push(Collection<T> elements) {
+        lock.lock();
+        queue.addAll(elements);
+        notEmpty.signalAll();
+        lock.unlock();
     }
 
     /**
@@ -45,8 +58,6 @@ public class ConcurrentQueue<T>{
      */
     public T pop() throws InterruptedException
     {
-        System.out.println(this);
-
         lock.lock();
 
         while(queue.isEmpty()){

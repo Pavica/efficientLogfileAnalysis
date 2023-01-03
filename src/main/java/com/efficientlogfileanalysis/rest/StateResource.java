@@ -22,15 +22,33 @@ public class StateResource {
 
     @POST
     @Path("/updates")
-    public Response waitForStateChange(IndexState currentState)
+    public Response waitForStateChange(String currentState)
     {
         try
         {
-            if(currentState != IndexManager.getInstance().getIndexState()){
+            //check if the state of the client is already different
+            IndexState currentClientState = IndexState.valueOf(currentState);
+
+            if(currentClientState != IndexManager.getInstance().getIndexState()){
                 return Response.ok(IndexManager.getInstance().getIndexState()).build();
             }
+        }
+        //is thrown if the state of the client isn't valid. If so, immediately return the correct index state
+        catch(IllegalArgumentException illegalArgument){
+            return Response.ok(IndexManager.getInstance().getIndexState()).build();
+        }
 
-            IndexState state = IndexManager.getInstance().waitForIndexStateChange();
+        //The client state is up-to-date, which means the server waits for an Index Change
+        try
+        {
+            //wait for state change
+            IndexState state = IndexManager.getInstance().waitForIndexStateChange(30);
+
+            if(state == null){
+                //timeout was reached
+                return Response.status(Response.Status.NO_CONTENT).build();
+            }
+
             return Response.ok(state).build();
         }
         catch (InterruptedException e) {

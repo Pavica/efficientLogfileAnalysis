@@ -4,9 +4,11 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Stream;
 
 import com.efficientlogfileanalysis.data.ConcurrentQueue;
 import com.efficientlogfileanalysis.data.Settings;
@@ -29,7 +31,7 @@ public class IndexManager {
     private Lock stateLock = new ReentrantLock();
     private Condition stateChanged = stateLock.newCondition();
     private List<IndexStateObserver> indexStateObservers = new ArrayList<>();
-    
+
     /**
      * The directory where the index gets created.
      */
@@ -109,10 +111,12 @@ public class IndexManager {
         //Delete previous directory
         if(PATH_TO_INDEX.toFile().exists())
         {
-            Files.walk(PATH_TO_INDEX)
-                .map(Path::toFile)
-                .sorted(Comparator.comparing(File::isDirectory)) //sort so that files are deleted before their directories are
-                .forEach(File::delete);
+            try(Stream<Path> paths = Files.walk(PATH_TO_INDEX))
+            {
+                paths.map(Path::toFile)
+                    .sorted(Comparator.comparing(File::isDirectory)) //sort so that files are deleted before their directories are
+                    .forEach(File::delete);
+            }
         }
 
         fileIDManager.clear();
@@ -133,13 +137,19 @@ public class IndexManager {
         stateLock.unlock();
     }
 
-    public IndexState waitForIndexStateChange() throws InterruptedException
+    /**
+     * Waits until the IndexState changes and returns the new State
+     * @param timeout the max amount of seconds to wait
+     * @return the new IndexState or null if the timeout was reached
+     * @throws InterruptedException if the threads gets interrupted during waiting
+     */
+    public IndexState waitForIndexStateChange(long timeout) throws InterruptedException
     {
         stateLock.lock();
-        stateChanged.await();
+        boolean timeOutReached = !stateChanged.await(timeout, TimeUnit.SECONDS);
         stateLock.unlock();
 
-        return currentState;
+        return timeOutReached ? null : currentState;
     }
 
     public void attachIndexStateObserver(IndexStateObserver newObserver)
@@ -198,7 +208,9 @@ public class IndexManager {
 
             try
             {
+                setCurrentState(IndexState.INDEXING);
                 checkAllFilesForUpdates();
+                setCurrentState(IndexState.READY);
             }
             catch (InterruptedException e) {interrupted = true;}
             catch (IOException e) {e.printStackTrace();}
@@ -248,12 +260,12 @@ public class IndexManager {
         }
 
         private void fileCreated(String filename) throws IOException, InterruptedException {
-            System.out.println("Indexing new file: " + filename);
+//            System.out.println("Indexing new file: " + filename);
             updateFile(filename);
         }
 
         private void fileChanged(String filename) throws IOException, InterruptedException {
-            System.out.println("Indexing changes in file: " + filename);
+//            System.out.println("Indexing changes in file: " + filename);
             updateFile(filename);
         }
 
@@ -282,7 +294,7 @@ public class IndexManager {
                     );
 
                     String logFolder = Settings.getInstance().getLogFilePath();
-                    File[] files = LogReader.getAllLogFiles(Settings.getInstance().getLogFilePath());
+                    File[] files = LogReader.getAllLogFiles(logFolder);
 
                     for(File file : files)
                     {
@@ -326,12 +338,12 @@ public class IndexManager {
                 {
                     try
                     {
-                        indexSingleLogFile(indexCreator, filename);
-                        shouldRetry = false;
-
                         if(!file.exists()){
                             shouldRetry = false;
                         }
+
+                        indexSingleLogFile(indexCreator, filename);
+                        shouldRetry = false;
                     }
                     catch(FileSystemException ex) {
                         System.out.println("File is currently being read by another process\nRetrying in 250ms");

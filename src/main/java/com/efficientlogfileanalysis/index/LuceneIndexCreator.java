@@ -36,8 +36,6 @@ public class LuceneIndexCreator implements Closeable {
 
         //Specify the Index to be written to and the config
         indexWriter = new IndexWriter(indexDirectory, indexWriterConfig);
-
-        System.out.println("Index writer constructed");
     }
 
     @Override
@@ -46,7 +44,5 @@ public class LuceneIndexCreator implements Closeable {
         indexWriter.close();
         analyzer.close();
         indexDirectory.close();
-
-        System.out.println("Index writer closed");
     }
 }

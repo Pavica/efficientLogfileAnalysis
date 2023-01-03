@@ -17,8 +17,6 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.efficientlogfileanalysis.test.ReadFile.readLine;
-
 /**
  * A class with methods for reading information out of logfiles.
  * @author Andreas Kurz, Jan Mandl
@@ -30,7 +28,7 @@ public class LogReader implements Closeable {
     public static File[] getAllLogFiles(String logFolder)
     {
         File[] files = new File(logFolder).listFiles(
-            name -> name.isFile() && name.getName().endsWith(".log")
+            name -> name.isFile() && name.getName().contains(".log")
         );
 
         if(files == null){
@@ -71,6 +69,7 @@ public class LogReader implements Closeable {
             for(char value : values){
                 if(currentCharacter == value){
                     characterIsPresent = true;
+                    break;
                 }
             }
             if(!characterIsPresent){
@@ -402,14 +401,12 @@ public class LogReader implements Closeable {
         byte[] bytes = new byte[24];
         file.read(bytes);
 
-        long milliseconds = DateConverter.toLong(
+        return DateConverter.toLong(
             LocalDateTime.parse(
                 new String(bytes),
                 LogEntry.DTF
             )
         );
-
-        return milliseconds;
     }
 
     /**

@@ -6,12 +6,14 @@ import lombok.AllArgsConstructor;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @AllArgsConstructor
 public class DirectoryWatcher extends Thread
 {
     public interface FileEventListener {
-        void handleTask(IndexCreatorTask task);
+        void handleTasks(List<IndexCreatorTask> task);
     }
 
     public DirectoryWatcher switchDirectory(String newPath)
@@ -49,9 +51,9 @@ public class DirectoryWatcher extends Thread
         {
             while (!Thread.currentThread().isInterrupted())
             {
-                System.err.println("Waiting");
                 WatchKey key = watchService.take();
-                System.err.println("Something happened");
+
+                List<IndexCreatorTask> tasks = new ArrayList<>();
 
                 for (WatchEvent event : key.pollEvents())
                 {
@@ -63,18 +65,20 @@ public class DirectoryWatcher extends Thread
                     Path fileName = (Path) event.context();
                     File file = Paths.get(directoryPath).resolve(fileName).toFile();
 
-                    eventListener.handleTask(new IndexCreatorTask(
+                    tasks.add(new IndexCreatorTask(
                         file.getName(),
                         event.kind() == StandardWatchEventKinds.ENTRY_CREATE ? IndexCreatorTask.TaskType.FILE_CREATED :
                         event.kind() == StandardWatchEventKinds.ENTRY_MODIFY ? IndexCreatorTask.TaskType.FILE_APPENDED :
                         IndexCreatorTask.TaskType.FILE_DELETED
                     ));
                 }
+
+                eventListener.handleTasks(tasks);
                 key.reset();
             }
         }
         catch (Exception interruptedException) {
-            System.err.println("I died");
+            System.err.println("Directory Watcher was interrupted");
             interruptedException.printStackTrace();
         }
     }
