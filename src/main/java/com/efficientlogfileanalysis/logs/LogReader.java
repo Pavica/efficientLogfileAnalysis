@@ -1,11 +1,14 @@
 package com.efficientlogfileanalysis.logs;
 
+import com.efficientlogfileanalysis.data.Settings;
 import com.efficientlogfileanalysis.index.IndexManager;
+import com.efficientlogfileanalysis.index.data.TimeRange;
 import com.efficientlogfileanalysis.logs.data.LogEntry;
 import com.efficientlogfileanalysis.logs.data.LogFile;
 import com.efficientlogfileanalysis.logs.data.LogFileData;
 import com.efficientlogfileanalysis.logs.data.LogLevel;
 import com.efficientlogfileanalysis.util.DateConverter;
+import com.efficientlogfileanalysis.test.*;
 import lombok.SneakyThrows;
 
 import java.io.*;
@@ -429,95 +432,62 @@ public class LogReader implements Closeable {
         return LogLevel.valueOf(new String(bytes).trim());
     }
 
-    @SneakyThrows
-    public static void main(String[] args) {
+    /**
+     * Finds the position (ID) of the last entry in a logfile
+     * @param path
+     * @param fileID
+     * @return
+     */
+    private long getIDOfLastLogEntry(String path, short fileID) throws IOException
+    {
+        RandomAccessFile file = prepareRandomAccessFile(path, fileID, 0);
 
-        LogFileData data = readSingleFile(
-                "C:\\Users\\AndiK\\OneDrive\\Dokumente\\HTL 5. Jahr\\Diplomarbeit\\efficientLogfileAnalysis\\test_logs_auto\\DesktopClient-DEGFF-N-0165.haribo.dom.log",
-                0L);
-        data.getEntries().forEach(entry -> System.out.println(entry.getEntryID() + " " + entry));
-        System.out.println("------------------");
-        System.out.println(data.getBytesRead());
+        for(long position = file.length() - 1; position >= 0; --position)
+        {
+            file.seek(position);
+            byte character = file.readByte();
 
-        System.exit(0);
+            if(character == '\n'){
 
+                byte[] bytes = new byte[24];
+                file.read(bytes);
 
-//        ArrayList<LogEntry> sno = new ArrayList<>();
-//        ArrayList<LogEntry> sho = new ArrayList<>();
-//
-//        int N_TIMES = 2;
-//        sno.ensureCapacity(N_TIMES);
-//        sho.ensureCapacity(N_TIMES);
-        
-        
-        
-        /*
-        Timer timer = new Timer();
+                String startOfEntry = new String(bytes);
 
-        LogReader logReader = new LogReader();
-        Timer.Time time = timer.timeExecutionSpeed(() -> {
-            
-            try {
-                long date = logReader.readDateOfEntry(
-                    Settings.getInstance().getLogFilePath(),
-                    (short)1,
-                    0
-                );
-                String loglevel = logReader.readLogLevelOfEntry(
-                    Settings.getInstance().getLogFilePath(),
-                    (short)1,
-                    0
-                );
-
-                LogEntry l = new LogEntry();
-                l.setTime(date);
-                l.setLogLevel(loglevel);
-                sno.add(l);
-
-            } catch (IOException ioe) {
-                ioe.printStackTrace();
-            }
-
-        }, N_TIMES);
-        logReader.close();
-        System.out.println("My function: " + time);
-        time = timer.timeExecutionSpeed(() -> {
-            
-            try {
-                LogEntry le = logReader.getLogEntry(
-                    Settings.getInstance().getLogFilePath(),
-                    (short)1,
-                    0
-                );
-                long date = le.getTime();
-                String loglevel = le.getLogLevel();
-
-                LogEntry l = new LogEntry();
-                l.setTime(date);
-                l.setLogLevel(loglevel);
-                sho.add(l);
-
-            } catch (IOException ioe) {
-                ioe.printStackTrace();
-            }
-
-        }, N_TIMES);
-        logReader.close();
-
-        System.out.println("Done");
-        for (int i = 0;i < N_TIMES; ++i) {
-            if(
-                !sno.get(i).getLogLevel().equals(sho.get(i).getLogLevel()) ||
-                sno.get(i).getTime() != sho.get(i).getTime()
-            ) {
-                System.out.println(sno.get(i).getLogLevel() + "\n" + sho.get(i).getLogLevel());
-                System.out.println(sno.get(i).getTime() + "\n" + sho.get(i).getTime());
-                System.out.println(":(");
-                break;
+                //check if the line starts with a date
+                if(startOfLogEntry.reset(startOfEntry).matches()){
+                    return ++position;
+                }
             }
         }
 
-        System.out.println("Shorts fast function: " + time);
-        */
+        return 0;
+    }
+
+    /**
+     * Retrieves the time range in which the logfile has been used
+     * @param logFolder the current log folder
+     * @param fileID the id of the specific file
+     * @return a TimeRange object containing the dates for the first and last logEntry
+     */
+    public TimeRange getTimeRangeOfFile(String logFolder, short fileID) throws IOException
+    {
+        TimeRange result = new TimeRange();
+        result.beginDate = readDateOfEntry(logFolder, fileID, 0);;
+        result.endDate = readDateOfEntry(logFolder, fileID, getIDOfLastLogEntry(logFolder, fileID));
+        return result;
+    }
+
+    @SneakyThrows
+    public static void main(String[] args) {
+        IndexManager.getInstance().readIndices();
+        try(LogReader reader = new LogReader())
+        {
+            for(Short s : IndexManager.getInstance().getFileIDs()){
+                TimeRange t = reader.getTimeRangeOfFile(Settings.getInstance().getLogFilePath(), s);
+                System.out.printf("%-75s - %s\n", IndexManager.getInstance().getFileName(s), t);
+            }
+        }
+        System.exit(0);
     }
 }
