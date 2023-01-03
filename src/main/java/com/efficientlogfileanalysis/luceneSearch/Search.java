@@ -205,20 +205,20 @@ public class Search implements Closeable {
 
         HashMap<Short, SearchEntry> logFiles = new HashMap<>();
 
-        try (LogReader logReader = new LogReader())
+        try (LogReader logReader = new LogReader(path))
         {
             for(ScoreDoc hit : hits)
             {
                 Document document = searcher.doc(hit.doc);
 
                 short fileID = document.getField("fileIndex").numericValue().shortValue();
+                String fileName = IndexManager.getInstance().getFileName(fileID);
                 long entryIndex = document.getField("logEntryID").numericValue().longValue();
 
-                long logEntryTime = logReader.readDateOfEntry(path, fileID, entryIndex);
-                LogLevel logLevel = logReader.readLogLevelOfEntry(path, fileID, entryIndex);
+                long logEntryTime = logReader.readDateOfEntry(fileName, entryIndex);
+                LogLevel logLevel = logReader.readLogLevelOfEntry(fileName, entryIndex);
 
-                //logFiles.putIfAbsent(fileIndex, new SearchEntry(FileIDManager.getInstance().get(fileID)));
-                logFiles.putIfAbsent(fileID, new SearchEntry(IndexManager.getInstance().getFileName(fileID)));
+                logFiles.putIfAbsent(fileID, new SearchEntry(fileName));
                 logFiles.get(fileID).addLogEntry(entryIndex, logLevel, logEntryTime);
             }
         }
@@ -355,7 +355,7 @@ public class Search implements Closeable {
         System.out.println("Lucene finished");
 
         List<LogEntry> logEntries = new ArrayList<>();
-        try (LogReader logReader = new LogReader())
+        try (LogReader logReader = new LogReader(Settings.getInstance().getLogFilePath()))
         {
             for(ScoreDoc hit : hits)
             {
@@ -364,7 +364,8 @@ public class Search implements Closeable {
                 long entryID = document.getField("logEntryID").numericValue().longValue();
                 short fileID = document.getField("fileIndex").numericValue().shortValue();
 
-                logEntries.add(logReader.readLogEntryWithoutMessage(Settings.getInstance().getLogFilePath(), fileID, entryID));
+                String fileName = IndexManager.getInstance().getFileName(fileID);
+                logEntries.add(logReader.readLogEntryWithoutMessage(fileName, entryID));
             }
         }
 

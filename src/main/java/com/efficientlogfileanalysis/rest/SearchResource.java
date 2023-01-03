@@ -103,12 +103,11 @@ public class SearchResource {
             List<LogEntry> result = new ArrayList<>();
             List<Long> entryIDs = search.searchForLogEntryIDs(filter);
 
-            try (LogReader logReader = new LogReader())
+            try (LogReader logReader = new LogReader(Settings.getInstance().getLogFilePath()))
             {
-                String logPath = Settings.getInstance().getLogFilePath();
                 for(long entryID : entryIDs)
                 {
-                    result.add(logReader.readLogEntryWithoutMessage(logPath, fileID, entryID));
+                    result.add(logReader.readLogEntryWithoutMessage(fileName, entryID));
                 }
             }
 
@@ -188,12 +187,12 @@ public class SearchResource {
             String logPath = Settings.getInstance().getLogFilePath();
             List<LogEntry> logEntries = new ArrayList<>();
 
-            try (LogReader logReader = new LogReader())
+            try (LogReader logReader = new LogReader(logPath))
             {
                 for(long entryID : result.value1)
                 {
                     //get preceding log entries
-                    logEntries.add(logReader.readLogEntryWithoutMessage(logPath, fileID, entryID));
+                    logEntries.add(logReader.readLogEntryWithoutMessage(fileName, entryID));
                 }
             }
 

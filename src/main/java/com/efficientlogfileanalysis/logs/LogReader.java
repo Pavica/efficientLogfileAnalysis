@@ -8,7 +8,6 @@ import com.efficientlogfileanalysis.logs.data.LogFile;
 import com.efficientlogfileanalysis.logs.data.LogFileData;
 import com.efficientlogfileanalysis.logs.data.LogLevel;
 import com.efficientlogfileanalysis.util.DateConverter;
-import com.efficientlogfileanalysis.test.*;
 import lombok.SneakyThrows;
 
 import java.io.*;
@@ -82,6 +81,13 @@ public class LogReader implements Closeable {
         return true;
     }
 
+    /**
+     * Reads all logEntries after a specific location in the file
+     * @param path the path to the logFile
+     * @param offset how many bytes should be skipped
+     * @return a logFileData object with all read logEntries as well as how many bytes have been read
+     * @throws IOException If an IOError occurs
+     */
     public static LogFileData readSingleFile(String path, long offset) throws IOException {
         Matcher startOfLogEntry = Pattern.compile(REGEX_START_OF_LOG_ENTRY).matcher("");
         List<LogEntry> entries = new ArrayList<>();
@@ -142,18 +148,19 @@ public class LogReader implements Closeable {
         return new LogFileData(entries, bytesRead - offset);
     }
 
-    private  Matcher startOfLogEntry;
+    private final String path;
+    private final Matcher startOfLogEntry;
+    private final HashMap<String, RandomAccessFile> openFiles;
 
-    private HashMap<Short, RandomAccessFile> openFiles;
-
-    public LogReader()
+    public LogReader(String logFolderPath)
     {
+        this.path = logFolderPath;
         startOfLogEntry = Pattern.compile(REGEX_START_OF_LOG_ENTRY).matcher("");
         openFiles = new HashMap<>();
     }
 
     /**
-     * Should be called after using a lot of methods inside this class for multiple times. This is so that the openend files can be closed which improves performance.
+     * Should always be called when the LogReader is no longer needed
      * @throws IOException
      */
     public void close() throws IOException
@@ -168,37 +175,34 @@ public class LogReader implements Closeable {
 
     /**
      * Convenience method. If the file isnt opened inside a RandomAccessFile Object yet, it gets openend.
-     * @param path The path to the log files 
-     * @param fileIndex The index of the file that should get checked.
+     * @param fileName The name of the file that should get checked.
      * @throws IOException
      */
-    private void prepareFile(String path, short fileIndex) throws IOException {
-        if(!openFiles.containsKey(fileIndex))
+    private void prepareFile(String fileName) throws IOException {
+        if(!openFiles.containsKey(fileName))
         {
             openFiles.put(
-                fileIndex,
-                new RandomAccessFile(path + "/" + IndexManager.getInstance().getFileName(fileIndex),"r")
+                fileName,
+                new RandomAccessFile(path + "/" + fileName,"r")
             );
         }
     }
 
     /**
      * Convenience method. Prepares a RandomAccessFile object to be ready to be read from.
-     * @param path The path to the folder containing the log files
-     * @param fileIndex The index of the file
+     * @param fileName The name of the file
      * @param logEntryID The nth log entry inside a file
      * @return a RandomAccessFile whose FilePointer is right before the logEntry
      * @throws IOException if the log directory can't be accessed
      */
     private RandomAccessFile prepareRandomAccessFile(
-        String path,
-        short fileIndex,
+        String fileName,
         long logEntryID
     ) throws IOException {
 
-        prepareFile(path, fileIndex);
+        prepareFile(fileName);
         
-        RandomAccessFile file = openFiles.get(fileIndex);
+        RandomAccessFile file = openFiles.get(fileName);
         file.seek(logEntryID);
         
         return file;
@@ -206,14 +210,13 @@ public class LogReader implements Closeable {
 
     /**
      * Creates a LogEntry object from a FileIndex and a logEntryID
-     * @param path The path to the folder containing the log files
-     * @param fileIndex The index of the file
+     * @param fileName The name of the file
      * @param logEntryID The nth log entry inside a file
      * @return The log entry that has the id of the variable fileIndex inside the file with the id in logEntryID
      * @throws IOException if the log directory can't be accessed
      */
-    public LogEntry getLogEntry(String path, short fileIndex, long logEntryID) throws IOException {
-        RandomAccessFile file = prepareRandomAccessFile(path, fileIndex, logEntryID);
+    public LogEntry getLogEntry(String fileName, long logEntryID) throws IOException {
+        RandomAccessFile file = prepareRandomAccessFile(fileName, logEntryID);
 
         String line = "";
         String tempLine = "";
@@ -234,14 +237,13 @@ public class LogReader implements Closeable {
 
     /**
      * Creates a LogEntry object without the message from a FileIndex and a logEntryID
-     * @param path The path to the folder containing the log files
-     * @param fileIndex The index of the file
+     * @param fileName The name of the file
      * @param logEntryID The nth log entry inside a file
      * @return The log entry that has the id of the variable fileIndex inside the file with the id in logEntryID<br>The message is null.
      * @throws IOException if the log directory can't be accessed
      */
-    public LogEntry readLogEntryWithoutMessage(String path, short fileIndex, long logEntryID) throws IOException {
-        RandomAccessFile file = prepareRandomAccessFile(path, fileIndex, logEntryID);
+    public LogEntry readLogEntryWithoutMessage(String fileName, long logEntryID) throws IOException {
+        RandomAccessFile file = prepareRandomAccessFile(fileName, logEntryID);
         StringBuilder stringBuilder = new StringBuilder("");
 
         LogEntry logEntry = new LogEntry();
@@ -318,10 +320,18 @@ public class LogReader implements Closeable {
         return logEntry;
     }
 
-    public List<LogEntry> getNearbyEntries(String path, short fileID, long logEntryID, long byteRange) throws IOException
+    /**
+     * Reads all Files which start less than x bytes before or after a given entry
+     * @param fileName the name of the file
+     * @param logEntryID the position of the original logEntry
+     * @param byteRange the range of bytes
+     * @return a list of logEntries
+     * @throws IOException
+     */
+    public List<LogEntry> getNearbyEntries(String fileName, long logEntryID, long byteRange) throws IOException
     {
         List<LogEntry> entries = new ArrayList<>();
-        RandomAccessFile file = prepareRandomAccessFile(path, fileID, logEntryID);
+        RandomAccessFile file = prepareRandomAccessFile(fileName, logEntryID);
 
         long startPosition = logEntryID - byteRange;
         long maxPosition = logEntryID + byteRange;
@@ -363,43 +373,16 @@ public class LogReader implements Closeable {
         return entries;
     }
 
-    /*public String getNearbyEntriesRaw(String path, short fileID, long logEntryID, long byteRange) throws IOException
-    {
-        String entries;
-        RandomAccessFile file = prepareRandomAccessFile(path, fileID, logEntryID);
-
-        long startPosition = logEntryID - byteRange;
-        long maxPosition = file.getFilePointer() + byteRange;
-        if(startPosition < 0) {
-            startPosition = 0;
-        }
-
-        file.seek(startPosition);
-
-        String currentLine = "";
-        while(!startOfLogEntry.reset(currentLine).matches()){
-            currentLine = file.readLine();
-        }
-        entries = currentLine + "\n";
-        do
-        {
-            entries += file.readLine() + "\n";
-        }while(file.getFilePointer() < maxPosition);
-
-        return entries;
-    }*/
-
 
     /**
-     * Reads the date of the specified entry and returns it in miliseconds.
-     * @param path The path to the folder containing the log files
-     * @param fileIndex The index of the file
+     * Reads the date of the specified entry and returns it in milliseconds.
+     * @param fileName The index of the file
      * @param logEntryID The nth log entry inside a file
      * @return The time at which the entry was logged
      * @throws IOException if the log directory can't be accessed
      */
-    public long readDateOfEntry(String path, short fileIndex, long logEntryID) throws IOException {
-        RandomAccessFile file = prepareRandomAccessFile(path, fileIndex, logEntryID);
+    public long readDateOfEntry(String fileName, long logEntryID) throws IOException {
+        RandomAccessFile file = prepareRandomAccessFile(fileName, logEntryID);
         
         byte[] bytes = new byte[24];
         file.read(bytes);
@@ -414,16 +397,14 @@ public class LogReader implements Closeable {
 
     /**
      * Reads the log level of the specified entry and returns it.
-     * @param path The path to the folder containing the log files
-     * @param fileIndex The index of the file
+     * @param fileName The name of the file
      * @param logEntryID The nth log entry inside a file
      * @return The log level of the entry as a String object
      * @throws IOException if the log directory can't be accessed
      */
-    public LogLevel readLogLevelOfEntry(String path, short fileIndex, long logEntryID) throws IOException {
-        prepareFile(path, fileIndex);
-        
-        RandomAccessFile file = openFiles.get(fileIndex);
+    public LogLevel readLogLevelOfEntry(String fileName, long logEntryID) throws IOException {
+
+        RandomAccessFile file = prepareRandomAccessFile(fileName, logEntryID);
         byte[] bytes = new byte[7];
         
         file.seek(logEntryID + 24);
@@ -434,13 +415,12 @@ public class LogReader implements Closeable {
 
     /**
      * Finds the position (ID) of the last entry in a logfile
-     * @param path
-     * @param fileID
-     * @return
+     * @param fileName the name of the file
+     * @return the ID of the last logEntry, or 0 if the file contains no entries
      */
-    private long getIDOfLastLogEntry(String path, short fileID) throws IOException
+    private long getIDOfLastLogEntry(String fileName) throws IOException
     {
-        RandomAccessFile file = prepareRandomAccessFile(path, fileID, 0);
+        RandomAccessFile file = prepareRandomAccessFile(fileName, 0);
 
         for(long position = file.length() - 1; position >= 0; --position)
         {
@@ -466,26 +446,24 @@ public class LogReader implements Closeable {
 
     /**
      * Retrieves the time range in which the logfile has been used
-     * @param logFolder the current log folder
-     * @param fileID the id of the specific file
+     * @param fileName the name of the file
      * @return a TimeRange object containing the dates for the first and last logEntry
      */
-    public TimeRange getTimeRangeOfFile(String logFolder, short fileID) throws IOException
+    public TimeRange getTimeRangeOfFile(String fileName) throws IOException
     {
         TimeRange result = new TimeRange();
-        result.beginDate = readDateOfEntry(logFolder, fileID, 0);;
-        result.endDate = readDateOfEntry(logFolder, fileID, getIDOfLastLogEntry(logFolder, fileID));
+        result.beginDate = readDateOfEntry(fileName, 0);;
+        result.endDate = readDateOfEntry(fileName, getIDOfLastLogEntry(fileName));
         return result;
     }
 
     @SneakyThrows
     public static void main(String[] args) {
-        IndexManager.getInstance().readIndices();
-        try(LogReader reader = new LogReader())
+        try(LogReader reader = new LogReader(Settings.getInstance().getLogFilePath()))
         {
-            for(Short s : IndexManager.getInstance().getFileIDs()){
-                TimeRange t = reader.getTimeRangeOfFile(Settings.getInstance().getLogFilePath(), s);
-                System.out.printf("%-75s - %s\n", IndexManager.getInstance().getFileName(s), t);
+            for(File f : LogReader.getAllLogFiles(reader.path)){
+                TimeRange t = reader.getTimeRangeOfFile(f.getName());
+                System.out.printf("%-75s - %s\n", f.getName(), t);
             }
         }
         System.exit(0);

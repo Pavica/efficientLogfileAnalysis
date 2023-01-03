@@ -17,7 +17,6 @@ import org.apache.lucene.store.FSDirectory;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
@@ -93,11 +92,10 @@ public class ReadIndex {
                     Long.parseLong(value.getField("logEntryID").stringValue())
                 );
 
-                try (LogReader logReader = new LogReader())
+                try (LogReader logReader = new LogReader(Settings.getInstance().getLogFilePath()))
                 {
                     result.setDateAsLocalDateTime(logReader.getLogEntry(
-                            Settings.getInstance().getLogFilePath(),
-                            Short.parseShort(value.getField("fileIndex").stringValue()),
+                            IndexManager.getInstance().getFileName(Short.parseShort(value.getField("fileIndex").stringValue())),
                             result.getEntryID()
                         ).retrieveDateAsLocalDateTime()
                     );

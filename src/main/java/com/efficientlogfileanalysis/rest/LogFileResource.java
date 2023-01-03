@@ -33,15 +33,12 @@ public class LogFileResource {
     public Response getLogEntry(
         @PathParam("logFileName") String logFileName,
         @PathParam("id") long entryID
-    ) {
-        //short fileID = FileIDManager.getInstance().get(logFileName);
-        short fileID = IndexManager.getInstance().getFileID(logFileName);
-
-        try( LogReader logReader = new LogReader())
+    )
+    {
+        try( LogReader logReader = new LogReader(Settings.getInstance().getLogFilePath()))
         {
             LogEntry requestedEntry = logReader.getLogEntry(
-                Settings.getInstance().getLogFilePath(),
-                fileID,
+                logFileName,
                 entryID
             );
 
@@ -60,21 +57,16 @@ public class LogFileResource {
     public Response getLogEntries(
         @PathParam("logFileName") String logFileName,
         List<Long> requestedIDs
-    ) {
-        //short fileID = FileIDManager.getInstance().get(logFileName);
-        short fileID = IndexManager.getInstance().getFileID(logFileName);
-
-        try( LogReader logReader = new LogReader())
+    )
+    {
+        try( LogReader logReader = new LogReader(Settings.getInstance().getLogFilePath()))
         {
-            String logFilePath = Settings.getInstance().getLogFilePath();
-
             List<LogEntry> logEntries = new ArrayList<>();
 
             for(long entryID : requestedIDs)
             {
                 logEntries.add(logReader.getLogEntry(
-                    logFilePath,
-                    fileID,
+                    logFileName,
                     entryID
                 ));
             }
@@ -96,11 +88,9 @@ public class LogFileResource {
             @QueryParam("byteRange") int byteRange
     )
     {
-        try(LogReader reader = new LogReader())
+        try(LogReader reader = new LogReader(Settings.getInstance().getLogFilePath()))
         {
-            String path = Settings.getInstance().getLogFilePath();
-            short fileID = IndexManager.getInstance().getFileID(filename);
-            return Response.ok(reader.getNearbyEntries(path, fileID, entryID, byteRange)).build();
+            return Response.ok(reader.getNearbyEntries(filename, entryID, byteRange)).build();
         }
         catch (IOException e) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
@@ -123,11 +113,10 @@ public class LogFileResource {
             @QueryParam("byteRange") int byteRange
     )
     {
-        try(LogReader reader = new LogReader())
+        try(LogReader reader = new LogReader(Settings.getInstance().getLogFilePath()))
         {
-            String path = Settings.getInstance().getLogFilePath();
             short fileID = IndexManager.getInstance().getFileID(filename);
-            List<LogEntry> entries = reader.getNearbyEntries(path, fileID, entryID, byteRange);
+            List<LogEntry> entries = reader.getNearbyEntries(filename, entryID, byteRange);
 
             List<RawEntryData> rawData = entries.stream().map(e -> new RawEntryData(e.getEntryID(), e.toString())).collect(Collectors.toList());
             return Response.ok(rawData).build();
