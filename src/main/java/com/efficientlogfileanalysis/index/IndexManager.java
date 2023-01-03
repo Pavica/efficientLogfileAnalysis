@@ -131,9 +131,12 @@ public class IndexManager {
     private synchronized void setCurrentState(IndexState state)
     {
         stateLock.lock();
-        currentState = state;
-        notifyIndexStateObservers(state);
-        stateChanged.signalAll();
+        if(currentState != state)
+        {
+            currentState = state;
+            notifyIndexStateObservers(state);
+            stateChanged.signalAll();
+        }
         stateLock.unlock();
     }
 
