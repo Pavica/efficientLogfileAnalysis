@@ -28,8 +28,8 @@ public class IndexManager {
      */
     private IndexState currentState;
 
-    private Lock stateLock = new ReentrantLock();
-    private Condition stateChanged = stateLock.newCondition();
+    private final Lock stateLock = new ReentrantLock();
+    private final Condition stateChanged = stateLock.newCondition();
     private List<IndexStateObserver> indexStateObservers = new ArrayList<>();
 
     /**
@@ -297,16 +297,10 @@ public class IndexManager {
                     );
 
                     String logFolder = Settings.getInstance().getLogFilePath();
-                    File[] files = LogReader.getAllLogFiles(logFolder);
 
-                    for(File file : files)
-                    {
-                        indexSingleLogFile(indexCreator, file.getName());
-
-                        if(directoryChanged){
-                            return;
-                        }
-                    }
+                    LogReader.forEachLogFile(logFolder,
+                        filePath -> indexSingleLogFile(indexCreator, filePath.getFileName().toString())
+                    );
 
                     saveIndices();
                 }
@@ -319,10 +313,9 @@ public class IndexManager {
 
         private void checkAllFilesForUpdates() throws IOException, InterruptedException
         {
-            for(File file : LogReader.getAllLogFiles(Settings.getInstance().getLogFilePath()))
-            {
-                updateFile(file.getName());
-            }
+            LogReader.forEachLogFile(Settings.getInstance().getLogFilePath(),
+                filePath -> updateFile(filePath.getFileName().toString())
+            );
         }
 
         private void updateFile(String filename) throws IOException, InterruptedException

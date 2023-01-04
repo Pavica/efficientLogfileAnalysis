@@ -1,23 +1,28 @@
 package com.efficientlogfileanalysis.logs;
 
 import com.efficientlogfileanalysis.data.Settings;
-import com.efficientlogfileanalysis.index.IndexManager;
 import com.efficientlogfileanalysis.index.data.TimeRange;
 import com.efficientlogfileanalysis.logs.data.LogEntry;
 import com.efficientlogfileanalysis.logs.data.LogFile;
 import com.efficientlogfileanalysis.logs.data.LogFileData;
 import com.efficientlogfileanalysis.logs.data.LogLevel;
 import com.efficientlogfileanalysis.util.DateConverter;
+import com.efficientlogfileanalysis.util.Timer;
+import lombok.Getter;
 import lombok.SneakyThrows;
 
 import java.io.*;
 import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 /**
  * A class with methods for reading information out of logfiles.
@@ -27,17 +32,58 @@ public class LogReader implements Closeable {
 
     private static final String REGEX_START_OF_LOG_ENTRY = "^\\d{2} \\w{3} \\d{4}[\\s\\S]*";
 
-    public static File[] getAllLogFiles(String logFolder)
-    {
-        File[] files = new File(logFolder).listFiles(
-            name -> name.isFile() && name.getName().contains(".log")
-        );
+    /**
+     * A functional interface containing an action used by the <code>forEachLogFile</code> method
+     * @param <T> an Optional Exception thrown by the performAction method
+     */
+    public interface LogFileAction<T extends Exception>{
+        void performAction(Path logFile) throws T, IOException;
+    }
 
-        if(files == null){
-            return new File[0];
+    /**
+     * Performs a given operation on all logFiles within the logFolder
+     * @param folder the path to the logFolder
+     * @param handler the Action that should be performed
+     * @param <E> the type of the exception which is thrown by performAction (optional)
+     * @throws E if the given action throws an Exception
+     * @throws IOException if the logFolder can't be accessed
+     */
+    public static <E extends Exception> void forEachLogFile(String folder, LogFileAction<E> handler) throws E, IOException {
+        try(Stream<Path> fileStream = getAllLogFilesAsStream(folder))
+        {
+            Iterator<Path> iterator = fileStream.iterator();
+
+            while(iterator.hasNext()){
+                handler.performAction(iterator.next());
+            }
         }
+    }
 
-        return files;
+    /**
+     * Returns a Stream containing all logFiles in a folder<br>
+     * Important! Has to be closed after being used (ideally within a try with resources block)
+     * @param logFolder the path to the logFolder
+     * @return a Stream of all LogFiles within the given folder
+     * @throws IOException if the logFolder can't be accessed
+     */
+    public static Stream<Path> getAllLogFilesAsStream(String logFolder) throws IOException {
+        return Files.walk(Paths.get(logFolder))
+            .filter(Files::isRegularFile)
+            .filter(file -> file.getFileName().toString().contains(".log"));
+    }
+
+    /**
+     * Returns all logFiles ina given folder as an File[]
+     * @param logFolder the path to the logFolder
+     * @return an array containing File objects
+     * @throws IOException if the folder can't be accessed
+     */
+    public static File[] getAllLogFiles(String logFolder) throws IOException
+    {
+        try(Stream<Path> files = getAllLogFilesAsStream(logFolder))
+        {
+            return files.map(Path::toFile).toArray(File[]::new);
+        }
     }
 
     /**
@@ -148,13 +194,14 @@ public class LogReader implements Closeable {
         return new LogFileData(entries, bytesRead - offset);
     }
 
-    private final String path;
+    @Getter
+    private final String logFolderPath;
     private final Matcher startOfLogEntry;
     private final HashMap<String, RandomAccessFile> openFiles;
 
     public LogReader(String logFolderPath)
     {
-        this.path = logFolderPath;
+        this.logFolderPath = logFolderPath;
         startOfLogEntry = Pattern.compile(REGEX_START_OF_LOG_ENTRY).matcher("");
         openFiles = new HashMap<>();
     }
@@ -183,7 +230,7 @@ public class LogReader implements Closeable {
         {
             openFiles.put(
                 fileName,
-                new RandomAccessFile(path + "/" + fileName,"r")
+                new RandomAccessFile(logFolderPath + "/" + fileName,"r")
             );
         }
     }
@@ -452,8 +499,15 @@ public class LogReader implements Closeable {
     public TimeRange getTimeRangeOfFile(String fileName) throws IOException
     {
         TimeRange result = new TimeRange();
-        result.beginDate = readDateOfEntry(fileName, 0);;
-        result.endDate = readDateOfEntry(fileName, getIDOfLastLogEntry(fileName));
+        result.endDate = Files.getLastModifiedTime(Paths.get(logFolderPath, fileName)).toMillis();
+        try {
+            result.beginDate = readDateOfEntry(fileName, 0);
+        }
+        catch(NumberFormatException | DateTimeParseException | IndexOutOfBoundsException ex) {
+            //LogEntry can not be read
+            //File has invalid format
+            result.beginDate = result.endDate;
+        }
         return result;
     }
 
@@ -461,11 +515,29 @@ public class LogReader implements Closeable {
     public static void main(String[] args) {
         try(LogReader reader = new LogReader(Settings.getInstance().getLogFilePath()))
         {
-            for(File f : LogReader.getAllLogFiles(reader.path)){
-                TimeRange t = reader.getTimeRangeOfFile(f.getName());
-                System.out.printf("%-75s - %s\n", f.getName(), t);
-            }
+            TimeRange range = new TimeRange(
+                DateConverter.toLong(LocalDateTime.parse("2022-07-05T00:00:00", DateTimeFormatter.ISO_LOCAL_DATE_TIME)),
+                DateConverter.toLong(LocalDateTime.parse("2022-07-06T00:00:00", DateTimeFormatter.ISO_LOCAL_DATE_TIME))
+            );
+
+            Timer.timeIt(() -> {
+                LogReader.forEachLogFile(reader.logFolderPath, path -> {
+                    TimeRange fileRange = reader.getTimeRangeOfFile(path.getFileName().toString());
+                    range.overlaps(fileRange);
+                });
+            }, 1_000);
+
+
+//            String path = Settings.getInstance().getLogFilePath();
+//            Timer.timeIt(() -> getAllLogFiles(path), 1_000);
+
+//            LogReader.getAllLogFiles()
+//            File[] files = LogReader.getAllLogFiles(reader.path);
+//            Timer.timeIt(() -> {
+//                for(File f : files){
+//                    TimeRange t = reader.getTimeRangeOfFile(f.getName());
+//                }
+//            }, 1_000);
         }
-        System.exit(0);
     }
 }
