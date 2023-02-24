@@ -382,8 +382,13 @@ public class LogReader implements Closeable {
 
         long startPosition = logEntryID - byteRange;
         long maxPosition = logEntryID + byteRange;
+
         if(startPosition < 0) {
             startPosition = 0;
+        }
+
+        if(maxPosition > file.length()){
+            maxPosition = file.length();
         }
 
         file.seek(startPosition);
