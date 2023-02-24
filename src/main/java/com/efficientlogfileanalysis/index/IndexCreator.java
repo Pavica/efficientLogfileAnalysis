@@ -136,8 +136,12 @@ public class IndexCreator implements Closeable {
     {
         Document document = new Document();
 
-        index.logLevelIndexManager.putIfAbsent(fileID, new LinkedHashSet<>());
-        index.logLevelIndexManager.get(fileID).add(logEntry.getLogLevel().getId());
+        Set logLevels = index.logLevelIndexManager.get(fileID);
+        if(logLevels == null){
+            logLevels = new LinkedHashSet<>();
+            index.logLevelIndexManager.putIfAbsent(fileID, logLevels);
+        }
+        logLevels.add(logEntry.getLogLevel().getId());
 
         //add the classname to the classname index
         index.classIDManager.addIfAbsent(index.classIDManager.size(), logEntry.getClassName());
