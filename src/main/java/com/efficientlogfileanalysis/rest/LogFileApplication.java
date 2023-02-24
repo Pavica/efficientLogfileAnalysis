@@ -1,6 +1,6 @@
 package com.efficientlogfileanalysis.rest;
 
-import com.efficientlogfileanalysis.index.IndexManager;
+import com.efficientlogfileanalysis.index.Index;
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
 import jakarta.servlet.annotation.WebListener;
@@ -12,10 +12,10 @@ import jakarta.ws.rs.core.Application;
 public class LogFileApplication extends Application implements ServletContextListener {
 
     public void contextInitialized(ServletContextEvent e) {
-        IndexManager.getInstance().startIndexCreationWorker();
+        Index.getInstance().startIndexCreationWorker();
     }
 
     public void contextDestroyed(ServletContextEvent e) {
-        IndexManager.getInstance().stopIndexCreationWorker();
+        Index.getInstance().stopIndexCreationWorker();
     }
 }

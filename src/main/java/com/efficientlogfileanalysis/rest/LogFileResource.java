@@ -2,7 +2,7 @@ package com.efficientlogfileanalysis.rest;
 
 import com.efficientlogfileanalysis.logs.data.LogEntry;
 import com.efficientlogfileanalysis.data.Settings;
-import com.efficientlogfileanalysis.index.IndexManager;
+import com.efficientlogfileanalysis.index.Index;
 import com.efficientlogfileanalysis.logs.LogReader;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -24,7 +24,7 @@ public class LogFileResource {
     public Response getAllLogfiles()
     {
         //return Response.ok(FileIDManager.getInstance().getLogFileData()).build();
-        return Response.ok(IndexManager.getInstance().getFileData()).build();
+        return Response.ok(Index.getInstance().getFileData()).build();
     }
 
     @GET
@@ -115,7 +115,7 @@ public class LogFileResource {
     {
         try(LogReader reader = new LogReader(Settings.getInstance().getLogFilePath()))
         {
-            short fileID = IndexManager.getInstance().getFileID(filename);
+            short fileID = Index.getInstance().getFileID(filename);
             List<LogEntry> entries = reader.getNearbyEntries(filename, entryID, byteRange);
 
             List<RawEntryData> rawData = entries.stream().map(e -> new RawEntryData(e.getEntryID(), e.toString())).collect(Collectors.toList());
@@ -130,7 +130,7 @@ public class LogFileResource {
     @Path("classNames")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getClassNames() {
-        Set<String> classNames = IndexManager.getInstance().getClassNames();
+        Set<String> classNames = Index.getInstance().getClassNames();
         return Response.ok(classNames).type(MediaType.APPLICATION_JSON).build();
     }
 
@@ -138,7 +138,7 @@ public class LogFileResource {
     @Path("modules")
     public Response getAllModules()
     {
-        Set<String> moduleNames = IndexManager.getInstance().getModuleNames();
+        Set<String> moduleNames = Index.getInstance().getModuleNames();
         return Response.ok(moduleNames).build();
     }
 
@@ -146,7 +146,7 @@ public class LogFileResource {
     @Path("exceptions")
     public Response getAllExceptions()
     {
-        Set<String> moduleNames = IndexManager.getInstance().getExceptionNames();
+        Set<String> moduleNames = Index.getInstance().getExceptionNames();
         return Response.ok(moduleNames).build();
     }
 }

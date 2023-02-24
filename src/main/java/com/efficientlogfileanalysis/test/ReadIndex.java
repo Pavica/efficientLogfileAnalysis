@@ -3,7 +3,7 @@ package com.efficientlogfileanalysis.test;
 import com.efficientlogfileanalysis.logs.data.LogEntry;
 import com.efficientlogfileanalysis.logs.data.LogLevel;
 import com.efficientlogfileanalysis.logs.LogReader;
-import com.efficientlogfileanalysis.index.IndexManager;
+import com.efficientlogfileanalysis.index.Index;
 import com.efficientlogfileanalysis.data.Settings;
 import com.efficientlogfileanalysis.util.Timer;
 
@@ -39,7 +39,7 @@ public class ReadIndex {
         Timer timer = new Timer();
 
         //Create path object
-        Path indexPath = IndexManager.PATH_TO_INDEX;
+        Path indexPath = Index.PATH_TO_INDEX;
 
         //Open the index directory (creates the directory if it doesn't exist)
         IndexSearcher indexSearcher = null;
@@ -76,7 +76,7 @@ public class ReadIndex {
         System.out.println(hits.length);
 
         //FileIDManager mgr = FileIDManager.getInstance();
-        IndexManager mgr = IndexManager.getInstance();
+        Index mgr = Index.getInstance();
         
         //Iterate through the search results
         try {
@@ -95,7 +95,7 @@ public class ReadIndex {
                 try (LogReader logReader = new LogReader(Settings.getInstance().getLogFilePath()))
                 {
                     result.setDateAsLocalDateTime(logReader.getLogEntry(
-                            IndexManager.getInstance().getFileName(Short.parseShort(value.getField("fileIndex").stringValue())),
+                            Index.getInstance().getFileName(Short.parseShort(value.getField("fileIndex").stringValue())),
                             result.getEntryID()
                         ).retrieveDateAsLocalDateTime()
                     );

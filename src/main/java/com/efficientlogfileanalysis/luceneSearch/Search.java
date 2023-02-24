@@ -1,6 +1,6 @@
 package com.efficientlogfileanalysis.luceneSearch;
 
-import com.efficientlogfileanalysis.index.IndexManager;
+import com.efficientlogfileanalysis.index.Index;
 import com.efficientlogfileanalysis.logs.data.LogEntry;
 import com.efficientlogfileanalysis.logs.data.LogLevel;
 import com.efficientlogfileanalysis.data.Settings;
@@ -10,6 +10,7 @@ import com.efficientlogfileanalysis.luceneSearch.data.SearchEntry;
 
 import com.efficientlogfileanalysis.logs.LogReader;
 import com.efficientlogfileanalysis.util.ByteConverter;
+import com.efficientlogfileanalysis.util.Timer;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -53,7 +54,7 @@ public class Search implements Closeable {
     public Search() throws IOException
     {
         //Open the Index
-        Directory indexDirectory = FSDirectory.open(Paths.get(IndexManager.PATH_TO_INDEX + File.separator + "lucene"));
+        Directory indexDirectory = FSDirectory.open(Paths.get(Index.PATH_TO_INDEX + File.separator + "lucene"));
         directoryReader = DirectoryReader.open(indexDirectory);
         searcher = new IndexSearcher(directoryReader);
     }
@@ -109,7 +110,7 @@ public class Search implements Closeable {
         if(filter.getModule() != null)
         {
             //int moduleID = ModuleIDManager.getInstance().get(filter.getModule());
-            int moduleID = IndexManager.getInstance().getModuleID(filter.getModule());
+            int moduleID = Index.getInstance().getModuleID(filter.getModule());
             queryBuilder.add(
                 IntPoint.newExactQuery("module", moduleID),
                 BooleanClause.Occur.MUST
@@ -120,7 +121,7 @@ public class Search implements Closeable {
         if(filter.getClassName() != null)
         {
             //int classNameID = ClassIDManager.getInstance().get(filter.getClassName());
-            int classNameID = IndexManager.getInstance().getClassID(filter.getClassName());
+            int classNameID = Index.getInstance().getClassID(filter.getClassName());
             queryBuilder.add(
                 IntPoint.newExactQuery("classname", classNameID),
                 BooleanClause.Occur.MUST
@@ -138,7 +139,7 @@ public class Search implements Closeable {
 
         if(filter.getException() != null)
         {
-            int exceptionID = IndexManager.getInstance().getExceptionID(filter.getException());
+            int exceptionID = Index.getInstance().getExceptionID(filter.getException());
             queryBuilder.add(
                 IntPoint.newExactQuery("exception", exceptionID),
                 BooleanClause.Occur.MUST
@@ -212,7 +213,7 @@ public class Search implements Closeable {
                 Document document = searcher.doc(hit.doc);
 
                 short fileID = document.getField("fileIndex").numericValue().shortValue();
-                String fileName = IndexManager.getInstance().getFileName(fileID);
+                String fileName = Index.getInstance().getFileName(fileID);
                 long entryIndex = document.getField("logEntryID").numericValue().longValue();
 
                 long logEntryTime = logReader.readDateOfEntry(fileName, entryIndex);
@@ -268,11 +269,11 @@ public class Search implements Closeable {
         List<Byte> levelsPerFile;
 
         //files.ensureCapacity(FileIDManager.getInstance().values.getKeySet().size());
-        files.ensureCapacity(IndexManager.getInstance().getFileIDs().size());
+        files.ensureCapacity(Index.getInstance().getFileIDs().size());
 
         //go through all files
         //for(short fileID : FileIDManager.getInstance().values.getKeySet()) {
-        for(short fileID : IndexManager.getInstance().getFileIDs()) {
+        for(short fileID : Index.getInstance().getFileIDs()) {
             filterBuilder = Filter
                     .builder()
                     .fileID(fileID);
@@ -364,7 +365,7 @@ public class Search implements Closeable {
                 long entryID = document.getField("logEntryID").numericValue().longValue();
                 short fileID = document.getField("fileIndex").numericValue().shortValue();
 
-                String fileName = IndexManager.getInstance().getFileName(fileID);
+                String fileName = Index.getInstance().getFileName(fileID);
                 logEntries.add(logReader.readLogEntryWithoutMessage(fileName, entryID));
             }
         }
@@ -471,7 +472,7 @@ public class Search implements Closeable {
 
         //System.out.println(Long.MAX_VALUE);
 
-        IndexManager mgr = IndexManager.getInstance();
+        Index mgr = Index.getInstance();
         mgr.readIndices();
 
         Search search = new Search();
