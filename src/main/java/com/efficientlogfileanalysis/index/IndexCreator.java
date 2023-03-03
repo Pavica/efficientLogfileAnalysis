@@ -174,8 +174,6 @@ public class IndexCreator implements Closeable {
         document.add(new StoredField("logEntryID", logEntry.getEntryID()));
         document.add(new StoredField("fileIndex", fileID));
 
-        document.add(new NumericDocValuesField("date", logEntry.getTime()));
-
         //add the file index as a sortedField so that lucene can group by it
         document.add(new SortedDocValuesField(
                 "fileIndex",
