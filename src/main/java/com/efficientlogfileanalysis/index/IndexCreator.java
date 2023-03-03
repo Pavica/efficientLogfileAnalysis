@@ -121,6 +121,7 @@ public class IndexCreator implements Closeable {
         }
         previousTimeRange.endDate = fileData.getEntries().get(fileData.getEntries().size() - 1).getTime();
 
+        //TODO - not really needed anymore due to the getTimeRangeOfFile method in LogReader
         //save the beginning and end date of each file
         index.logDateManager.put(
                 fileID,
@@ -160,18 +161,20 @@ public class IndexCreator implements Closeable {
             document.add(new IntPoint("exception", exceptionID));
         }
 
-        document.add(new NumericDocValuesField("date", logEntry.getTime()));
+        //Add main parts of a log entry
         document.add(new LongPoint("date", logEntry.getTime()));
-        document.add(new StoredField("logEntryID", logEntry.getEntryID()));
         document.add(new LongPoint("logLevel", logEntry.getLogLevel().getId()));
-        document.add(new StoredField("logLevel", logEntry.getLogLevel().getId()));
         document.add(new TextField("message", logEntry.getMessage(), Field.Store.NO));
         document.add(new IntPoint("classname", classID));
         document.add(new IntPoint("module", moduleID));
-        document.add(new StoredField("fileIndex", fileID));
-
         //add the fileIndex as a IntPoint so that lucene can search for entries in a specific file
         document.add(new IntPoint("fileIndex", fileID));
+
+        //store data for latter retrieval
+        document.add(new StoredField("logEntryID", logEntry.getEntryID()));
+        document.add(new StoredField("fileIndex", fileID));
+
+        document.add(new NumericDocValuesField("date", logEntry.getTime()));
 
         //add the file index as a sortedField so that lucene can group by it
         document.add(new SortedDocValuesField(
