@@ -2,7 +2,7 @@ package com.efficientlogfileanalysis.rest;
 
 import com.efficientlogfileanalysis.logs.data.LogEntry;
 import com.efficientlogfileanalysis.data.Settings;
-import com.efficientlogfileanalysis.index.IndexManager;
+import com.efficientlogfileanalysis.index.Index;
 import com.efficientlogfileanalysis.logs.LogReader;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -24,7 +24,7 @@ public class LogFileResource {
     public Response getAllLogfiles()
     {
         //return Response.ok(FileIDManager.getInstance().getLogFileData()).build();
-        return Response.ok(IndexManager.getInstance().getFileData()).build();
+        return Response.ok(Index.getInstance().getFileData()).build();
     }
 
     @GET
@@ -33,15 +33,12 @@ public class LogFileResource {
     public Response getLogEntry(
         @PathParam("logFileName") String logFileName,
         @PathParam("id") long entryID
-    ) {
-        //short fileID = FileIDManager.getInstance().get(logFileName);
-        short fileID = IndexManager.getInstance().getFileID(logFileName);
-
-        try( LogReader logReader = new LogReader())
+    )
+    {
+        try( LogReader logReader = new LogReader(Settings.getInstance().getLogFilePath()))
         {
             LogEntry requestedEntry = logReader.getLogEntry(
-                Settings.getInstance().getLogFilePath(),
-                fileID,
+                logFileName,
                 entryID
             );
 
@@ -60,21 +57,16 @@ public class LogFileResource {
     public Response getLogEntries(
         @PathParam("logFileName") String logFileName,
         List<Long> requestedIDs
-    ) {
-        //short fileID = FileIDManager.getInstance().get(logFileName);
-        short fileID = IndexManager.getInstance().getFileID(logFileName);
-
-        try( LogReader logReader = new LogReader())
+    )
+    {
+        try( LogReader logReader = new LogReader(Settings.getInstance().getLogFilePath()))
         {
-            String logFilePath = Settings.getInstance().getLogFilePath();
-
             List<LogEntry> logEntries = new ArrayList<>();
 
             for(long entryID : requestedIDs)
             {
                 logEntries.add(logReader.getLogEntry(
-                    logFilePath,
-                    fileID,
+                    logFileName,
                     entryID
                 ));
             }
@@ -96,11 +88,9 @@ public class LogFileResource {
             @QueryParam("byteRange") int byteRange
     )
     {
-        try(LogReader reader = new LogReader())
+        try(LogReader reader = new LogReader(Settings.getInstance().getLogFilePath()))
         {
-            String path = Settings.getInstance().getLogFilePath();
-            short fileID = IndexManager.getInstance().getFileID(filename);
-            return Response.ok(reader.getNearbyEntries(path, fileID, entryID, byteRange)).build();
+            return Response.ok(reader.getNearbyEntries(filename, entryID, byteRange)).build();
         }
         catch (IOException e) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
@@ -123,11 +113,10 @@ public class LogFileResource {
             @QueryParam("byteRange") int byteRange
     )
     {
-        try(LogReader reader = new LogReader())
+        try(LogReader reader = new LogReader(Settings.getInstance().getLogFilePath()))
         {
-            String path = Settings.getInstance().getLogFilePath();
-            short fileID = IndexManager.getInstance().getFileID(filename);
-            List<LogEntry> entries = reader.getNearbyEntries(path, fileID, entryID, byteRange);
+            short fileID = Index.getInstance().getFileID(filename);
+            List<LogEntry> entries = reader.getNearbyEntries(filename, entryID, byteRange);
 
             List<RawEntryData> rawData = entries.stream().map(e -> new RawEntryData(e.getEntryID(), e.toString())).collect(Collectors.toList());
             return Response.ok(rawData).build();
@@ -141,7 +130,7 @@ public class LogFileResource {
     @Path("classNames")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getClassNames() {
-        Set<String> classNames = IndexManager.getInstance().getClassNames();
+        Set<String> classNames = Index.getInstance().getClassNames();
         return Response.ok(classNames).type(MediaType.APPLICATION_JSON).build();
     }
 
@@ -149,7 +138,7 @@ public class LogFileResource {
     @Path("modules")
     public Response getAllModules()
     {
-        Set<String> moduleNames = IndexManager.getInstance().getModuleNames();
+        Set<String> moduleNames = Index.getInstance().getModuleNames();
         return Response.ok(moduleNames).build();
     }
 
@@ -157,7 +146,7 @@ public class LogFileResource {
     @Path("exceptions")
     public Response getAllExceptions()
     {
-        Set<String> moduleNames = IndexManager.getInstance().getExceptionNames();
+        Set<String> moduleNames = Index.getInstance().getExceptionNames();
         return Response.ok(moduleNames).build();
     }
 }

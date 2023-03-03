@@ -7,7 +7,7 @@ import com.efficientlogfileanalysis.data.Tuple;
 import com.efficientlogfileanalysis.luceneSearch.data.Filter;
 import com.efficientlogfileanalysis.luceneSearch.data.FilterData;
 import com.efficientlogfileanalysis.logs.LogReader;
-import com.efficientlogfileanalysis.index.IndexManager;
+import com.efficientlogfileanalysis.index.Index;
 import com.efficientlogfileanalysis.luceneSearch.Search;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Response;
@@ -54,20 +54,30 @@ public class SearchResource {
         {
             List<Short> fileIDs = search.searchForFiles(filter);
             List<FileData> affectedFiles = new ArrayList<>(fileIDs.size());
-            IndexManager mgr = IndexManager.getInstance();
+            Index mgr = Index.getInstance();
 
             for(short fileID : fileIDs)
             {
                 FileData fileData = new FileData();
 
+                fileData.setFilename(mgr.getFileName(fileID));
+
                 fileData.setFirstDate(mgr.getLogFileDateRange(fileID).beginDate);
                 fileData.setLastDate(mgr.getLogFileDateRange(fileID).endDate);
+
+                /*
+                //New way of getting the begin and end date
+                try ( LogReader reader = new LogReader(Settings.getInstance().getLogFilePath()) )
+                {
+                    TimeRange timeRangeOfFile = reader.getTimeRangeOfFile(fileData.filename);
+                    fileData.setFirstDate(timeRangeOfFile.beginDate);
+                    fileData.setLastDate(timeRangeOfFile.endDate);
+                }
+                 */
 
                 for(byte logLevelID : mgr.getLogLevelsOfFile(fileID)) {
                     fileData.addLogLevel(LogLevel.fromID(logLevelID));
                 }
-
-                fileData.setFilename(mgr.getFileName(fileID));
 
                 affectedFiles.add(fileData);
             }
@@ -95,7 +105,7 @@ public class SearchResource {
         Filter filter = filterData.parse();
 
         //add the fileID to the filter
-        short fileID = IndexManager.getInstance().getFileID(fileName);
+        short fileID = Index.getInstance().getFileID(fileName);
         filter.setFileID(fileID);
 
         try (Search search = new Search())
@@ -103,12 +113,11 @@ public class SearchResource {
             List<LogEntry> result = new ArrayList<>();
             List<Long> entryIDs = search.searchForLogEntryIDs(filter);
 
-            try (LogReader logReader = new LogReader())
+            try (LogReader logReader = new LogReader(Settings.getInstance().getLogFilePath()))
             {
-                String logPath = Settings.getInstance().getLogFilePath();
                 for(long entryID : entryIDs)
                 {
-                    result.add(logReader.readLogEntryWithoutMessage(logPath, fileID, entryID));
+                    result.add(logReader.readLogEntryWithoutMessage(fileName, entryID));
                 }
             }
 
@@ -169,7 +178,7 @@ public class SearchResource {
 
         //Get the ID of the requested file
         Filter filter = pageRequestData.filterData.parse();
-        short fileID = IndexManager.getInstance().getFileID(fileName);
+        short fileID = Index.getInstance().getFileID(fileName);
 
         filter.setFileID(fileID);
 
@@ -188,12 +197,12 @@ public class SearchResource {
             String logPath = Settings.getInstance().getLogFilePath();
             List<LogEntry> logEntries = new ArrayList<>();
 
-            try (LogReader logReader = new LogReader())
+            try (LogReader logReader = new LogReader(logPath))
             {
                 for(long entryID : result.value1)
                 {
                     //get preceding log entries
-                    logEntries.add(logReader.readLogEntryWithoutMessage(logPath, fileID, entryID));
+                    logEntries.add(logReader.readLogEntryWithoutMessage(fileName, entryID));
                 }
             }
 

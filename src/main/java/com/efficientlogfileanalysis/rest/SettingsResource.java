@@ -1,7 +1,7 @@
 package com.efficientlogfileanalysis.rest;
 
 import com.efficientlogfileanalysis.data.Settings;
-import com.efficientlogfileanalysis.index.IndexManager;
+import com.efficientlogfileanalysis.index.Index;
 
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.PUT;
@@ -53,7 +53,7 @@ public class SettingsResource {
             Settings settings = Settings.getInstance();
             settings.setLogFilePath(newPath);
 
-            IndexManager.getInstance().startIndexCreationWorker();
+            Index.getInstance().redoIndex();
         }
         catch (IOException e) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();

@@ -25,7 +25,6 @@ function loadDocument(){
 
     //Inputs
     initializeDatePickers();
-    fillDataLists();
 
     //Modal
     abortFetchOnModalExit();
@@ -48,19 +47,20 @@ function initializeDatePickers(){
 }
 
 async function fillDataLists(){
+    let modules = await loadModules();
+    let classes = await loadClassNames();
+    let exceptions = await loadExceptions();
+
     $("#datalistOptionsModul").empty();
     $("#datalistOptionsClass").empty();
     $("#datalistOptionsException").empty();
 
-    let modules = await loadModules();
     $.each(modules, function(i, item) {
         $("#datalistOptionsModul").append($("<option>").attr('value', item));
     });
-    let classes = await loadClassNames();
     $.each(classes, function(i, item) {
         $("#datalistOptionsClass").append($("<option>").attr('value', item));
     });
-    let exceptions = await loadExceptions();
     $.each(exceptions, function(i, item) {
         $("#datalistOptionsException").append($("<option>").attr('value', item));
     });
