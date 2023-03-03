@@ -27,6 +27,7 @@ import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.QueryBuilder;
 
 import java.io.Closeable;
 import java.io.File;
@@ -91,19 +92,15 @@ public class Search implements Closeable {
         if(!filter.getLogLevels().isEmpty())
         {
             //Apply all logLevel filters
-            //TODO improve that
-
-            for(
-                Byte notIncluded : Arrays.stream(LogLevel.values())
-                    .map(LogLevel::getId)
-                    .filter(s -> !filter.getLogLevels().contains(s))
-                    .collect(Collectors.toList())
-            ) {
-                queryBuilder.add(
+            Arrays.stream(LogLevel.values())
+                .map(LogLevel::getId)
+                .filter(s -> !filter.getLogLevels().contains(s))
+                .forEach(notIncluded -> {
+                    queryBuilder.add(
                         LongPoint.newExactQuery("logLevel", notIncluded),
                         BooleanClause.Occur.MUST_NOT
-                );
-            }
+                    );
+                });
         }
 
         //Apply module filter
@@ -149,13 +146,16 @@ public class Search implements Closeable {
         if(filter.getMessage() != null)
         {
             //Approach 1: search for sentence with sloppiness (word order can differ)
-            //QueryBuilder builder = new QueryBuilder(analyzer);
-            //Query messageQuery = builder.createPhraseQuery("message", filter.getMessage(), 1917);
+            QueryBuilder builder = new QueryBuilder(analyzer);
+            Query messageQuery = builder.createPhraseQuery("message", filter.getMessage(), Integer.MAX_VALUE);
+            queryBuilder.add(messageQuery, BooleanClause.Occur.MUST);
 
             //Approach 2: FuzzyQuery spelling can differ
             //Term term = new Term("message", filter.getMessage());
             //FuzzyQuery messageQuery = new FuzzyQuery(term);
 
+            //Approach 3: FuzzySearch + Sloppiness (Results are actually not that great)
+            /*
             try
             {
                 BooleanQuery.Builder messageQueryBuilder = new BooleanQuery.Builder();
@@ -189,6 +189,7 @@ public class Search implements Closeable {
                 ioe.printStackTrace();
                 System.err.println("Message filter konnte nicht angewand werden!");
             }
+            */
         }
 
         return queryBuilder;

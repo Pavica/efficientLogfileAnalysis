@@ -6,7 +6,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Data
 @Builder
@@ -15,7 +17,7 @@ import java.util.List;
 public class Filter {
     private long beginDate;
     private long endDate;
-    private List<Byte> logLevels;
+    private Set<Byte> logLevels;
     private String module;
     private String className;
     private String exception;
@@ -28,7 +30,7 @@ public class Filter {
         {
             beginDate   =   0;
             endDate     =   Long.MAX_VALUE;
-            logLevels   =   new ArrayList<>();
+            logLevels   =   new HashSet();
             module      =   null;
             className   =   null;
             exception   =   null;
