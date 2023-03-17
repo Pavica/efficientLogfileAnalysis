@@ -48,7 +48,8 @@ public class Settings {
     private void setDefaultValues() {
         logFilePath = 
             System.getProperty("user.home") +
-            "/logs";
+            File.separator +
+            "logs";
         maxSizeOfCacheFile = 0;
     }
 
