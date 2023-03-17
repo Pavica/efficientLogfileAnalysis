@@ -42,7 +42,7 @@ class IndexCreationWorker extends Thread{
             index.setCurrentState(IndexState.READY);
         }
         catch (InterruptedException e) {interrupted = true;}
-        catch (IOException e) {e.printStackTrace();}
+        catch (IOException e) {index.setCurrentState(IndexState.NOT_READY);}
 
         while(!interrupted || directoryChanged)
         {
