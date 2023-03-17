@@ -35,7 +35,7 @@ asadmin.bat stop-domain
 -----
 
 ## Deploying the application
-Place the compiled ``.war`` folder in the ``/bin`` directory of your glassfish 6 install.<br>
+Place the compiled ``.war`` file in the ``/bin`` directory of your glassfish6 installation.<br>
 You can then deploy the application using:
 ```
 asadmin.bat deploy --contextroot "/" EfficientLogfileAnalysis-1.0-SNAPSHOT.war
